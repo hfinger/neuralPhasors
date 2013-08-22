@@ -1,0 +1,17 @@
+{Error using corr (line 87)
+Requires a data matrix X.
+
+Error in ConnectomeSim/run (line 86)
+      [corrFCvsFCsimNoBold,pvalFCvsFCsimNoBold] =
+      corr(FCsimNoBoldVals(:),FCVals(:));
+
+Error in Gridjob.startJobid (line 329)
+      end
+
+Error in Gridjob/start (line 187)
+        %start jobs sequentially in this matlab instance
+
+Error in script (line 38)
+start(gridjobs);
+} 
+

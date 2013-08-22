@@ -1,0 +1,45 @@
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.jobname = 'layer1ConnVar';
+params.Gridjob.requiremf = 13000;
+params.ProbabilisticConn.inCorrFile = 'layer1Cov/patchCorr.mat';
+params.ProbabilisticConn.outWeightsFolder = 'layer1ConnVar';
+params.ProbabilisticConn.numExc = {50,100,200,400,800};
+params.ProbabilisticConn.numInh = 200;
+params.ProbabilisticConn.exclSelfConn = true;
+params.ProbabilisticConn.useDiscretesample = true;
+params.ProbabilisticConn.exclDoubleConns = true;
+params.ProbabilisticConn.probRadiusFcn = [];
+paramsAll{1} = params;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 4000;
+params.Gridjob.jobname = 'layer1PhaseVar';
+params.PhaseSimulation.inActFolder = 'layer1Act';
+params.PhaseSimulation.inActFilenames = 'act.*.mat';
+params.PhaseSimulation.inFileid = 1;
+params.PhaseSimulation.inCellid = 1;
+params.PhaseSimulation.inConnFilename = {'layer1ConnVar/1/weights.mat','layer1ConnVar/2/weights.mat','layer1ConnVar/3/weights.mat','layer1ConnVar/4/weights.mat','layer1ConnVar/5/weights.mat'};
+params.PhaseSimulation.inPhaseFilename = [];
+params.PhaseSimulation.outPhaseFolder = 'layer1PhaseVar';
+params.PhaseSimulation.noiseLevel = 0;
+params.PhaseSimulation.noiseEMAconst = 0;
+params.PhaseSimulation.tmax = 30;
+params.PhaseSimulation.dt = 1;
+params.PhaseSimulation.fixedPhaseDelay = 0;
+params.PhaseSimulation.odeSolver = 'ode1';
+params.PhaseSimulation.weightAll = {1,3,10};
+params.PhaseSimulation.weightInh = 1;
+params.PhaseSimulation.weightExc = 1;
+params.PhaseSimulation.saveintervalPhase = Inf;
+params.PhaseSimulation.saveintervalMeanPhase = 1;
+params.PhaseSimulation.saveintervalMeanWeightedPhase = 1;
+params.PhaseSimulation.plotPhase = false;
+params.PhaseSimulation.maxdphase = 0.5;
+paramsAll{2} = params;
+
+clear params;
+gridjobs = Gridjob(paramsAll);
+start(gridjobs);

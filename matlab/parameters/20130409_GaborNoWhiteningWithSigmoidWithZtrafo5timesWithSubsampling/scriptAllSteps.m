@@ -1,0 +1,120 @@
+%% create Gabor filter weights
+rfSize = 12;
+numOrient = 8;
+order = 2;
+sigma = 1;
+aspectratio = 3;
+integral = 0.01;
+numChan = 3;
+
+W = zeros(rfSize,rfSize,numChan,1,1,numChan*numOrient);
+Wtmp = zeros(rfSize,rfSize,1,1,1,numOrient);
+orientations=(0:numOrient-1)*pi/numOrient;
+for k=1:length(orientations);
+  Wtmp(:,:,1,1,1,k) = genSpatialKernel( rfSize, order, sigma, aspectratio, integral, orientations(k) );
+end
+for k=1:numChan
+  W(:,:,k,1,1,(k-1)*numOrient+1:k*numOrient) = Wtmp;
+end
+conn.W = 5 * cat(6,W,-W); % add opposite colors
+% so W in total consists of surround -5, center 10.01 and surround -5
+conn.inputSubtract = zeros(1,1,3);
+conn.inputSubtract(1,1,:) = [0.4255, 0.4409, 0.4324]; %subtract mean
+conn.inputScaling = zeros(1,1,3);
+conn.inputScaling(1,1,:) = [1/0.2465, 1/0.2432, 1/0.2563]; %standardize input
+conn.inputSubsampling = 2;
+
+%%
+clear paramsAll;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 3000;
+params.Gridjob.jobname = 'labelMeInput';
+params.LoadLabelMe.catName = '05june05_static_street_boston';
+params.LoadLabelMe.fileid = 1:185;
+params.LoadLabelMe.outActFolder = 'labelMeInput';
+paramsAll{1} = params;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 3000;
+params.Gridjob.jobname = 'layer1ActNotRectified';
+params.ApplyWeights.inActFolder = 'labelMeInput';
+params.ApplyWeights.inActFilenames = 'act.*.mat';
+params.ApplyWeights.outActFolder = 'layer1ActNotRectified';
+params.ApplyWeights.weightsFile = conn;
+params.ApplyWeights.actFcn = @(x) 1 ./ (1 + exp(-x));
+params.ApplyWeights.convType = 'same';
+paramsAll{2} = params;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 3000;
+params.Gridjob.jobname = 'layer1ActRectified';
+params.ApplyWeights.inActFolder = 'layer1ActNotRectified';
+params.ApplyWeights.inActFilenames = 'act.*.mat';
+params.ApplyWeights.outActFolder = 'layer1ActRectified';
+params.ApplyWeights.weightsFile = [];
+params.ApplyWeights.actFcn2 = @(x) feval(@(x2) bsxfun(@rdivide,x2,0.001+sum(x2,3)), max(0,bsxfun(@minus,x,mean(x,3))) ); % subtract mean and rectify and then normalize to sum=1
+params.ApplyWeights.convType = 'same';
+paramsAll{3} = params;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.jobname = 'layer1Cov';
+params.Gridjob.requiremf = 3000;
+params.FeatureCovariance.inActFolder = 'layer1ActRectified';
+params.FeatureCovariance.inActFilenames = 'act.*.mat';
+params.FeatureCovariance.fileid = [];
+params.FeatureCovariance.outCovFolder = 'layer1Cov';
+params.FeatureCovariance.maxCovLengthDim1 = 32;
+params.FeatureCovariance.maxCovLengthDim2 = 32;
+params.FeatureCovariance.numSamplesPerImage = 50;
+params.FeatureCovariance.borderBuffer = 0;
+paramsAll{4} = params;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.jobname = 'layer1Conn';
+params.Gridjob.requiremf = 3000;
+params.ProbabilisticConn.inCorrFile = 'layer1Cov/patchCorr.mat';
+params.ProbabilisticConn.outWeightsFolder = 'layer1Conn';
+params.ProbabilisticConn.numExc = 200;
+params.ProbabilisticConn.numInh = 200;
+params.ProbabilisticConn.exclSelfConn = true;
+params.ProbabilisticConn.useDiscretesample = true;
+params.ProbabilisticConn.exclDoubleConns = true;
+params.ProbabilisticConn.probRadiusFcn = [];
+paramsAll{5} = params;
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 3000;
+params.Gridjob.jobname = 'layer1Phase';
+params.PhaseSimulation.inActFolder = 'layer1ActRectified';
+params.PhaseSimulation.inActFilenames = 'act.*.mat';
+params.PhaseSimulation.inFileid = 1;
+params.PhaseSimulation.inCellid = 1;
+params.PhaseSimulation.inConnFilename = 'layer1Conn/weights.mat';
+params.PhaseSimulation.inPhaseFilename = [];
+params.PhaseSimulation.outPhaseFolder = 'layer1Phase';
+params.PhaseSimulation.noiseLevel = 0;
+params.PhaseSimulation.noiseEMAconst = 0;
+params.PhaseSimulation.tmax = 30;
+params.PhaseSimulation.dt = 1;
+params.PhaseSimulation.fixedPhaseDelay = 0;
+params.PhaseSimulation.odeSolver = 'ode4';
+params.PhaseSimulation.weightAll = 3;
+params.PhaseSimulation.weightInh = 1;
+params.PhaseSimulation.weightExc = 1;
+params.PhaseSimulation.saveintervalPhase = 5;
+params.PhaseSimulation.saveintervalMeanPhase = 5;
+params.PhaseSimulation.saveintervalMeanWeightedPhase = 5;
+params.PhaseSimulation.plotPhase = false;
+params.PhaseSimulation.maxdphase = 0.5;
+paramsAll{6} = params;
+
+clear params;
+gridjobs = Gridjob(paramsAll);
+start(gridjobs);

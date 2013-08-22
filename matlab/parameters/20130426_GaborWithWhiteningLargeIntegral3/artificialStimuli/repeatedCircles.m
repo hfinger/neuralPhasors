@@ -1,0 +1,32 @@
+
+clear params;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 3000;
+params.Gridjob.jobname = 'repeatedCircles';
+params.Gridjob.wc_host = '';
+params.Gridjob.initRandStreamWithJobid = true;
+params.PhaseSimulation.inActFolder = 'layer1ActRectified';
+params.PhaseSimulation.inActFilenames = 'act.*.mat';
+params.PhaseSimulation.inFileid = 2;
+params.PhaseSimulation.inCellid = 1;
+params.PhaseSimulation.inConnFilename = '../layer1ConnManySamples/weights.mat';
+params.PhaseSimulation.inPhaseFilename = [];
+params.PhaseSimulation.outPhaseFolder = 'repeatedCircles';
+params.PhaseSimulation.noiseLevel = 0;
+params.PhaseSimulation.noiseEMAconst = 0;
+params.PhaseSimulation.tmax = 30;
+params.PhaseSimulation.dt = 1;
+params.PhaseSimulation.fixedPhaseDelay = 0;
+params.PhaseSimulation.odeSolver = 'ode4';
+params.PhaseSimulation.weightAll = 3;
+params.PhaseSimulation.weightInh = 1;
+params.PhaseSimulation.weightExc = 1;
+params.PhaseSimulation.saveintervalPhase = 5;
+params.PhaseSimulation.saveintervalMeanPhase = 5;
+params.PhaseSimulation.saveintervalMeanWeightedPhase = 5;
+params.PhaseSimulation.plotPhase = false;
+params.PhaseSimulation.maxdphase = 2*pi/4;
+paramsAll{5} = params;
+
+gridjobs = Gridjob(paramsAll(5));
+start(gridjobs);

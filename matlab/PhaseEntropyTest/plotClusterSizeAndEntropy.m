@@ -1,0 +1,1 @@
+funcslider(@combineClusterSizeAndEntrop, 'surf(z1,z2,z3); colormap winter')

@@ -1,0 +1,238 @@
+classdef ConnectomeSim < Gridjob
+  %ConnectomeSim Summary of this class goes here
+  %   Detailed explanation goes here
+  
+  properties
+
+  end
+  
+  methods
+    
+    %% Subclass Constructor: initialize standard parameters:
+    function this = ConnectomeSim(varargin)
+      
+      % Call superclass constructor:
+      this = this@Gridjob(varargin{:});
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      %%%% START EDIT HERE: define standard parameters for the job %%%%
+      
+      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat
+      this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
+      
+      this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
+      this.params.ConnectomeSim.homotopic = 0;
+      this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
+      this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR'
+      this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
+
+      %params specific for Kuramoto:
+      this.params.ConnectomeSim.approx=false;
+      this.params.ConnectomeSim.invertSin=false;
+      this.params.ConnectomeSim.f=60;
+      this.params.ConnectomeSim.startState = [];
+     
+      %params specific for rate model:
+      this.params.ConnectomeSim.tau=20;
+      
+      %params for all models:
+      this.params.ConnectomeSim.k=0.8;
+      
+      %params for all models but SAR model:
+      this.params.ConnectomeSim.v=10; % in m/sec
+      this.params.ConnectomeSim.delay = 0; % in ms
+      this.params.ConnectomeSim.t_max=500;
+      this.params.ConnectomeSim.dt=0.0001;
+      this.params.ConnectomeSim.sampling=10;
+      this.params.ConnectomeSim.sig_n=1.25;
+      this.params.ConnectomeSim.d=0;
+      this.params.ConnectomeSim.verbose=true;
+      
+      this.params.ConnectomeSim.statsRemoveInitialT = 0;
+            
+      this.params.ConnectomeSim.outFilenames = 'results';
+
+      
+      %%%% END EDIT HERE:                                          %%%%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+      this = this.init(varargin{:});
+
+    end
+    
+    %% Start: is executed before all individual parameter jobs are started
+    function startJob(this)
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      %%%% START EDIT HERE: do some preprocessing (not parallel) %%%%
+
+%       disp('this excecutes before the parallel job is started');
+      
+      %%%% END EDIT HERE:                                        %%%%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+    end
+    
+    %% Run: is executed on the grid for each parameter individually (in parallel)
+    % this function is called from Gridjob-class and executes the parallel job
+    function run(this)
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      %%%% START EDIT HERE: implement the algorithm here %%%%
+      
+      param = this.params.ConnectomeSim;
+      
+      paths = dataPaths( );
+      
+      if param.dataset==0
+        load(fullfile(paths.databases,'datasimu.mat'));
+      elseif param.dataset==1
+        load(fullfile(paths.databases,'SC_Bastian','Stuct_connectivity_for_Holger.mat'));
+        if param.subjId==-1
+          SC = mean(cell2mat(reshape(SC,[1 1 numel(SC)])),3);
+          D = mean(cell2mat(reshape(D,[1 1 numel(D)])),3);
+        else
+          SC = SC{param.subjId};
+          D = D{param.subjId};
+        end
+        
+        SC(isnan(SC)) = 0;
+        SC = SC + SC';
+        
+        D(D==0)=Inf;
+        D(isinf(D))=min(D(:));
+        D = 1./D;
+        D(isnan(D)) = 0;
+        D = D + D';
+        D = D * 230; % approx to scale to mm
+      elseif param.dataset==2
+        ci = load(fullfile(paths.databases,'SC_Bastian','dist_and_CI_controls_preprocessed.mat'));
+
+        if param.subjId==-1
+          SC = ci.avg_ci;
+          D = ci.avg_dist;
+        else
+          SC = ci.ci{param.subjId};
+          D = ci.dist{param.subjId};
+        end
+        
+        SC(isnan(SC)) = 0;
+        SC = SC + SC';
+        
+        D(isnan(D)) = 0;
+        D = D + D'; % scale unclear should be scaled to mm
+      end
+      
+      if param.normRowBeforeHomotopic==1
+        SC = bsxfun(@rdivide,SC,sum(SC,2));
+      elseif param.normRowBeforeHomotopic==2
+        SC = size(SC,1) * SC / sum(SC(:));
+      end
+      
+      if param.homotopic
+        SC = SC + param.homotopic * diag(ones(size(SC,1)/2,1),size(SC,1)/2) + param.homotopic * diag(ones(size(SC,1)/2,1),-size(SC,1)/2);
+      end
+      
+      if param.normRow==1
+        C = bsxfun(@rdivide,SC,sum(SC,2));
+      elseif param.normRow==2
+        C = size(SC,1) * SC / sum(SC(:));
+      else
+        C = SC;
+      end
+      
+      if param.delay
+        %% incorporate the fixed time delay offset into the distance matrix
+        % 1. convert distance (in mm) to delay (in ms) via velocity:
+        timeDelays = D / param.v;
+        % 2. add constant delay offset (in ms)
+        timeDelays = timeDelays + param.delay;
+        % 3. convert back to distance (in mm):
+        D = timeDelays * param.v;
+      end
+      
+      savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
+      mkdir(savepath);
+      savefilename = fullfile(savepath,num2str(this.currJobid));
+      
+      if strcmp(param.model,'kuramoto')
+        if param.useNetworkFokkerPlanck
+          phase = Network_FokkerPlanckKuramoto(C,D,param.k,param.f,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose,param.approx,param.invertSin,param.startState);
+        else
+          phase = runKuramoto(C,D,param.k,param.f,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose,param.approx,param.invertSin,param.startState);
+        end
+        
+        cutAt = max(1,round(param.statsRemoveInitialT/(param.dt*param.sampling)));
+        OrderParam = abs(sum(exp(1i*phase(:,cutAt:end)),1)/size(phase,1));
+        meanOrderParam = mean(OrderParam);
+        stdOrderParam = std(OrderParam);
+        save([savefilename 'KuramotoStats.mat'],'OrderParam','meanOrderParam','stdOrderParam');
+        save([savefilename 'SimResult.mat'],'phase','param');
+        
+        FCsimNoBold = corr(sin(phase)');
+        
+      elseif strcmp(param.model,'rate')
+        if param.useNetworkFokkerPlanck
+          rate = Network_FokkerPlanck(C,D,param.k,param.tau,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose);        
+        else
+          rate = runRatemodel(C,D,param.k,param.tau,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose);        
+        end
+        save([savefilename 'SimResult.mat'],'rate','param');
+        
+        FCsimNoBold = corr(rate');
+        
+      elseif strcmp(param.model,'SAR')
+        
+        tmp = eye(size(C))-param.k*C;
+        FCsimNoBold = inv(tmp) * inv(tmp');
+        
+      end
+      
+      FCsimNoBoldVals = FCsimNoBold(find(tril(ones(size(FCsimNoBold)),-1)));
+      if exist('FC','var')
+        FCVals = FC(find(tril(ones(size(FC)),-1)));
+        [corrFCvsFCsimNoBold,pvalFCvsFCsimNoBold] = corr(FCsimNoBoldVals(:),FCVals(:));
+        save([savefilename 'FC.mat'],'FCsimNoBold','corrFCvsFCsimNoBold','pvalFCvsFCsimNoBold');
+      else
+        save([savefilename 'FC.mat'],'FCsimNoBold');
+      end
+      
+      
+      
+      
+      %%%% END EDIT HERE:                                %%%%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+    end
+    
+    %% finishJobs: is executed once (after all individual parameter jobs are finished)
+    function finishJobs(this)
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      %%%% START EDIT HERE: do some clean up and saving %%%%
+      
+      %%%% END EDIT HERE:                               %%%%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+      % Execute clean up of superclass:
+      finishJobs@Gridjob(this)
+      
+    end
+    
+    %% finishJobs: is executed once (after all individual parameter jobs are finished)
+    function plotJob(this)
+      
+      %% plot instantanous frequency of all neurons:
+      figure;
+      imagesc(diff(Y2/(2*pi),[],2))
+      
+      plot(OrderParam)
+      
+      
+      
+    end
+    
+  end
+  
+end
+

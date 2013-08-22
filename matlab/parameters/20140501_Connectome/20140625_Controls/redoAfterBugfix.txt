@@ -1,0 +1,30 @@
+
+
+State of grid on 20140721:
+
+Already Done with bugfixed version:
+20140708_AverageSubjVarVVarK
+20140721_AverageSubjVarFVarNoise
+20140721_AverageSubjVarKVarHomotopic
+20140721_AverageSubjVarVVarDelay
+20140721_AverageSubjVarVVarK
+
+Still running jobs:
+
+20140707_VarVVarK (jobid 30142)
+20140708_VarVVarK (jobid 30143)
+20140721_AverageSubjVarFVarNoiseSmall  (jobid 30154)
+
+Queued:
+20140625_VarKVarVVarNoise (jobid 30146)
+20140701_VarKVarVVarNoiseVarSubject (jobid 30149)
+
+Sim not started yet: TODO
+20140722_BestParamVarSubject
+20140722_AverageSubjNormRow2VarVVarK
+
+Env not started:
+20140702_VarKVarVVarNoiseVarSubjectRateModel
+
+Very large folders consider deleting:
+20140707_VarVVarK

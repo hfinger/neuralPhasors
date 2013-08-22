@@ -1,0 +1,20 @@
+clear paramsAll;
+
+clear params;
+params.Gridjob.runLocal = true;
+params.Gridjob.requiremf = 12000;
+params.Gridjob.jobname = 'rfsWithActFcn';
+params.ApplyWeights.plotPdf = true;
+params.ApplyWeights.inActFolder = '../../20131220_MoreImages/labelMeWhite/05june05_static_street_boston/p1010736.jpg';
+params.ApplyWeights.inActFilenames = 'act.*.mat';
+params.ApplyWeights.fileid = 1;
+params.ApplyWeights.outActFolder = 'rfsWithActFcn';
+params.ApplyWeights.weightsFile = 'ReLogDAE100/forwConn.mat';
+params.ApplyWeights.convType = 'same';
+paramsAll{1} = params;
+
+clear params;
+
+gridjobs = Gridjob(paramsAll);
+start(gridjobs);
+
