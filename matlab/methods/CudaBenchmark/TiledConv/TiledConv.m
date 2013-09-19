@@ -11,13 +11,20 @@ classdef TiledConv < handle
     tileSizeY
     fIn
     fOut
+    
+    useGpu
   end
   
   methods
     
-    function obj = TiledConv(tileSizeX,tileSizeY,fIn,fOut)
+    function obj = TiledConv(tileSizeX,tileSizeY,fIn,fOut,useGpu)
       % the individual patch size will be [tileSizeX+1 tileSizeY+1]
       obj.setDims(tileSizeX,tileSizeY,fIn,fOut);
+      if nargin<5
+          obj.useGpu=false;
+      else
+          obj.useGpu=useGpu;
+      end
     end
     
     function setDims(this,tileSizeX,tileSizeY,fIn,fOut)
@@ -51,19 +58,32 @@ classdef TiledConv < handle
       end
       this.idsW2WfullSplitted = dummyW(:);
       this.idsW2Winv = [];
+      
+      if this.useGpu
+        this.idsW2WfullSplitted = gpuArray(this.idsW2WfullSplitted);
+        this.idsW2Winv = gpuArray(this.idsW2Winv);
+      end
     end
     
     function WfullSplitted = W2WfullSplitted(this,W)
       % W has dimensions [1+tileSizeX, 1+tileSizeY, fIn, tileSizeX, tileSizeY, fOut]
       % Wfull has dimensions [tileSizeX tileSizeY fIn 2 2 tileSizeX tileSizeY fOut]
-      WfullSplitted = zeros( this.tileSizeX, this.tileSizeY, this.fIn, 2, 2, this.tileSizeX, this.tileSizeY, this.fOut );
+      if this.useGpu
+        WfullSplitted = parallel.gpu.GPUArray.zeros( [this.tileSizeX, this.tileSizeY, this.fIn, 2, 2, this.tileSizeX, this.tileSizeY, this.fOut] , 'double');
+      else
+        WfullSplitted = zeros( [this.tileSizeX, this.tileSizeY, this.fIn, 2, 2, this.tileSizeX, this.tileSizeY, this.fOut] , 'double');
+      end
       WfullSplitted(this.idsW2WfullSplitted) = W(:);
     end
     
     function W = WfullSplitted2W(this,WfullSplitted)
       % Wfull has dimensions [tileSizeX tileSizeY fIn 2 2 tileSizeX tileSizeY fOut]
       % W has dimensions [1+tileSizeX, 1+tileSizeY, fIn, tileSizeX, tileSizeY, fOut]
-      W = zeros( 1+this.tileSizeX, 1+this.tileSizeY, this.fIn, this.tileSizeX, this.tileSizeY, this.fOut );
+      if this.useGpu
+        W = parallel.gpu.GPUArray.zeros( [1+this.tileSizeX, 1+this.tileSizeY, this.fIn, this.tileSizeX, this.tileSizeY, this.fOut] , 'double' );
+      else
+        W = zeros( [1+this.tileSizeX, 1+this.tileSizeY, this.fIn, this.tileSizeX, this.tileSizeY, this.fOut] , 'double' );
+      end
       W(:) = WfullSplitted(this.idsW2WfullSplitted);
     end
     
@@ -86,7 +106,11 @@ classdef TiledConv < handle
       if strcmp(type,'full')
         s_in = size(in);
         s_in(end+1:5) = 1;
-        tmp = zeros(s_in+[0 2 0 2 0]);
+        if this.useGpu
+            tmp = parallel.gpu.GPUArray.zeros(s_in+[0 2 0 2 0],'double');
+        else
+            tmp = zeros(s_in+[0 2 0 2 0],'double');
+        end
         tmp(:,2:end-1,:,2:end-1,:) = in;
         in = permute(tmp,[2 4 1 3 5]);
         numTilesX = numTilesX+2;
@@ -194,10 +218,18 @@ classdef TiledConv < handle
         
         this.idsW2Winv = dummyW(:);
         
+        if this.useGpu
+            this.idsW2Winv = gpuArray(this.idsW2Winv);
+        end
+      
       end
       
       %% Now put together the inverse just by indexing:
-      Winv = zeros( this.tileSizeX+1, this.tileSizeY+1, this.fOut, this.tileSizeX, this.tileSizeY, this.fIn );
+      if this.useGpu
+        Winv = parallel.gpu.GPUArray.zeros( this.tileSizeX+1, this.tileSizeY+1, this.fOut, this.tileSizeX, this.tileSizeY, this.fIn, 'double' );
+      else
+        Winv = zeros( this.tileSizeX+1, this.tileSizeY+1, this.fOut, this.tileSizeX, this.tileSizeY, this.fIn, 'double' );
+      end
       Winv(this.idsW2Winv) = W(:);
       
     end
