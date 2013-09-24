@@ -149,7 +149,11 @@ classdef TiledConv < handle
       % in has dimensions [X*tileSizeX Y*tileSizeY fIn]
       % outErr has dimensions [X-1 Y-1 tileSizeX tileSizeY fOut]
       
-      Wfull = zeros([this.tileSizeX this.tileSizeY this.fIn 2 2 this.tileSizeX this.tileSizeY this.fOut]);
+      if this.useGpu
+          Wfull = parallel.gpu.GPUArray.zeros([this.tileSizeX this.tileSizeY this.fIn 2 2 this.tileSizeX this.tileSizeY this.fOut],'double');
+      else
+          Wfull = zeros([this.tileSizeX this.tileSizeY this.fIn 2 2 this.tileSizeX this.tileSizeY this.fOut],'double');
+      end
       
       X = size(in,1) / this.tileSizeX;
       Y = size(in,2) / this.tileSizeY;
