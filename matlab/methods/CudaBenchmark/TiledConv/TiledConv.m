@@ -238,6 +238,19 @@ classdef TiledConv < handle
       
     end
     
+    function expanded5D = compact2expanded(this,compact3D)
+        [numX numY numF] = size(compact3D);
+        numTilesX = numX / this.tileSizeX;
+        numTilesY = numY / this.tileSizeY;
+        expanded5D = reshape(compact3D,[this.tileSizeX numTilesX this.tileSizeY numTilesY numF]);
+        expanded5D = permute(expanded5D,[2 4 1 3 5]);
+    end
+    
+    function compact3D = expanded2compact(this,expanded5D)
+        compact3D = permute(expanded5D,[3 1 4 2 5]);
+        compact3D = reshape(compact3D,[size(compact3D,1)*size(compact3D,2) size(compact3D,3)*size(compact3D,4) size(compact3D,5)]);
+    end
+        
   end
   
   methods (Static)

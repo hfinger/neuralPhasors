@@ -1,13 +1,13 @@
 clear all;
 
-tileSizeX = 16;
-tileSizeY = 16;
-fIn = 10;
+useGpu = true;
+tileSizeX = 8;
+tileSizeY = 8;
+fIn = 3;
 fOut = 10;
-numTilesX = 20;
-numTilesY = 15;
-useGpu = false;
-numIters = 20;
+numTilesX = 30;
+numTilesY = 30;
+numIters = 100;
 
 %% init rand stream:
 s = RandStream('mt19937ar','Seed',1);
@@ -22,7 +22,7 @@ W = randn([tileSizeX+1,tileSizeY+1,fIn,tileSizeX,tileSizeY,fOut],'double');
 Winv = tiledConv.invertW(W);
 
 %% initialize input for tiledConv:
-in = randn([numTilesX*tileSizeX,numTilesY*tileSizeY,fIn],'double');
+in = rand([numTilesX*tileSizeX,numTilesY*tileSizeY,fIn],'double');
 
 if useGpu
     W = gpuArray(W);
@@ -30,12 +30,19 @@ if useGpu
 end
 
 %% iterate several times up and down:
+
+WfullSplitted = tiledConv.W2WfullSplitted(W);
+WfullSplittedInv = tiledConvInv.W2WfullSplitted(Winv);
+
 tic;
 for k=1:numIters
-    out5D = tiledConv.convW(W,in,'full');
+    
+    in = (in>0.5);
+    
+    out5D = tiledConv.convWfullSplitted(WfullSplitted,in,'full');
     out = permute(out5D,[3 1 4 2 5]);
     out = reshape(out,[size(out,1)*size(out,2) size(out,3)*size(out,4) size(out,5)]);
-    in5D = tiledConvInv.convW(Winv,out,'valid');
+    in5D = tiledConvInv.convWfullSplitted(WfullSplittedInv,out,'valid');
     in = permute(in5D,[3 1 4 2 5]);
     in = reshape(in,[size(in,1)*size(in,2) size(in,3)*size(in,4) size(in,5)]);
     Wbackprop = tiledConvInv.backpropErrorW(out,in5D);
@@ -44,3 +51,6 @@ for k=1:numIters
     fprintf(['k = ' num2str(k) ' of ' num2str(numIters) ' toc=' num2str(toc) '\n']);
 end
 disp(toc)
+
+% in = gather(in)
+% save('inCPU.mat','in')
