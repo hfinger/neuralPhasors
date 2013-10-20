@@ -13,7 +13,7 @@ data.resultsdir = '/net/store/nbp/phasesim/results';
 
 data.sge_workdir = '/net/store/nbp/phasesim/workdir';
 data.sge_resultsdir = '/net/store/nbp/phasesim/results';
-data.sge_pathToAddScriptPaths = '/net/store/nbp/phasesim/phasesim/matlab';
+data.sge_pathToAddScriptPaths = '/net/store/nbp/phasesim/src/matlab';
 data.puttyPrivateKey = 'C:\Users\....';
 data.sshUsername = 'hofinger';
 data.sshServer = 'gate.ikw.uni-osnabrueck.de';
