@@ -23,6 +23,8 @@ addpath(fullfile(pathstr, 'include', 'minFunc_2012', 'minFunc', 'compiled'));
 addpath(fullfile(pathstr, 'include', 'plot2svg_20120915'));
 addpath(fullfile(pathstr, 'include', 'shadedErrorBar'));
 addpath(fullfile(pathstr, 'include', 'sfigure'));
+addpath(fullfile(pathstr, 'include', 'panel_2.10'));
+addpath(fullfile(pathstr, 'include', 'subaxis'));
 addpath(fullfile(pathstr, 'methods'));
 addpath(fullfile(pathstr, 'methods', 'grid'));
 addpath(fullfile(pathstr, 'methods', 'odeSolver'));
