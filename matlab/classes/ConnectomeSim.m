@@ -19,11 +19,12 @@ classdef ConnectomeSim < Gridjob
       
       this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
+      this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
       
       this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
       this.params.ConnectomeSim.homotopic = 0;
       this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
-      this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR'
+      this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR' or 'WilsonCowan'
       this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
 
       %params specific for Kuramoto:
@@ -108,12 +109,38 @@ classdef ConnectomeSim < Gridjob
       elseif param.dataset==2
         ci = load(fullfile(paths.databases,'SC_Bastian','dist_and_CI_controls_preprocessed.mat'));
 
-        if param.subjId==-1
-          SC = ci.avg_ci;
-          D = ci.avg_dist;
+        if ~isempty(param.normRoisizeInterp)
+          if param.subjId==-1
+            avg_ci = zeros(size(ci.samples{1}));
+            counter = 0;
+            for subjId = 1:length(ci.samples)
+              if ~isempty(ci.samples{subjId})
+                samples = ci.samples{subjId};
+                roisize = ci.roisize{subjId};
+                roisizeMul = roisize * roisize';
+                roisizeAdd = bsxfun(@plus, roisize, roisize');
+                avg_ci = avg_ci + samples ./ (param.normRoisizeInterp * roisizeMul + (1-param.normRoisizeInterp) * roisizeAdd);
+                counter = counter + 1;
+              end
+            end
+            SC = avg_ci / counter;
+            D = ci.avg_dist;
+          else
+            samples = ci.samples{param.subjId};
+            roisize = ci.roisize{param.subjId};
+            roisizeMul = roisize * roisize';
+            roisizeAdd = bsxfun(@plus, roisize, roisize');
+            SC = samples ./ (param.normRoisizeInterp * roisizeMul + (1-param.normRoisizeInterp) * roisizeAdd);
+            D = ci.dist{param.subjId};
+          end
         else
-          SC = ci.ci{param.subjId};
-          D = ci.dist{param.subjId};
+          if param.subjId==-1
+            SC = ci.avg_ci;
+            D = ci.avg_dist;
+          else
+            SC = ci.ci{param.subjId};
+            D = ci.dist{param.subjId};
+          end
         end
         
         SC(isnan(SC)) = 0;
@@ -152,7 +179,9 @@ classdef ConnectomeSim < Gridjob
       end
       
       savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
-      mkdir(savepath);
+      if ~exist(savepath,'dir')
+        mkdir(savepath);
+      end
       savefilename = fullfile(savepath,num2str(this.currJobid));
       
       if strcmp(param.model,'kuramoto')
@@ -170,6 +199,11 @@ classdef ConnectomeSim < Gridjob
         save([savefilename 'SimResult.mat'],'phase','param');
         
         FCsimNoBold = corr(sin(phase)');
+        
+      elseif strcmp(param.model,'WilsonCowan')
+        
+        [u, v] = runWilsonCowan(C,D,param.k,param.f,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose,param.approx,param.invertSin,param.startState);
+        
         
       elseif strcmp(param.model,'rate')
         if param.useNetworkFokkerPlanck

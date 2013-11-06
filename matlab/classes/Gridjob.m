@@ -40,6 +40,7 @@ classdef Gridjob
       this.params.Gridjob.newGrid = true;
       this.params.Gridjob.requiredThreads = '4';%'2-8';
       this.params.Gridjob.matlabpool = 0;
+      this.params.Gridjob.relativeWorkpath = [];
       
       % save folder from which the object is constructed
       this.constructedFromFolder = pwd;
@@ -136,6 +137,16 @@ classdef Gridjob
         localWorkpath = this.params.Gridjob.workpath;
         this.workpath = this.params.Gridjob.workpath;
         this.resultpath = this.params.Gridjob.resultpath;
+      elseif ~isempty(this.params.Gridjob.relativeWorkpath)
+        relativePath=this.params.Gridjob.relativeWorkpath;
+        localWorkpath = fullfile(paths.workdir,relativePath,this.params.Gridjob.workpath);
+        if this.params.Gridjob.runLocal
+          this.workpath = fullfile(paths.workdir,relativePath,this.params.Gridjob.workpath);
+          this.resultpath = fullfile(paths.resultsdir,relativePath,this.params.Gridjob.resultpath);
+        else
+          this.workpath = fullfile(paths.sge_workdir,relativePath,this.params.Gridjob.workpath);
+          this.resultpath = fullfile(paths.sge_resultsdir,relativePath,this.params.Gridjob.resultpath);
+        end
       else
         if iscell(this.constructedFromFolder)
           relativePath=fullfile(this.constructedFromFolder{:});
@@ -184,11 +195,13 @@ classdef Gridjob
         jobDesc.(propNames{i}) = this.(propNames{i}); %#ok<STRNU>
       end
       save(jobDescPath,'-struct','jobDesc');
+%       clear jobDesc;
       
       if this.params.Gridjob.runLocal
         %start jobs sequentially in this matlab instance
         for jobid=1:this.numJobs
-          Gridjob.startJobid(jobDescPath,jobid);
+%           Gridjob.startJobid(jobDescPath,jobid);
+          Gridjob.startJobid(jobDesc,jobid);
         end
       else
         
@@ -303,7 +316,11 @@ classdef Gridjob
     
     %% start the individual parameter job
     function startJobid(jobDescPath,jobid)
-      jobDesc = load(jobDescPath);
+      if ischar(jobDescPath)
+        jobDesc = load(jobDescPath);
+      else
+        jobDesc = jobDescPath;
+      end
       
       this = Gridjob.createSubclass(jobDesc.params);
 %       this = updateStruct(this,jobDesc);
@@ -335,10 +352,18 @@ classdef Gridjob
 %       disp(['numSlots matlab has: ' num2str(maxNumCompThreads())]);
       
       if this.params.Gridjob.initRandStreamWithJobid
-        RandStream.setDefaultStream(RandStream('mt19937ar','Seed',jobid));
+        if sum(strcmp('setGlobalStream',methods('RandStream')))
+          RandStream.setGlobalStream(RandStream('mt19937ar','Seed',jobid));
+        else
+          RandStream.setDefaultStream(RandStream('mt19937ar','Seed',jobid));
+        end
       end
       if ~isempty(this.params.Gridjob.initRandStreamWithSeed)
-        RandStream.setDefaultStream(RandStream('mt19937ar','Seed',this.params.Gridjob.initRandStreamWithSeed));
+        if sum(strcmp('setGlobalStream',methods('RandStream')))
+          RandStream.setGlobalStream(RandStream('mt19937ar','Seed',this.params.Gridjob.initRandStreamWithSeed));
+        else
+          RandStream.setDefaultStream(RandStream('mt19937ar','Seed',this.params.Gridjob.initRandStreamWithSeed));
+        end
       end
       
       run(this);

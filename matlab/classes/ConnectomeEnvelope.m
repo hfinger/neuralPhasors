@@ -96,7 +96,9 @@ classdef ConnectomeEnvelope < Gridjob
       end
       
       savepath = fullfile(this.workpath,this.params.ConnectomeEnvelope.outFilenames);
-      mkdir(savepath);
+      if ~exist(savepath,'dir')
+        mkdir(savepath);
+      end
 
       if strcmp(input.param.model,'kuramoto')
         if isfield(input,'phase')
