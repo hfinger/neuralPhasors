@@ -6,15 +6,17 @@ if length(newStruct)>1
   
   %special case of structure array:
   
-  for j=1:length(oldStruct)
-    for i=1:length(fnames)
-        if isstruct(newStruct(j).(fnames{i})) && isfield(oldStruct(j),fnames{i}) && isstruct(oldStruct(j).(fnames{i}))
-          oldStruct(j).(fnames{i}) = updateStruct(oldStruct(j).(fnames{i}),newStruct(j).(fnames{i}));
-        else
-          oldStruct(j).(fnames{i}) = newStruct(j).(fnames{i});
-        end
-    end
-  end
+%   for j=1:length(oldStruct)
+%     for i=1:length(fnames)
+%         if isstruct(newStruct(j).(fnames{i})) && isfield(oldStruct(j),fnames{i}) && isstruct(oldStruct(j).(fnames{i}))
+%           oldStruct(j).(fnames{i}) = updateStruct(oldStruct(j).(fnames{i}),newStruct(j).(fnames{i}));
+%         else
+%           oldStruct(j).(fnames{i}) = newStruct(j).(fnames{i});
+%         end
+%     end
+%   end
+  oldStruct = newStruct;
+  disp('WARNING: structure array was not updated with subfield but just assigned... in updateStruct(oldStruct,newStruct)')
   
 else
   
