@@ -1,6 +1,6 @@
 clear all;
 
-useGpu = true;
+useGpu = false;
 tileSizeX = 5;
 tileSizeY = 5;
 fIn = 3;

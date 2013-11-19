@@ -1,4 +1,7 @@
 clear paramsAll;
+clear paramsAllRange;
+
+subjects = [1:4];
 
 clear params;
 params.Gridjob.runLocal = false;
@@ -10,7 +13,7 @@ params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '3';
 
 params.ConnectomeSim.dataset = 2; % 0=datasimu from Arnaud, 1=Bastian, 2=BastianNew
-params.ConnectomeSim.subjId = num2cell([1:4 6:10]);
+params.ConnectomeSim.subjId = num2cell(subjects);
 
 params.ConnectomeSim.normRowBeforeHomotopic = 1;
 params.ConnectomeSim.homotopic = 0.02;
@@ -31,15 +34,22 @@ params.ConnectomeSim.tau=20;
 params.ConnectomeSim.k=500;
 params.ConnectomeSim.v=1.8;
 params.ConnectomeSim.delay=1.5; %typically 0.3-0.5 ms up to 2 ms
-params.ConnectomeSim.t_max={320,320,320,320};
+params.ConnectomeSim.t_max={190,190};
 params.ConnectomeSim.dt=0.0001;
 params.ConnectomeSim.sampling=10;
 params.ConnectomeSim.sig_n=0;
 params.ConnectomeSim.d=0;
-params.ConnectomeSim.verbose=true;
-params.ConnectomeSim.statsRemoveInitialT = 20;
+params.ConnectomeSim.verbose=false;
+params.ConnectomeSim.statsRemoveInitialT = 10;
 params.ConnectomeSim.outFilenames = 'ConnectomeSim';
-paramsAll{1} = params;
+paramsAll(1).params = params;
+
+paramsAllRange(1).params.ConnectomeSim.k = [200 1400 false true false];
+paramsAllRange(1).params.ConnectomeSim.v = [0.3 14 false true false];
+paramsAllRange(1).params.ConnectomeSim.delay = [0 10 false true false];
+paramsAllRange(1).params.ConnectomeSim.homotopic = [0 0.5 false true false];
+
+[variableParams, paramComb] = getVariableParams(paramsAll(1).params,false);
 
 clear params;
 params.Gridjob.runLocal = false;
@@ -49,12 +59,12 @@ params.Gridjob.jobname = 'ConnectomeEnvelope';
 params.Gridjob.initRandStreamWithSeed = 1;
 params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '3';
-params.ConnectomeEnvelope.inFileRates = cellfun(@(x) ['ConnectomeSim/' num2str(x) 'SimResult.mat'], num2cell(1:36),'UniformOutput',false);
+params.ConnectomeEnvelope.inFileRates = cellfun(@(x) ['ConnectomeSim/' num2str(x) 'SimResult.mat'], num2cell(1:size(paramComb,2)),'UniformOutput',false);
 params.ConnectomeEnvelope.source_t_start = -Inf;
 params.ConnectomeEnvelope.source_t_end = Inf;
 params.ConnectomeEnvelope.saveSamples_t_start = [20 55];
 params.ConnectomeEnvelope.saveSamples_t_end = [25 60];
-params.ConnectomeEnvelope.env_t_start = 20;
+params.ConnectomeEnvelope.env_t_start = 10;
 params.ConnectomeEnvelope.env_t_end = Inf;
 params.ConnectomeEnvelope.filtermethod = 'butter'; %or equiripple
 
@@ -93,10 +103,12 @@ params.ConnectomeEnvelope.saveSourcePhase = false;
 params.ConnectomeEnvelope.saveSourceBP = false;
 params.ConnectomeEnvelope.saveEnvSig = false;
 params.ConnectomeEnvelope.saveEnvLP = false;
-paramsAll{2} = params;
+paramsAll(2).params = params;
+paramsAllRange(2).params = struct();
+% paramsAllRange(2).params.ConnectomeEnvelope.env_t_start = [4 6 false true];
 
 clear params;
-params.Gridjob.runLocal = true;
+params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 5000;
 % params.Gridjob.wc_host = [];
 params.Gridjob.jobname = 'CompareWithEEG';
@@ -107,58 +119,48 @@ params.Gridjob.combParallel = true;
 params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'ConnectomeEnvelope';
-params.ConnectomeEnvelopeReduce.eegDatabase = {3,4};
+params.ConnectomeEnvelopeReduce.eegDatabase = 4;
 
-params.ConnectomeEnvelopeReduce.eeg{1}.subj.Ids = [1:4 6:10];
-params.ConnectomeEnvelopeReduce.eeg{1}.subj.Avg = false;
-params.ConnectomeEnvelopeReduce.eeg{1}.day.Ids = [];
-params.ConnectomeEnvelopeReduce.eeg{1}.day.Avg = true;
-params.ConnectomeEnvelopeReduce.eeg{1}.prepost.Ids = 1;
-params.ConnectomeEnvelopeReduce.eeg{1}.prepost.Avg = false;
-params.ConnectomeEnvelopeReduce.eeg{1}.task.Ids = [];
-params.ConnectomeEnvelopeReduce.eeg{1}.task.Avg = true;
-
-params.ConnectomeEnvelopeReduce.eeg{2}.subj.Ids = [1:4 6:10];
-params.ConnectomeEnvelopeReduce.eeg{2}.subj.Avg = false;
-params.ConnectomeEnvelopeReduce.eeg{2}.day.Ids = [];
-params.ConnectomeEnvelopeReduce.eeg{2}.day.Avg = true;
-params.ConnectomeEnvelopeReduce.eeg{2}.cond.Ids = 5:6;
-params.ConnectomeEnvelopeReduce.eeg{2}.cond.Avg = true;
+params.ConnectomeEnvelopeReduce.eeg.subj.Ids = subjects;
+params.ConnectomeEnvelopeReduce.eeg.subj.Avg = false;
+params.ConnectomeEnvelopeReduce.eeg.day.Ids = [];
+params.ConnectomeEnvelopeReduce.eeg.day.Avg = true;
+params.ConnectomeEnvelopeReduce.eeg.cond.Ids = 5:6;
+params.ConnectomeEnvelopeReduce.eeg.cond.Avg = true;
 
 params.ConnectomeEnvelopeReduce.sim.t_max.Ids = [];
 params.ConnectomeEnvelopeReduce.sim.t_max.Avg = true;
 
-params.ConnectomeEnvelopeReduce.outDirectory = {'CompareWithPreTask','CompareWithRS'};
-paramsAll{3} = params;
+params.ConnectomeEnvelopeReduce.resultsCombineSubjDims = 'match'; %reduce two subject dims to one dim
+params.ConnectomeEnvelopeReduce.results.subj.Ids = [];
+params.ConnectomeEnvelopeReduce.results.subj.Avg = true; % average over remaining subj dim
 
-% clear params;
-% params.Gridjob.runLocal = true;
-% params.Gridjob.requiremf = 5000;
-% % params.Gridjob.wc_host = [];
-% params.Gridjob.jobname = 'CompareWithEEGPerDays';
-% params.Gridjob.continue = false;
-% params.Gridjob.requiredThreads = '6';
-% params.Gridjob.combParallel = true;
-% 
-% params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
-% params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
-% params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'ConnectomeEnvelope';
-% params.ConnectomeEnvelopeReduce.eegDatabase = 4;
-% 
-% params.ConnectomeEnvelopeReduce.eeg.subjEeg.Ids = [1:4 6:10];
-% params.ConnectomeEnvelopeReduce.eeg.subjEeg.Avg = false;
-% params.ConnectomeEnvelopeReduce.eeg.day.Ids = {1,2,1:2};
-% params.ConnectomeEnvelopeReduce.eeg.day.Avg = true;
-% params.ConnectomeEnvelopeReduce.eeg.cond.Ids = 5:6;
-% params.ConnectomeEnvelopeReduce.eeg.cond.Avg = true;
-% 
-% params.ConnectomeEnvelopeReduce.sim.t_max.Ids = [];
-% params.ConnectomeEnvelopeReduce.sim.t_max.Avg = true;
-% 
-% params.ConnectomeEnvelopeReduce.outDirectory = {'PerDays/CompareWithRsEegDay1Only','PerDays/CompareWithRsEegDay2Only','PerDays/CompareWithRsEegBothDays'};
-% paramsAll{4} = params;
+params.ConnectomeEnvelopeReduce.outDirectory = 'CompareWithRS';
+params.ConnectomeEnvelopeReduce.doPlot = false;
+params.ConnectomeEnvelopeReduce.deleteEnvelopeWhenDone = true;
+params.ConnectomeEnvelopeReduce.deleteSimWhenDone = true;
+paramsAll(3).params = params;
+paramsAllRange(3).params = struct();
 
 clear params;
-gridjobs = Gridjob(paramsAll{4});
-start(gridjobs);
+params.Gridjob.runLocal = true;
+params.Gridjob.requiremf = 5000;
+params.Gridjob.jobname = 'Evolution';
+params.Gridjob.continue = true;
+params.Gridjob.requiredThreads = '6';
+params.Gridjob.combParallel = false;
+params.Evolution.paramsAll = paramsAll;
+params.Evolution.paramsAllRange = paramsAllRange;
+params.Evolution.numGenerations = Inf;
+params.Evolution.populationSize = 10;
+params.Evolution.numNewIndividualsPerGen = 5;
+params.Evolution.startGenId = 1;
+params.Evolution.mutationInitial = 0.4;
+params.Evolution.mutationHalfIter = 3;
+params.Evolution.initFromOneIndividual = true;
+params.Evolution.fitnessFcn = @(individualPath) max(0,subsref(load(fullfile(individualPath,'CompareWithRS','compareSimExp1.mat')), substruct('.','perFreqAvg','.','coh','.','rho')));
+params.Evolution.doReplaceLeastFitParent = true;
+evolutionParams{1} = params;
 
+gridjobs = Gridjob(evolutionParams);
+start(gridjobs);
