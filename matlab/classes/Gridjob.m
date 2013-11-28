@@ -38,6 +38,7 @@ classdef Gridjob
       this.params.Gridjob.fhandleFinish = [];
       this.params.Gridjob.remoteStart = false;
       this.params.Gridjob.newGrid = true;
+      this.params.Gridjob.runOnHPC = false;
       this.params.Gridjob.requiredThreads = '4';%'2-8';
       this.params.Gridjob.matlabpool = 0;
       this.params.Gridjob.relativeWorkpath = [];
@@ -198,11 +199,19 @@ classdef Gridjob
 %       clear jobDesc;
       
       if this.params.Gridjob.runLocal
+        
         %start jobs sequentially in this matlab instance
         for jobid=1:this.numJobs
 %           Gridjob.startJobid(jobDescPath,jobid);
           Gridjob.startJobid(jobDesc,jobid);
         end
+        
+      elseif this.params.Gridjob.runOnHPC
+        
+        
+        
+        
+        
       else
         
         if isfield(paths,'sge_pathToAddScriptPaths')

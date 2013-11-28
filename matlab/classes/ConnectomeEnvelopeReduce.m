@@ -56,6 +56,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       this.params.ConnectomeEnvelopeReduce.deleteEnvelopeWhenDone = false;
       this.params.ConnectomeEnvelopeReduce.deleteSimWhenDone = false;
       this.params.ConnectomeEnvelopeReduce.permutePlotDims = [];
+      this.params.ConnectomeEnvelopeReduce.permutePlotDimsPermTest = [];
       this.params.ConnectomeEnvelopeReduce.plotPermTests = true;
 
       this.params.ConnectomeEnvelopeReduce.reloadConnFC = false;
@@ -391,8 +392,6 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         data.(modalities{k}).dimLabels(2) = [];
       end
       
-      
-      
       %% Add Absolute Imaginary Coherence:
       for k=1:length(modalities)
         data.(modalities{k}).aicoh = abs(data.(modalities{k}).icoh);
@@ -496,7 +495,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         
         %% do permutation tests for all metrics:
         dimSize = compareSimExp.dimSize;
-        dimSize(end+1:4)=1;
+        dimSize(end+1:5)=1;
         
         metrics0 = {'overFreq','perFreqAvg'};
         for m0=1:length(metrics0)
@@ -506,93 +505,96 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             for m2=1:length(metrics2)
               
               if strcmp(metrics2{m2},'rho') || strcmp(metrics2{m2},'jac')
-                indices = {':',':',':',':'};
-                iterateOverDims = setdiff(1:4,[eegSubjDim simSubjDim]);
+                indices = {':',':',':',':',':'};
+                iterateOverDims = setdiff(1:5,[eegSubjDim simSubjDim]);
                 for iterDim1=1:dimSize(iterateOverDims(1))
                   indices{iterateOverDims(1)} = iterDim1;
                   for iterDim2=1:dimSize(iterateOverDims(2))
                     indices{iterateOverDims(2)} = iterDim2;
-                    
-                    normString = {'orig','norm'};
-                    for normBefore = 1:2
-                      RhoMatch = cell(2,1);
-                      RhoNomat = cell(2,1);
+                    for iterDim3=1:dimSize(iterateOverDims(3))
+                      indices{iterateOverDims(3)} = iterDim3;
                       
-                      transpString = {'fixEeg','fixSim'};
-                      for transp=1:2
-                        metricVal = atanh(compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2})(indices{:}));
+                      normString = {'orig','norm'};
+                      for normBefore = 1:2
+                        RhoMatch = cell(2,1);
+                        RhoNomat = cell(2,1);
                         
-                        if transp==2
-                          metricVal = metricVal';
+                        transpString = {'fixEeg','fixSim'};
+                        for transp=1:2
+                          metricVal = atanh(compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2})(indices{:}));
+                          
+                          if transp==2
+                            metricVal = metricVal';
+                          end
+                          
+                          if normBefore==2
+                            metricVal = bsxfun(@rdivide, metricVal, sum(metricVal,1));
+                          end
+                          
+                          %% extract matching and nonmatching matrix:
+                          matching = repmat(diag(metricVal),1,8);
+                          ur = triu(metricVal,1);
+                          bl = tril(metricVal,-1);
+                          if transp==1
+                            nonmatch = ur(:,2:end) + bl(:,1:end-1);
+                          else
+                            nonmatch = (ur(1:end-1,:) + bl(2:end,:))';
+                          end
+                          
+                          %% calc fraction greater vs smaller
+                          pairedDiff = matching(:) - nonmatch(:);
+                          numMatchSmaller = sum(pairedDiff < 0);
+                          numMatchLarger = sum(pairedDiff > 0);
+                          fractionMatchLarger = numMatchLarger / (numMatchSmaller+numMatchLarger);
+                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).fractionMatchLarger(iterDim1,iterDim2,iterDim3) = fractionMatchLarger;
+                          
+                          %% signrank test
+                          if sum(isnan(matching(:))) || sum(isnan(nonmatch(:)))
+                            disp(['NaN values in statistical test at m0=' num2str(m0) ' m1=' num2str(m1) ' m2=' num2str(m2) ' iterDim1=' num2str(iterDim1) ' iterDim2=' num2str(iterDim2) ' iterDim3=' num2str(iterDim3) ' '  ])
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).signrank_pval(iterDim1,iterDim2,iterDim3) = NaN;
+                          else
+                            pval = signrank(matching(:),nonmatch(:));
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).signrank_pval(iterDim1,iterDim2,iterDim3) = pval;
+                          end
+                          
+                          %% do paired t-test with repeated nonmatching variables:
+                          RhoMatch{transp} = matching(:);
+                          RhoNomat{transp} = nonmatch(:);
+                          [~,pval]=ttest(RhoMatch{transp},RhoNomat{transp});
+                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).repeatMatches(iterDim1,iterDim2,iterDim3) = pval;
+                          
+                          %% do paired t-test where the nonmatching values are before averaged for each column:
+                          nonmatchingMeans = mean(nonmatch,2);
+                          [~,pval]=ttest(matching(:,1),nonmatchingMeans);
+                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).meanNonmatch(iterDim1,iterDim2,iterDim3) = pval;
+                          
+                          %% do paired t-test where the nonmatching values are before averaged for each column:
+                          nonmatchingMedian = median(nonmatch,2);
+                          [~,pval]=ttest(matching(:,1),nonmatchingMedian);
+                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).medianNonmatch(iterDim1,iterDim2,iterDim3) = pval;
+                          
+                          %% mixed-effects anovan:
+                          if ~isreal(metricVal(:)) || sum(isnan(matching(:))) || sum(isnan(nonmatch(:)))
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_matching(iterDim1,iterDim2,iterDim3) = NaN;
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjDTI(iterDim1,iterDim2,iterDim3) = NaN;
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjEEG(iterDim1,iterDim2,iterDim3) = NaN;
+                          else
+                            groupMatch = eye(9,9);
+                            groupSubjDTI = repmat(1:9,[9 1]);
+                            groupSubjEEG = repmat(1:9,[9 1])';
+                            pval = anovan(metricVal(:), {groupMatch(:) groupSubjDTI(:) groupSubjEEG(:)} , 'random', [2 3], 'varnames', {'matching', 'subjDTI', 'subjEEG'}, 'display','off');
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_matching(iterDim1,iterDim2,iterDim3) = pval(1);
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjDTI(iterDim1,iterDim2,iterDim3) = pval(2);
+                            compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjEEG(iterDim1,iterDim2,iterDim3) = pval(3);
+                          end
+                          
                         end
                         
-                        if normBefore==2
-                          metricVal = bsxfun(@rdivide, metricVal, sum(metricVal,1));
-                        end
-                        
-                        %% extract matching and nonmatching matrix:
-                        matching = repmat(diag(metricVal),1,8);
-                        ur = triu(metricVal,1);
-                        bl = tril(metricVal,-1);
-                        if transp==1
-                          nonmatch = ur(:,2:end) + bl(:,1:end-1);
-                        else
-                          nonmatch = (ur(1:end-1,:) + bl(2:end,:))';
-                        end
-                        
-                        %% calc fraction greater vs smaller
-                        pairedDiff = matching(:) - nonmatch(:);
-                        numMatchSmaller = sum(pairedDiff < 0);
-                        numMatchLarger = sum(pairedDiff > 0);
-                        fractionMatchLarger = numMatchLarger / (numMatchSmaller+numMatchLarger);
-                        compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).fractionMatchLarger(iterDim1,iterDim2) = fractionMatchLarger;
-                        
-                        %% signrank test
-                        if sum(isnan(matching(:))) || sum(isnan(nonmatch(:)))
-                          disp(['NaN values in statistical test at m0=' num2str(m0) ' m1=' num2str(m1) ' m2=' num2str(m2) ' iterDim1=' num2str(iterDim1) ' iterDim2=' num2str(iterDim2) ' '  ])
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).signrank_pval(iterDim1,iterDim2) = NaN;
-                        else
-                          pval = signrank(matching(:),nonmatch(:));
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).signrank_pval(iterDim1,iterDim2) = pval;
-                        end
-                        
-                        %% do paired t-test with repeated nonmatching variables:
-                        RhoMatch{transp} = matching(:);
-                        RhoNomat{transp} = nonmatch(:);
-                        [~,pval]=ttest(RhoMatch{transp},RhoNomat{transp});
-                        compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).repeatMatches(iterDim1,iterDim2) = pval;
-                        
-                        %% do paired t-test where the nonmatching values are before averaged for each column:
-                        nonmatchingMeans = mean(nonmatch,2);
-                        [~,pval]=ttest(matching(:,1),nonmatchingMeans);
-                        compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).meanNonmatch(iterDim1,iterDim2) = pval;
-                        
-                        %% do paired t-test where the nonmatching values are before averaged for each column:
-                        nonmatchingMedian = median(nonmatch,2);
-                        [~,pval]=ttest(matching(:,1),nonmatchingMedian);
-                        compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).medianNonmatch(iterDim1,iterDim2) = pval;
-                        
-                        %% mixed-effects anovan:
-                        if ~isreal(metricVal(:)) || sum(isnan(matching(:))) || sum(isnan(nonmatch(:)))
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_matching(iterDim1,iterDim2) = NaN;                        
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjDTI(iterDim1,iterDim2) = NaN;                        
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjEEG(iterDim1,iterDim2) = NaN;                                                  
-                        else
-                          groupMatch = eye(9,9);                        
-                          groupSubjDTI = repmat(1:9,[9 1]);
-                          groupSubjEEG = repmat(1:9,[9 1])';
-                          pval = anovan(metricVal(:), {groupMatch(:) groupSubjDTI(:) groupSubjEEG(:)} , 'random', [2 3], 'varnames', {'matching', 'subjDTI', 'subjEEG'}, 'display','off');
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_matching(iterDim1,iterDim2) = pval(1);                        
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjDTI(iterDim1,iterDim2) = pval(2);                        
-                          compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).(transpString{transp}).(normString{normBefore}).anovan_pval_subjEEG(iterDim1,iterDim2) = pval(3);                        
-                        end
+                        [~,compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).fixBoth(iterDim1,iterDim2,iterDim3)]=ttest([RhoMatch{1}(:); RhoMatch{2}(:)],[RhoNomat{1}(:); RhoNomat{2}(:)]);
                         
                       end
                       
-                      [~,compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).fixBoth(iterDim1,iterDim2)]=ttest([RhoMatch{1}(:); RhoMatch{2}(:)],[RhoNomat{1}(:); RhoNomat{2}(:)]);
-                      
                     end
-                    
                   end
                 end
 
@@ -733,8 +735,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       
       %% plot permutation eval:
       if isfield(compareSimExp,'permTest') && p.plotPermTests
-        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.overFreq, compareSimExp.permTest, 'ttest.overFreq', 'ttest_overFreq', plotDir, {});
-        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.perFreqAvg, compareSimExp.permTest, 'ttest.perFreqAvg', 'ttest_perFreqAvg', plotDir, {});
+        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.overFreq, compareSimExp.permTest, 'ttest.overFreq', 'ttest_overFreq', plotDir, {}, p.permutePlotDimsPermTest);
+        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.perFreqAvg, compareSimExp.permTest, 'ttest.perFreqAvg', 'ttest_perFreqAvg', plotDir, {}, p.permutePlotDimsPermTest);
       end
       
       %% write permutation eval to file:
@@ -766,7 +768,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         end
         
         %% plots:
-        figure(1); clf;
+        sfigure(1); clf;
         bothCoh=abs(cohy_simBest).*abs(cohy_eegBest);
         phaseDiffDirect=mod(angle(cohy_simBest)-angle(cohy_eegBest)+pi,2*pi)-pi;
         scatter(bothCoh,phaseDiffDirect)
@@ -776,7 +778,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
         print('-dpng','-r72',fullfile(plotDir,'cohy_phasediff_bestSim.png'))
         
-        figure(1); clf;
+        sfigure(1); clf;
         bothCoh=abs(cohy_simBest).*abs(cohy_eegBest);
         phaseDiffDirect=mod(angle(cohy_simBest)-angle(cohy_eegBest)+pi,2*pi)-pi;
         scatter(bothCoh,abs(phaseDiffDirect))
@@ -786,7 +788,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
         print('-dpng','-r72',fullfile(plotDir,'cohy_absPhasediff_bestSim.png'))
         
-        figure(1); clf;
+        sfigure(1); clf;
         hist(angle(cohy_eegBest),100)
         title(['Histogram over all ROI-pairs eeg'])
         xlabel('phase lag [rad]')
@@ -794,7 +796,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
         print('-dpng','-r72',fullfile(plotDir,'hist_phaseLag_EEG.png'))
         
-        figure(1); clf;
+        sfigure(1); clf;
         hist(angle(cohy_simBest),100)
         title(['Histogram over all ROI-pairs for sim'])
         xlabel('phase lag [rad]')
@@ -808,7 +810,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         if isfield(compareSimExp.sim,'metrics')
           metrics = fieldnames(compareSimExp.sim.metrics);
           for m=1:length(metrics)
-            figure(1); clf;
+            sfigure(1); clf;
             imagesc(compareSimExp.sim.metrics.(metrics{m})(:,:,1,1));
             title(metrics{m})
             colormap hot;
@@ -909,13 +911,21 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         end
         
         if length(siz) > 2
+          if length(siz) == 3
+            %% shift third dimension to forth for horizonal plot
+            structure = permute(structure,[1 2 4 3]);
+            inSpecPerm.dimName{4} = '';
+            inSpecPerm.dimLabels{4} = {};
+            inSpecPerm.dimName = inSpecPerm.dimName([1 2 4 3]);
+            inSpecPerm.dimLabels = inSpecPerm.dimLabels([1 2 4 3]);
+          end
           
 %           if length(siz) == 3
 %             
 %             m=round(sqrt(siz(3)));
 %             n=ceil(siz(3)/m);
 %             
-%             figure(1); clf;
+%             sfigure(1); clf;
 %             for k=1:siz(3)
 %               subplot(m,n,k);
 %               imagesc(structure(:,:,k));
@@ -939,7 +949,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             minc = min(structure(:));
             maxc = max(structure(:));
             
-            figure(1)
+            sfigure(1)
             clf
             p = panel();
             p.pack(size(structure,3), size(structure,4));
@@ -951,7 +961,12 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                 p(m, n).select();
                 imagesc(structure(:,:,m,n));
                 colormap hot;
-                set(gca,'clim',[minc maxc]);
+                if isnan(minc) || isnan(maxc) || minc==maxc || isinf(maxc) || isinf(minc) 
+                  disp('cannot set caxis limits')
+                else
+                  set(gca,'clim',[minc maxc]);
+                end
+                
                 axis image;
                 
                 if n==size(structure,4)
@@ -1009,7 +1024,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           %% return because only scalar
           return;
         elseif siz(2) == 1
-          figure(1); clf;
+          sfigure(1); clf;
           plot(structure);
           title(caption)
           xlabel(inSpecPerm.dimName{1})
@@ -1019,7 +1034,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
           print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
         else
-          figure(1);clf;
+          sfigure(1);clf;
           imagesc(structure);
           title(caption)
           colormap hot;
@@ -1067,7 +1082,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           end
 
           %% plot matching and nonmatching data
-          figure(1); clf
+          sfigure(1); clf
           plot(match,'bo')
           hold on;
           plot(mean(nonmatch,2),'g*')
