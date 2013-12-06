@@ -1,0 +1,7 @@
+#PBS -l ncpus=1
+#PBS -l walltime=600
+#PBS -q workq
+cd $PBS_O_WORKDIR
+/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "startBenchmark1(false)" -c ~/ikw_license.dat
+exit 0
+

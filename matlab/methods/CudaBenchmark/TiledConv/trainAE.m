@@ -1,6 +1,4 @@
 function [ Wforw, Wback ] = trainAE( trainData, useGpu, tileSizeX, tileSizeY, fIn, fOut, numIters, lrate )
-%TRAINRBM Summary of this function goes here
-%   Detailed explanation goes here
 
 %% init tiledConvForw object
 tiledConvForw = TiledConv(tileSizeX,tileSizeY,fIn,fOut,useGpu);
