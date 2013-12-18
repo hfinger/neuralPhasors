@@ -1,20 +1,27 @@
 function data = dataPaths( )
 
-data.HOMEIMAGES = '/net/store/nbp/phasesim/databases/LabelMeImages';
-data.HOMEANNOTATIONS = '/net/store/nbp/phasesim/databases/LabelMeAnnotations';
+if ispc
+    basepath = 'E:';
+else
+    basepath = '/net/store/nbp/phasesim';
+end
+data.HOMEIMAGES = [basepath '/databases/LabelMeImages'];
+data.HOMEANNOTATIONS = [basepath '/databases/LabelMeAnnotations'];
 data.pdflatex = '/net/store/users/hofinger/texlive/2011/bin/x86_64-linux/pdflatex';
-data.labelMeToolbox = '/net/store/nbp/phasesim/databases/LabelMeToolbox';
-data.cifar100matlab = '/net/store/nbp/phasesim/databases/cifar-100-matlab';
-data.databases = '/net/store/nbp/phasesim/databases';
+data.labelMeToolbox = [basepath '/databases/LabelMeToolbox'];
+data.cifar100matlab = [basepath '/databases/cifar-100-matlab'];
+data.databases = [basepath '/databases'];
 
-data.paramdir = '/net/store/nbp/phasesim/src/matlab/parameters';
-data.workdir = '/net/store/nbp/phasesim/workdir';
-data.resultsdir = '/net/store/nbp/phasesim/results';
+data.paramdir = [basepath '/src/matlab/parameters'];
+data.workdir = [basepath '/workdir'];
+data.resultsdir = [basepath '/results'];
 
-data.sge_workdir = '/net/store/nbp/phasesim/workdir';
-data.sge_resultsdir = '/net/store/nbp/phasesim/results';
-data.sge_pathToAddScriptPaths = '/net/store/nbp/phasesim/src/matlab';
-data.puttyPrivateKey = 'C:\Users\....';
-data.sshUsername = 'hofinger';
-data.sshServer = 'gate.ikw.uni-osnabrueck.de';
+data.sge_workdir = ['/net/store/nbp/phasesim/workdir'];
+data.sge_resultsdir = ['/net/store/nbp/phasesim/results'];
+data.sge_pathToAddScriptPaths = ['/net/store/nbp/phasesim/src/matlab'];
+
+% data.plinkArg = '-ssh -i D:\Daten\putty\puttyUOS\putty_nopw.ppk hofinger@gate.ikw.uni-osnabrueck.de';
+% use putty gateway instead:
+data.plinkArg = '-ssh -P 5555 -i D:\Daten\putty\puttyUOS\putty_nopw.ppk hofinger@localhost';
+
 end
