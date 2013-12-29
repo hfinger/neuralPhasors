@@ -277,7 +277,8 @@ classdef Gridjob
         if qsubMissing || this.params.Gridjob.remoteStart
           if ispc
 %             system(['putty.exe -ssh -2 -m c:"cd ' pwd '; qsub ' jobscriptpath '" shaggy']);
-            systemCmd = ['plink.exe -ssh -i ' paths.puttyPrivateKey ' ' paths.sshUsername '@' paths.sshServer ' "qsub ' jobscriptpathRemote '"'];
+%             systemCmd = ['plink.exe -ssh -i ' paths.puttyPrivateKey ' ' paths.sshUsername '@' paths.sshServer ' "qsub ' jobscriptpathRemote '"'];
+            systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
             disp('Execute:');
             disp(systemCmd);
             system(systemCmd);

@@ -45,19 +45,29 @@ classdef ConnectomeEnvelopeReduce < Gridjob
 %       this.params.ConnectomeEnvelopeReduce.sim.Dim2.Avg = false;
       
       this.params.ConnectomeEnvelopeReduce.outDirectory = 'results';
+      this.params.ConnectomeEnvelopeReduce.outDirectoryPlotFolder = []; % if empty use jobid
       
       this.params.ConnectomeEnvelopeReduce.resultsCombineSubjDims = 'no'; % 'no' or 'match' or 'nonmatch'
       
       this.params.ConnectomeEnvelopeReduce.results = struct();
 %       this.params.ConnectomeEnvelopeReduce.results.Dim1.Ids = [];
 %       this.params.ConnectomeEnvelopeReduce.results.Dim1.Avg = false;
-
+      this.params.ConnectomeEnvelopeReduce.calcSubjectSpecificTests = false;
+      this.params.ConnectomeEnvelopeReduce.calcSquaredDist = false;
+      this.params.ConnectomeEnvelopeReduce.calcSquaredDistAvg = false;
+      
       this.params.ConnectomeEnvelopeReduce.doPlot = true; 
       this.params.ConnectomeEnvelopeReduce.deleteEnvelopeWhenDone = false;
       this.params.ConnectomeEnvelopeReduce.deleteSimWhenDone = false;
       this.params.ConnectomeEnvelopeReduce.permutePlotDims = [];
       this.params.ConnectomeEnvelopeReduce.permutePlotDimsPermTest = [];
+      this.params.ConnectomeEnvelopeReduce.permutePlotDimsSquaredDist = [];
+      this.params.ConnectomeEnvelopeReduce.permutePlotDimsSquaredDistAvg = [];
       this.params.ConnectomeEnvelopeReduce.plotPermTests = true;
+      this.params.ConnectomeEnvelopeReduce.plotBestParamPerSubj = false;
+      this.params.ConnectomeEnvelopeReduce.excludePlotFieldsRegexp = '';
+      this.params.ConnectomeEnvelopeReduce.deletePlotFolder = false;
+      
 
       this.params.ConnectomeEnvelopeReduce.reloadConnFC = false;
       this.params.ConnectomeEnvelopeReduce.reloadCompareSimExp = false;
@@ -243,15 +253,16 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         ConnFC.stdOrderParam = stdOrderParam;
       end
       
-      ConnFC.plv = plv;
-      ConnFC.icoh = icoh;
-      ConnFC.coh = coh;
-      ConnFC.cohy = cohy;
-      ConnFC.FCsim = FCsim;
+      ConnFC.sim.plv = plv;
+      ConnFC.sim.icoh = icoh;
+      ConnFC.sim.coh = coh;
+      ConnFC.sim.cohy = cohy;
+      ConnFC.sim.FCsim = FCsim;
       
-      ConnFC.paramName = paramName;
-      ConnFC.paramVar = paramVar;
-      ConnFC.dims = dims;
+      ConnFC.sim.spec.dimName = cat(2,{'roi','roi','freq'},paramName);
+      ConnFC.sim.spec.dimLabels = [{num2cell(1:66),num2cell(1:66),{5,11,25}},paramVar];
+      ConnFC.sim.spec.dimSize = size(plv);
+      ConnFC.sim.spec.metrics = {'icoh','coh','plv','cohy'};
       
       save([savepath '/ConnFC.mat'],'-struct','ConnFC')
       
@@ -263,165 +274,143 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       
       %% load simulation values:
       if nargin<2
-        data.sim = load([savepath '/ConnFC.mat']);
+        data = load([savepath '/ConnFC.mat']);
       else
-        data.sim = sim;
+        data = sim;
       end
-      data.sim.metrics = {'icoh','coh','plv','cohy'};
-      data.sim.dimName = cat(2,{'roi','roi','freq'},data.sim.paramName);
-      data.sim.dimSize = size(data.sim.plv);
-      data.sim.dimLabels = [{num2cell(1:66),num2cell(1:66),{5,11,25}},data.sim.paramVar];
-      
-      
       paths = dataPaths( );
       
-      
       %% load eeg values:
-      if p.eegDatabase==4
-        data.eeg = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbertrest_20140807.mat']);
-        data.eeg.metrics = {'icoh','coh','plv','cohy'};
-        for n=1:length(data.eeg.metrics)
+      if p.eegDatabase==4 || p.eegDatabase==5 || p.eegDatabase==6
+        if p.eegDatabase==4
+          dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbertrest_20140807.mat']);
+        elseif p.eegDatabase==5
+          dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmv0_001hilbert_rest_bp_20140902.mat']);
+        elseif p.eegDatabase==6
+          dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmv0_001_bp_hilbert_20140907.mat']);
+        end
+        data.eeg.spec.metrics = {'icoh','coh','plv','cohy'};
+        for n=1:length(data.eeg.spec.metrics)
           % replace NaNs of subject 6 on day 2 with day 1:
-          data.eeg.([data.eeg.metrics{n} '_all'])(6,2,5:6,:,:,:) = data.eeg.([data.eeg.metrics{n} '_all'])(6,1,5:6,:,:,:);
+          dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,2,:,:,:,:) = dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,1,:,:,:,:);
           % replace NaNs of subject 7 on day 2 post_rs with day 1 post_rs:
-          data.eeg.([data.eeg.metrics{n} '_all'])(7,2,6,:,:,:) = data.eeg.([data.eeg.metrics{n} '_all'])(7,1,6,:,:,:);
+          dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(7,2,6,:,:,:) = dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(7,1,6,:,:,:);
           
           % permute to format [roi, roi, freq, more-dims...]:
-          data.eeg.(data.eeg.metrics{n}) = permute(data.eeg.([data.eeg.metrics{n} '_all']),[4 5 6 1 2 3]);
+          data.eeg.(data.eeg.spec.metrics{n}) = permute(dataEegTmp.([data.eeg.spec.metrics{n} '_all']),[4 5 6 1 2 3]);
         end
-        data.eeg.dimName = {'roi','roi','freq','subjEeg','day','cond'};
-        data.eeg.dimLabels = {num2cell(1:66),num2cell(1:66),{5,11,25},num2cell(1:10),{1,2},{'pre_co','pre_ce','co','ce','pre_rs','post_rs'}};
+        data.eeg.spec.dimName = {'roi','roi','freq','subjEeg','day','cond'};
+        data.eeg.spec.dimLabels = {num2cell(1:66),num2cell(1:66),{5,11,25},num2cell(1:10),{1,2},{'pre_co','pre_ce','co','ce','pre_rs','post_rs'}};
         
       else
         if p.eegDatabase==3
-          data.eeg = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbert_20140804.mat']);
-          data.eeg.metrics = {'icoh','coh','plv','cohy'};
+          dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbert_20140804.mat']);
+          data.eeg.spec.metrics = {'icoh','coh','plv','cohy'};
         else
           if p.eegDatabase==2
-            data.eeg = load([paths.databases '/SC_Bastian/icoh_all_mne2_20140730.mat']);
+            dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_mne2_20140730.mat']);
           else
-            data.eeg = load([paths.databases '/SC_Bastian/icoh_all_0_20140715.mat']);
+            dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_0_20140715.mat']);
           end
-          data.eeg.metrics = {'icoh','coh','plv'};
+          data.eeg.spec.metrics = {'icoh','coh','plv'};
         end
-        for n=1:length(data.eeg.metrics)
+        for n=1:length(data.eeg.spec.metrics)
           % replace NaNs of subject 6 on day 2 with day 1:
-          data.eeg.([data.eeg.metrics{n} '_all'])(6,2,:,:,:,:) = data.eeg.([data.eeg.metrics{n} '_all'])(6,1,:,:,:,:);
+          dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,2,:,:,:,:) = dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,1,:,:,:,:);
           
            % permute to format [roi, roi, freq, more-dims...]:
-          data.eeg.(data.eeg.metrics{n}) = permute(data.eeg.([data.eeg.metrics{n} '_all']),[5 6 7 1 2 3 4]);
+          data.eeg.(data.eeg.spec.metrics{n}) = permute(dataEegTmp.([data.eeg.spec.metrics{n} '_all']),[5 6 7 1 2 3 4]);
         end
-        data.eeg.dimName = {'roi','roi','freq','subjEeg','day','prepost','task'};
-        data.eeg.dimLabels = {num2cell(1:66),num2cell(1:66),{5,11,25},num2cell(1:10),{1,2},{'pre','post'},{'co','ce'}};
+        data.eeg.spec.dimName = {'roi','roi','freq','subjEeg','day','prepost','task'};
+        data.eeg.spec.dimLabels = {num2cell(1:66),num2cell(1:66),{5,11,25},num2cell(1:10),{1,2},{'pre','post'},{'co','ce'}};
       end
-      data.eeg.dimSize = size(data.eeg.plv);
-      
+      data.eeg.spec.dimSize = size(data.eeg.plv);
       
       %% pre filter and average over the data:
-      modalities=fieldnames(data);
-      for k=1:length(modalities)
-        myData = data.(modalities{k});
-        metrics = myData.metrics;
-        
-        
-        inSpec.dimName = myData.dimName;
-        inSpec.dimSize = myData.dimSize;
-        inSpec.dimLabels = myData.dimLabels;
-        for m=1:length(metrics)
-          [myData.(metrics{m}), outSpec] = ConnectomeEnvelopeReduce.filterTensor(myData.(metrics{m}), inSpec, p.(modalities{k}));
-        end
-        myData.dimName = outSpec.dimName;
-        myData.dimSize = outSpec.dimSize;
-        myData.dimLabels = outSpec.dimLabels;
-
-%         dimensionNames = fieldnames(p.(modalities{k}));
-%         
-%         %% calculate indices to filter over all dimensions at once:
-%         indices = repmat({':'},size(myData.(metrics{1})));
-%         for l=1:length(dimensionNames)
-%           curDimId = find(strcmp(myData.dimName,dimensionNames{l}));
-%           if isfield(p.(modalities{k}).(dimensionNames{l}),'Ids') && ~isempty(p.(modalities{k}).(dimensionNames{l}).Ids)
-%             indices{curDimId} = p.(modalities{k}).(dimensionNames{l}).Ids;
-%             myData.dimLabels{curDimId} = myData.dimLabels{curDimId}(indices{curDimId});
-%           end
-%         end
-%         
-%         %% now filter all dimensions at once:
-%         for m=1:length(metrics)
-%           myData.(metrics{m}) = myData.(metrics{m})(indices{:});
-%         end
-%         
-%         %% now compute average over some of the dimensions
-%         for l=1:length(dimensionNames)
-%           if p.(modalities{k}).(dimensionNames{l}).Avg
-%             curDimId = find(strcmp(myData.dimName,dimensionNames{l}));
-%             for m=1:length(metrics)
-%               myData.(metrics{m}) = mean(myData.(metrics{m}),curDimId);
-%             end
-%           end
-%         end
-%         
-%         %% squeeze dimensions and at the same time delete corresponding dimNames and dimLabels
-%         dimsToReduce = find(size(myData.(metrics{1}))==1);
-%         dimsToKeep = find(size(myData.(metrics{1}))~=1);
-%         for m=1:length(metrics)
-%           myData.(metrics{m}) = permute(myData.(metrics{m}),[dimsToKeep dimsToReduce]);
-%         end
-%         myData.dimName = myData.dimName(dimsToKeep);
-%         myData.dimSize = size(myData.(metrics{1}));
-%         myData.dimLabels = myData.dimLabels(dimsToKeep);
-%         
-        data.(modalities{k}) = myData;
-      end
+      data.eeg = ConnectomeEnvelopeReduce.filterTensor(data.eeg, p.eeg);
+      data.sim = ConnectomeEnvelopeReduce.filterTensor(data.sim, p.sim);
       
-      
-      %% convert FC-Matrix to Vector:
       numRois = size(data.eeg.plv,1);
       numFreq = size(data.eeg.plv,3);
       trigIds=find(triu(ones(numRois,numRois),1));
       
-      for k=1:length(modalities)
-        metrics = data.(modalities{k}).metrics;
-        for m=1:length(metrics)
-          data.(modalities{k}).(metrics{m}) = cell2mat(cellfun(@(x) x(trigIds), num2cell(data.(modalities{k}).(metrics{m}),[1 2]), 'UniformOutput', false));
-          data.(modalities{k}).(metrics{m}) = permute(data.(modalities{k}).(metrics{m}),[1 3:length(data.(modalities{k}).dimName) 2]);
-        end
-        data.(modalities{k}).dimName = cat(2,{'roiPair'},data.(modalities{k}).dimName(3:end));
-        data.(modalities{k}).dimSize = size(data.(modalities{k}).(metrics{1}));
-        data.(modalities{k}).dimLabels{1} = num2cell(1:length(trigIds));
-        data.(modalities{k}).dimLabels(2) = [];
-      end
+      %% convert FC-Matrix to Vector:
+      data.eeg = ConnectomeEnvelopeReduce.tensorCombineDims(data.eeg, 'roi', 'trig', 'roiPair');
+      data.sim = ConnectomeEnvelopeReduce.tensorCombineDims(data.sim, 'roi', 'trig', 'roiPair');
+      
       
       %% Add Absolute Imaginary Coherence:
-      for k=1:length(modalities)
-        data.(modalities{k}).aicoh = abs(data.(modalities{k}).icoh);
-        data.(modalities{k}).metrics{end+1} = 'aicoh';
-      end
+      data.eeg.aicoh = abs(data.eeg.icoh);
+      data.sim.aicoh = abs(data.sim.icoh);
+      
       
       %% Start Evaluation:
-      metrics = intersect(data.eeg.metrics, data.sim.metrics);
+      simMetrics = setdiff(fieldnames(data.sim),{'spec'});
+      eegMetrics = setdiff(fieldnames(data.eeg),{'spec'});
+      metrics = intersect(eegMetrics, simMetrics);
       compareSimExp = struct();
       
-      %% 
-      if sum(strcmp(data.sim.dimName,'freq'))
-        simDimSize = data.sim.dimSize(3:end);
-        simDimLabels = data.sim.dimLabels(3:end);
-        simDimName = data.sim.dimName(3:end);
+      %% combine dimNames and Labels and Sizes:
+      if sum(strcmp(data.sim.spec.dimName,'freq'))
+        simDimSize = data.sim.spec.dimSize(3:end);
+        simDimLabels = data.sim.spec.dimLabels(3:end);
+        simDimName = data.sim.spec.dimName(3:end);
       else
-        simDimSize = data.sim.dimSize(2:end);
-        simDimLabels = data.sim.dimLabels(2:end);
-        simDimName = data.sim.dimName(2:end);
+        simDimSize = data.sim.spec.dimSize(2:end);
+        simDimLabels = data.sim.spec.dimLabels(2:end);
+        simDimName = data.sim.spec.dimName(2:end);
       end
-      eegDimSize = data.eeg.dimSize(3:end);
-      eegDimLabels = data.eeg.dimLabels(3:end);
-      eegDimName = data.eeg.dimName(3:end);
+      eegDimSize = data.eeg.spec.dimSize(3:end);
+      eegDimLabels = data.eeg.spec.dimLabels(3:end);
+      eegDimName = data.eeg.spec.dimName(3:end);
+      
+      specTotal.dimSize = [numRois numRois numFreq eegDimSize simDimSize];
+      specTotal.dimLabels = [{num2cell(1:66),num2cell(1:66)} data.eeg.spec.dimLabels(2) eegDimLabels simDimLabels];
+      specTotal.dimName = [{'roi', 'roi', 'freq'} eegDimName simDimName];
+      
+      specWithoutFreq = specTotal;
+      specWithoutFreq.dimSize(3) = [];
+      specWithoutFreq.dimLabels(3) = [];
+      specWithoutFreq.dimName(3) = [];
+      
+      specWithoutRois = specTotal;
+      specWithoutRois.dimSize(1:2) = [];
+      specWithoutRois.dimLabels(1:2) = [];
+      specWithoutRois.dimName(1:2) = [];
+      
+      specWithoutRoisFreq = specTotal;
+      specWithoutRoisFreq.dimSize(1:3) = [];
+      specWithoutRoisFreq.dimLabels(1:3) = [];
+      specWithoutRoisFreq.dimName(1:3) = [];
+      
+      specOneRoisFreq = specTotal;
+      specOneRoisFreq.dimSize(1) = [];
+      specOneRoisFreq.dimLabels(1) = [];
+      specOneRoisFreq.dimName(1) = [];
+      
+      specOneRois = specWithoutFreq;
+      specOneRois.dimSize(1) = [];
+      specOneRois.dimLabels(1) = [];
+      specOneRois.dimName(1) = [];
       
       
       %% per freq:
       for m=1:length(metrics)
+        
+        if ~strcmp(metrics{m},'cohy')
+          if p.calcSquaredDist
+            compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+          end
+          if p.calcSquaredDistAvg
+            compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+          end
+        end
+        
         for freq=1:numFreq
           tmpEEG = reshape(data.eeg.(metrics{m})(:,freq,:,:,:,:,:),[2145 prod(eegDimSize)]);
-          if sum(strcmp(data.sim.dimName,'freq'))
+          if sum(strcmp(data.sim.spec.dimName,'freq'))
             tmpSIM = reshape(data.sim.(metrics{m})(:,freq,:,:,:,:,:),[2145 prod(simDimSize)]);
           else
             tmpSIM = reshape(data.sim.(metrics{m})(:,:,:,:,:,:),[2145 prod(simDimSize)]);
@@ -432,31 +421,85 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             %% Corr:
             [compareSimExp.perFreq.(metrics{m}).rho(freq,:,:), compareSimExp.perFreq.(metrics{m}).pval(freq,:,:)] = corr(tmpEEG,tmpSIM);
             
-            %% Jaccard similarity coefficient:
-            tmpMin = bsxfun(@min,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
-            tmpMax = bsxfun(@max,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
-            compareSimExp.perFreq.(metrics{m}).jac(freq,:,:) = sum(tmpMin,1) ./ sum(tmpMax,1);
+            %% Jaccard similarity coefficient (only for positive real valued metrics):
+            if ~strcmp(metrics{m},'icoh')
+              tmpMin = bsxfun(@min,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
+              tmpMax = bsxfun(@max,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
+              compareSimExp.perFreq.(metrics{m}).jac(freq,:,:) = sum(tmpMin,1) ./ sum(tmpMax,1);
+            end
+            
+            %% Linear Regression using Total Least-Squared:
+            if p.calcSquaredDist || p.calcSquaredDistAvg
+              for eegId=1:size(tmpEEG,2)
+                for simId=1:size(tmpSIM,2)
+                  [~, ~, d] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
+                  squaredDist = zeros(numRois,numRois);
+                  squaredDist(trigIds) = d;
+                  
+                  absDist = zeros(numRois,numRois);
+                  absDist(trigIds) = abs(tmpSIM(:,simId) - tmpEEG(:,eegId));
+                  
+                  if p.calcSquaredDist
+                    compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDist;
+                    compareSimExp.distRoiPair.absDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = absDist;
+                  end
+                  if p.calcSquaredDistAvg
+                    compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
+                    compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
+                  end
+                  
+                end
+              end
+              
+            end
+            
+            
+            
           end
         end
-        if strcmp(metrics{m},'cohy')
-          compareSimExp.perFreq.(metrics{m}).coh = reshape(compareSimExp.perFreq.(metrics{m}).coh,[numFreq eegDimSize simDimSize]);
-          
-          compareSimExp.perFreqAvg.(metrics{m}).coh = permute(mean(compareSimExp.perFreq.(metrics{m}).coh,1),[2:length(size(compareSimExp.perFreq.(metrics{m}).coh)) 1]);
-        else
-          compareSimExp.perFreq.(metrics{m}).rho = reshape(compareSimExp.perFreq.(metrics{m}).rho,[numFreq eegDimSize simDimSize]);
-          compareSimExp.perFreq.(metrics{m}).pval = reshape(compareSimExp.perFreq.(metrics{m}).pval,[numFreq eegDimSize simDimSize]);
-          compareSimExp.perFreq.(metrics{m}).jac = reshape(compareSimExp.perFreq.(metrics{m}).jac,[numFreq eegDimSize simDimSize]);
-          
-          compareSimExp.perFreqAvg.(metrics{m}).rho = permute(mean(compareSimExp.perFreq.(metrics{m}).rho,1),[2:length(size(compareSimExp.perFreq.(metrics{m}).rho)) 1]);
-          compareSimExp.perFreqAvg.(metrics{m}).pval = permute(mean(compareSimExp.perFreq.(metrics{m}).pval,1),[2:length(size(compareSimExp.perFreq.(metrics{m}).pval)) 1]);
-          compareSimExp.perFreqAvg.(metrics{m}).jac = permute(mean(compareSimExp.perFreq.(metrics{m}).jac,1),[2:length(size(compareSimExp.perFreq.(metrics{m}).jac)) 1]);
+        
+        fnames = fieldnames(compareSimExp.perFreq.(metrics{m}));
+        for f=1:length(fnames)
+          compareSimExp.perFreq.(metrics{m}).(fnames{f}) = reshape(compareSimExp.perFreq.(metrics{m}).(fnames{f}), [numFreq eegDimSize simDimSize]);
+          compareSimExp.perFreqAvg.(metrics{m}).(fnames{f}) = permute(mean(compareSimExp.perFreq.(metrics{m}).(fnames{f}),1),[2:length(size(compareSimExp.perFreq.(metrics{m}).(fnames{f}))) 1]);
         end
+        
+        if ~strcmp(metrics{m},'cohy')
+          if p.calcSquaredDist
+            compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distRoiPair.sqrDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}))) 3]);
+            compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distRoiPair.absDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}))) 3]);
+          end
+          if p.calcSquaredDistAvg
+            compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distAvgPerRoi.sqrDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}))) 2]);
+            compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distAvgPerRoi.absDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}))) 2]);
+          end
+        end
+      end
+      
+      %% add specs:
+      compareSimExp.perFreq.spec = specWithoutRois;
+      compareSimExp.perFreqAvg.spec = specWithoutRoisFreq;
+      if p.calcSquaredDist
+        compareSimExp.distRoiPair.sqrDist.perFreq.spec = specTotal;
+        compareSimExp.distRoiPair.sqrDist.perFreqAvg.spec = specWithoutFreq;
+        compareSimExp.distRoiPair.absDist.perFreq.spec = specTotal;
+        compareSimExp.distRoiPair.absDist.perFreqAvg.spec = specWithoutFreq;
+      end
+      if p.calcSquaredDistAvg
+        compareSimExp.distAvgPerRoi.sqrDist.perFreq.spec = specOneRoisFreq;
+        compareSimExp.distAvgPerRoi.sqrDist.perFreqAvg.spec = specOneRois;
+        compareSimExp.distAvgPerRoi.absDist.perFreq.spec = specOneRoisFreq;
+        compareSimExp.distAvgPerRoi.absDist.perFreqAvg.spec = specOneRois;
       end
       
       %% combine all freq:
       for m=1:length(metrics)
         
-        if sum(strcmp(data.sim.dimName,'freq'))
+        if sum(strcmp(data.sim.spec.dimName,'freq'))
           tmpEEG = reshape(data.eeg.(metrics{m}),[2145*numFreq prod(eegDimSize)]);
           tmpSIM = reshape(data.sim.(metrics{m}),[2145*numFreq prod(simDimSize)]);
         else
@@ -473,28 +516,30 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           compareSimExp.overFreq.(metrics{m}).rho = reshape(compareSimExp.overFreq.(metrics{m}).rho,[eegDimSize simDimSize]);
           compareSimExp.overFreq.(metrics{m}).pval = reshape(compareSimExp.overFreq.(metrics{m}).pval,[eegDimSize simDimSize]);
           
-          %% Jaccard similarity coefficient:
-          tmpMin = bsxfun(@min,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
-          tmpMax = bsxfun(@max,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
-          compareSimExp.overFreq.(metrics{m}).jac = sum(tmpMin,1) ./ sum(tmpMax,1);
-          compareSimExp.overFreq.(metrics{m}).jac = reshape(compareSimExp.overFreq.(metrics{m}).jac, [eegDimSize simDimSize]);
+          %% Jaccard similarity coefficient (only for positive real valued metrics):
+          if ~strcmp(metrics{m},'icoh')
+            tmpMin = bsxfun(@min,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
+            tmpMax = bsxfun(@max,permute(tmpEEG,[1 2]),permute(tmpSIM,[1 3 2]));
+            compareSimExp.overFreq.(metrics{m}).jac = sum(tmpMin,1) ./ sum(tmpMax,1);
+            compareSimExp.overFreq.(metrics{m}).jac = reshape(compareSimExp.overFreq.(metrics{m}).jac, [eegDimSize simDimSize]);
+          end
         end
       end
       
-      %% combine dimNames and Labels and Sizes:
-      compareSimExp.dimSize = [eegDimSize simDimSize];
-      compareSimExp.dimLabels = [eegDimLabels simDimLabels];
-      compareSimExp.dimName = [eegDimName simDimName];
+      compareSimExp.overFreq.spec = specWithoutRoisFreq;
+%       if p.calcSquaredDist
+%         compareSimExp.distRoiPair.sqrDist.overFreq.spec = specTotal;
+%       end
       
       %% evaluate subject specific:
-      eegSubjDim = find(strcmp(compareSimExp.dimName,'subjEeg'));
-      simSubjDim = find(strcmp(compareSimExp.dimName,'subjId'));
-      if ~isempty(eegSubjDim) && ~isempty(simSubjDim)
+      eegSubjDim = find(strcmp(compareSimExp.overFreq.spec.dimName,'subjEeg'));
+      simSubjDim = find(strcmp(compareSimExp.overFreq.spec.dimName,'subjId'));
+      if p.calcSubjectSpecificTests && ~isempty(eegSubjDim) && ~isempty(simSubjDim)
         
-        nonDiagIds=find(~eye([compareSimExp.dimSize(eegSubjDim) compareSimExp.dimSize(simSubjDim)]));
+        nonDiagIds=find(~eye([compareSimExp.overFreq.spec.dimSize(eegSubjDim) compareSimExp.overFreq.spec.dimSize(simSubjDim)]));
         
         %% do permutation tests for all metrics:
-        dimSize = compareSimExp.dimSize;
+        dimSize = compareSimExp.overFreq.spec.dimSize;
         dimSize(end+1:5)=1;
         
         metrics0 = {'overFreq','perFreqAvg'};
@@ -598,10 +643,10 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                   end
                 end
 
-                iterateOverDims(iterateOverDims>length(compareSimExp.dimName)) = [];
-                compareSimExp.permTest.dimName = compareSimExp.dimName(iterateOverDims);
-                compareSimExp.permTest.dimSize = size(compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).fixSim);
-                compareSimExp.permTest.dimLabels = compareSimExp.dimLabels(iterateOverDims);
+                iterateOverDims(iterateOverDims>length(compareSimExp.overFreq.spec.dimName)) = [];
+                compareSimExp.permTest.spec.dimName = compareSimExp.overFreq.spec.dimName(iterateOverDims);
+                compareSimExp.permTest.spec.dimSize = size(compareSimExp.permTest.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}).fixSim);
+                compareSimExp.permTest.spec.dimLabels = compareSimExp.overFreq.spec.dimLabels(iterateOverDims);
               end
             end
           end
@@ -609,96 +654,62 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       end
       
       %% maybe combine subject dimensions from eeg and sim into one dimension:
-      if ~isempty(eegSubjDim) && ~isempty(simSubjDim)
-        if strcmp(p.resultsCombineSubjDims,'match') || strcmp(p.resultsCombineSubjDims,'nonmatch')
-          nonDiagIds=find(~eye([compareSimExp.dimSize(eegSubjDim) compareSimExp.dimSize(simSubjDim)]));
-          
-          metrics0 = {'overFreq','perFreqAvg'};
-          for m0=1:length(metrics0)
-            metrics1 = fieldnames(compareSimExp.(metrics0{m0}));
-            for m1=1:length(metrics1)
-              metrics2 = fieldnames(compareSimExp.(metrics0{m0}).(metrics1{m1}));
-              for m2=1:length(metrics2)                
-                asCell = num2cell(compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}),[eegSubjDim simSubjDim]);
-                asCell = cellfun(@(x) squeeze(x), asCell,'UniformOutput', false);
-                if strcmp(p.resultsCombineSubjDims,'match')
-                  asCell = cellfun(@(x) shiftdim(diag(x),eegSubjDim-1), asCell,'UniformOutput', false);
-                elseif strcmp(p.resultsCombineSubjDims,'nonmatch')
-                  asCell = cellfun(@(x) shiftdim(x(nonDiagIds),eegSubjDim-1), asCell,'UniformOutput', false); %#ok<FNDSB>
-                end
-                compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}) = permute(cell2mat(asCell),[setdiff(1:length(compareSimExp.dimSize),simSubjDim) simSubjDim]);
-                
-                % calc best param per subject
-                tmp = compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2});
-                siz = size(tmp);
-                numParam = length(siz);
-                siz = siz(2:end);
-                siz(end+1:5) = 1;
-                [~,bestLinInd] = max(reshape(tmp,[9 prod(siz)]),[],2);
-                [I1,I2,I3,I4,I5] = ind2sub(siz,bestLinInd);
-                allPerSubj = [I1,I2,I3,I4,I5];
-                compareSimExp.bestParamPerSubj.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}) = allPerSubj(:,1:numParam-1);
-                
-              end
-            end
-          end
-          
-          compareSimExp.dimSize = size(compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}));
-          compareSimExp.dimLabels{eegSubjDim} = num2cell(1:compareSimExp.dimSize(eegSubjDim));
-          compareSimExp.dimName(simSubjDim) = [];
-          compareSimExp.dimLabels(simSubjDim) = [];
+      if strcmp(p.resultsCombineSubjDims,'match') || strcmp(p.resultsCombineSubjDims,'nonmatch')
+        compareSimExp.overFreq = ConnectomeEnvelopeReduce.tensorCombineDims(compareSimExp.overFreq, {'subjEeg','subjId'}, p.resultsCombineSubjDims, 'subject');
+        compareSimExp.perFreqAvg = ConnectomeEnvelopeReduce.tensorCombineDims(compareSimExp.perFreqAvg, {'subjEeg','subjId'}, p.resultsCombineSubjDims, 'subject');
+        if p.calcSquaredDist
+          compareSimExp.distRoiPair = ConnectomeEnvelopeReduce.tensorCombineDims(compareSimExp.distRoiPair, {'subjEeg','subjId'}, p.resultsCombineSubjDims, 'subject');
         end
-        
+        if p.calcSquaredDistAvg
+          compareSimExp.distAvgPerRoi = ConnectomeEnvelopeReduce.tensorCombineDims(compareSimExp.distAvgPerRoi, {'subjEeg','subjId'}, p.resultsCombineSubjDims, 'subject');
+        end
       end
+      
       
       %% maybe reduce some dimensions in the results:
       if isfield(p,'results')
-        inSpec.dimName = compareSimExp.dimName;
-        inSpec.dimSize = compareSimExp.dimSize;
-        inSpec.dimLabels = compareSimExp.dimLabels;
-        metrics0 = {'overFreq','perFreqAvg'};
-        for m0=1:length(metrics0)
-          metrics1 = fieldnames(compareSimExp.(metrics0{m0}));
-          for m1=1:length(metrics1)
-            metrics2 = fieldnames(compareSimExp.(metrics0{m0}).(metrics1{m1}));
-            for m2=1:length(metrics2)
-
-                [compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}), outSpec] = ...
-                  ConnectomeEnvelopeReduce.filterTensor(...
-                  compareSimExp.(metrics0{m0}).(metrics1{m1}).(metrics2{m2}), ...
-                  inSpec, ...
-                  p.results);
-
-            end
-          end
+        compareSimExp.overFreq = ConnectomeEnvelopeReduce.filterTensor(compareSimExp.overFreq, p.results);
+        compareSimExp.perFreqAvg = ConnectomeEnvelopeReduce.filterTensor(compareSimExp.perFreqAvg, p.results);
+        if p.calcSquaredDist
+          compareSimExp.distRoiPair = ConnectomeEnvelopeReduce.filterTensor(compareSimExp.distRoiPair, p.results);
         end
-        compareSimExp.dimName = outSpec.dimName;
-        compareSimExp.dimSize = outSpec.dimSize;
-        compareSimExp.dimLabels = outSpec.dimLabels;
+        if p.calcSquaredDistAvg
+          compareSimExp.distAvgPerRoi = ConnectomeEnvelopeReduce.filterTensor(compareSimExp.distAvgPerRoi, p.results);
+        end
       end
       
+      
       %% calc the following only for the simulation with the best coh value:
-      if sum(strcmp(metrics,'cohy')) && sum(strcmp(data.sim.dimName,'freq'))
-        [~,Ibest] = max(compareSimExp.overFreq.coh.rho(:));
-        [compareSimExp.samples.bestEegId,compareSimExp.samples.bestSimId] = ind2sub([prod(eegDimSize) prod(simDimSize)],Ibest);
+      if sum(strcmp(metrics,'cohy')) && sum(strcmp(data.sim.spec.dimName,'freq'))
+        [~,Ibest] = max(compareSimExp.perFreqAvg.coh.rho(:));
+        [compareSimExp.samples.bestEegId,compareSimExp.samples.bestSimId] = ind2sub([eegDimSize simDimSize],Ibest);
+        [I(1),I(2),I(3),I(4),I(5)] = ind2sub(compareSimExp.perFreqAvg.spec.dimSize,Ibest);
+        compareSimExp.samples.I = I;
+        
         tmpEEG = reshape(data.eeg.cohy,[2145*numFreq prod(eegDimSize)]);
         tmpSIM = reshape(data.sim.cohy,[2145*numFreq prod(simDimSize)]);
         compareSimExp.samples.cohy_eegBest = tmpEEG(:,compareSimExp.samples.bestEegId);
         compareSimExp.samples.cohy_simBest = tmpSIM(:,compareSimExp.samples.bestSimId);
+        
+        compareSimExp.samples.histAngles = linspace(-pi,pi,100);
+        compareSimExp.samples.histAngleCohy = histc(angle(tmpEEG(:)),compareSimExp.samples.histAngles)/size(tmpEEG,1);
+        
+        
+        %% calc desc:
+        dimNames = compareSimExp.perFreqAvg.spec.dimName;
+        dimLabels = compareSimExp.perFreqAvg.spec.dimLabels;
+        compareSimExp.samples.descParam = '';
+        for ii=1:min(length(dimNames),length(I))
+          compareSimExp.samples.descParam = [compareSimExp.samples.descParam dimNames{ii} '=' num2str(dimLabels{ii}{I(ii)}) ' '];
+        end
+        
       end
       
-      compareSimExp.dimName_eeg = data.eeg.dimName;
-      compareSimExp.dimName_sim = data.sim.dimName;
-      compareSimExp.dims_eeg = data.eeg.dimSize;
-      compareSimExp.dims_sim = data.sim.dimSize;
-      compareSimExp.dimLabels_eeg = data.eeg.dimLabels;
-      compareSimExp.dimLabels_sim = data.sim.dimLabels;
-      
-      compareSimExp.sim.dimName = data.sim.paramName;
-      compareSimExp.sim.dimLabels = data.sim.paramVar;
+      compareSimExp.sim.spec.dimName = data.sim.spec.dimName;
+      compareSimExp.sim.spec.dimLabels = data.sim.spec.dimLabels;
       if isfield(data.sim,'meanOrderParam')
-        compareSimExp.sim.metrics.orderParamMean = data.sim.meanOrderParam;
-        compareSimExp.sim.metrics.orderParamStd = data.sim.stdOrderParam;
+        compareSimExp.sim.spec.metrics.orderParamMean = data.sim.meanOrderParam;
+        compareSimExp.sim.spec.metrics.orderParamStd = data.sim.stdOrderParam;
       end
       
       save(fullfile(savepath,['compareSimExp' num2str(this.currJobid)]),'-struct','compareSimExp')
@@ -710,41 +721,62 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       
       p = this.params.ConnectomeEnvelopeReduce;
       savepath = fullfile(this.workpath,p.outDirectory);
-      plotDir = fullfile(savepath,['plots' num2str(this.currJobid)]);
+      if isempty(this.params.ConnectomeEnvelopeReduce.outDirectoryPlotFolder)
+        plotDir = fullfile(savepath,['plots' num2str(this.currJobid)]);
+      else
+        plotDir = fullfile(savepath,this.params.ConnectomeEnvelopeReduce.outDirectoryPlotFolder);
+      end
       mkdir(plotDir)
       
       if nargin<2
         compareSimExp = load(fullfile(savepath,['compareSimExp' num2str(this.currJobid)]));
       end
       
-      dimNames = compareSimExp.dimName;
-      dimSizes = compareSimExp.dimSize;
-      dimLabels = compareSimExp.dimLabels;
-      
       
       %% plot normal result metrics:
-      ConnectomeEnvelopeReduce.plotStructure(compareSimExp.overFreq, compareSimExp, 'result.overFreq', 'result_overFreq', plotDir, {'pval'}, p.permutePlotDims)
-      ConnectomeEnvelopeReduce.plotStructure(compareSimExp.perFreqAvg, compareSimExp, 'result.perFreqAvg', 'result_perFreqAvg', plotDir, {'pval'}, p.permutePlotDims)
+      ConnectomeEnvelopeReduce.plotStructure(compareSimExp.overFreq, compareSimExp.overFreq.spec, 'result.overFreq', 'result_overFreq', plotDir, {'pval'}, p.permutePlotDims, p.excludePlotFieldsRegexp)
+      ConnectomeEnvelopeReduce.plotStructure(compareSimExp.perFreqAvg, compareSimExp.perFreqAvg.spec, 'result.perFreqAvg', 'result_perFreqAvg', plotDir, {'pval'}, p.permutePlotDims, p.excludePlotFieldsRegexp)
       
       %% plot over fixed subject if two remaining dimensions correspond to eeg and mri subject
-      if length(compareSimExp.dimName)==2 && sum(strcmp(compareSimExp.dimName,'subjEeg')) && sum(strcmp(compareSimExp.dimName,'subjId'))
-        ConnectomeEnvelopeReduce.plotStructureSubj(compareSimExp.overFreq, compareSimExp, 'fixSubj.overFreq', 'fixSubj_overFreq', plotDir, {'pval'})
-        ConnectomeEnvelopeReduce.plotStructureSubj(compareSimExp.perFreqAvg, compareSimExp, 'fixSubj.perFreqAvg', 'fixSubj_perFreqAvg', plotDir, {'pval'})
+      if length(compareSimExp.overFreq.spec.dimName)==2 && sum(strcmp(compareSimExp.overFreq.spec.dimName,'subjEeg')) && sum(strcmp(compareSimExp.overFreq.spec.dimName,'subjId'))
+        ConnectomeEnvelopeReduce.plotStructureSubj(compareSimExp.overFreq, compareSimExp.overFreq.spec, 'fixSubj.overFreq', 'fixSubj_overFreq', plotDir, {'pval'})
+        ConnectomeEnvelopeReduce.plotStructureSubj(compareSimExp.perFreqAvg, compareSimExp.perFreqAvg.spec, 'fixSubj.perFreqAvg', 'fixSubj_perFreqAvg', plotDir, {'pval'})
       end
       
+      %% plot best params if there is at least one remaining subject dimension:
+      if p.plotBestParamPerSubj && sum(strcmp(compareSimExp.overFreq.spec.dimName,'subjEeg')) || sum(strcmp(compareSimExp.overFreq.spec.dimName,'subjId'))
+%         ConnectomeEnvelopeReduce.plotBestParams(compareSimExp.overFreq, 'bestParams.overFreq', 'bestParams_overFreq', plotDir, {'pval'});
+%         ConnectomeEnvelopeReduce.plotBestParams(compareSimExp.perFreqAvg, 'bestParams.overFreq', 'bestParams_overFreq', plotDir, {'pval'});
+      end
       
       %% plot permutation eval:
-      if isfield(compareSimExp,'permTest') && p.plotPermTests
-        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.overFreq, compareSimExp.permTest, 'ttest.overFreq', 'ttest_overFreq', plotDir, {}, p.permutePlotDimsPermTest);
-        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.perFreqAvg, compareSimExp.permTest, 'ttest.perFreqAvg', 'ttest_perFreqAvg', plotDir, {}, p.permutePlotDimsPermTest);
+      if p.plotPermTests && isfield(compareSimExp,'permTest')
+        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.overFreq, compareSimExp.permTest.spec, 'ttest.overFreq', 'ttest_overFreq', plotDir, {'anovan_pval_subjDTI','anovan_pval_subjEEG'}, p.permutePlotDimsPermTest, p.excludePlotFieldsRegexp);
+        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.permTest.perFreqAvg, compareSimExp.permTest.spec, 'ttest.perFreqAvg', 'ttest_perFreqAvg', plotDir, {'anovan_pval_subjDTI','anovan_pval_subjEEG'}, p.permutePlotDimsPermTest, p.excludePlotFieldsRegexp);
       end
       
       %% write permutation eval to file:
-      if isfield(compareSimExp,'permTest') && isempty(compareSimExp.permTest.dimName)
+      if isfield(compareSimExp,'permTest') && isempty(compareSimExp.permTest.spec.dimName)
         fileID = fopen(fullfile(plotDir,'subjPermTest_pval.txt'),'w');
         ConnectomeEnvelopeReduce.dispStructure(compareSimExp.permTest.overFreq, 'permTest.overFreq', fileID, {});
         ConnectomeEnvelopeReduce.dispStructure(compareSimExp.permTest.perFreqAvg, 'permTest.perFreqAvg', fileID, {});
         fclose(fileID);
+      end
+      
+      %% squared distances
+      paths = dataPaths();
+      dataSC = load([paths.databases '/SC_Bastian/dist_and_CI_controls_preprocessed.mat']);
+      
+      if p.calcSquaredDist        
+        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.distRoiPair, [], 'distRoiPair', 'distRoiPair', plotDir, {''}, p.permutePlotDimsSquaredDist, p.excludePlotFieldsRegexp);
+        % compare with sc_avg_dist:
+        ConnectomeEnvelopeReduce.plotCompareDistWithSC(compareSimExp.distRoiPair,[],dataSC,'compareSC.distRoiPair', 'compareSC_distRoiPair', plotDir, p.excludePlotFieldsRegexp)
+      end
+      
+      if p.calcSquaredDistAvg
+        ConnectomeEnvelopeReduce.plotStructure(compareSimExp.distAvgPerRoi, [], 'distAvgPerRoi', 'distAvgPerRoi', plotDir, {''}, p.permutePlotDimsSquaredDistAvg, p.excludePlotFieldsRegexp);
+        % compare with sc_avg_roi_size:
+        ConnectomeEnvelopeReduce.plotCompareDistWithSC(compareSimExp.distAvgPerRoi,[],dataSC,'compareSC.distAvgPerRoi', 'compareSC_distAvgPerRoi', plotDir, p.excludePlotFieldsRegexp)
       end
       
       
@@ -753,80 +785,90 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         cohy_eegBest = compareSimExp.samples.cohy_eegBest;
         cohy_simBest = compareSimExp.samples.cohy_simBest;
         
-        %% calc desc:
-        if length(compareSimExp.dims_eeg)==4
-          [I(1),I(2)] = ind2sub(compareSimExp.dims_eeg(3:end),compareSimExp.samples.bestEegId);
-        elseif length(compareSimExp.dims_sim)==3
-          I(1) = compareSimExp.samples.bestEegId;
-          I(2) = compareSimExp.samples.bestSimId;
-        else
-          [I(1),I(2),I(3),I(4)] = ind2sub(compareSimExp.dims_sim(3:end),compareSimExp.samples.bestSimId);
-        end
-        descParam = '';
-        for ii=1:min(length(dimNames),length(I))
-          descParam = [descParam dimNames{ii} '=' num2str(dimLabels{ii}{I(ii)}) ' ']; %#ok<AGROW>
-        end
+        descParam = compareSimExp.samples.descParam;
         
         %% plots:
         sfigure(1); clf;
+        plotFilename = 'cohy_phasediff_bestSim';
         bothCoh=abs(cohy_simBest).*abs(cohy_eegBest);
         phaseDiffDirect=mod(angle(cohy_simBest)-angle(cohy_eegBest)+pi,2*pi)-pi;
-        scatter(bothCoh,phaseDiffDirect)
+        plot(bothCoh,phaseDiffDirect,'.','MarkerSize', 12)
         title(['Phasediff vs coh for ' descParam])
         xlabel('eegCoh * simCoh')
         ylabel('eeg-sim-difference in phase-lag between rois [rad]')
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-        print('-dpng','-r72',fullfile(plotDir,'cohy_phasediff_bestSim.png'))
+%         print('-dpng','-r72',fullfile(plotDir,[plotFilename '.png']))
+        export_fig(fullfile(plotDir,[plotFilename '.pdf']), '-transparent', '-r72');
         
         sfigure(1); clf;
+        plotFilename = 'cohy_absPhasediff_bestSim';
         bothCoh=abs(cohy_simBest).*abs(cohy_eegBest);
         phaseDiffDirect=mod(angle(cohy_simBest)-angle(cohy_eegBest)+pi,2*pi)-pi;
-        scatter(bothCoh,abs(phaseDiffDirect))
+        plot(bothCoh,abs(phaseDiffDirect),'.','MarkerSize', 12)
         title(['Phasediff vs coh for ' descParam])
         xlabel('eegCoh * simCoh')
         ylabel('abs eeg-sim-difference in phase-lag between rois [rad]')
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-        print('-dpng','-r72',fullfile(plotDir,'cohy_absPhasediff_bestSim.png'))
+%         print('-dpng','-r72',fullfile(plotDir,[plotFilename '.png']))
+        export_fig(fullfile(plotDir,[plotFilename '.pdf']), '-transparent', '-r72');
         
         sfigure(1); clf;
-        hist(angle(cohy_eegBest),100)
+        plotFilename = 'hist_phaseLag_EEG';
+%         hist(angle(cohy_eegBest),100)
+        bar(compareSimExp.samples.histAngles,compareSimExp.samples.histAngleCohy)
         title(['Histogram over all ROI-pairs eeg'])
         xlabel('phase lag [rad]')
         ylabel('number of ROI-pairs')
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-        print('-dpng','-r72',fullfile(plotDir,'hist_phaseLag_EEG.png'))
+%         print('-dpng','-r72',fullfile(plotDir,[plotFilename '.png']))
+        export_fig(fullfile(plotDir,[plotFilename '.pdf']), '-transparent', '-r72');
         
         sfigure(1); clf;
+        plotFilename = 'hist_phaseLag_bestSim';
         hist(angle(cohy_simBest),100)
         title(['Histogram over all ROI-pairs for sim'])
         xlabel('phase lag [rad]')
         ylabel('number of ROI-pairs')
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-        print('-dpng','-r72',fullfile(plotDir,'hist_phaseLag_bestSim.png'))
+%         print('-dpng','-r72',fullfile(plotDir,[plotFilename '.png']))
+        export_fig(fullfile(plotDir,[plotFilename '.pdf']), '-transparent', '-r72');
+        
       end
       
       %% plot sim specifics
       if isfield(compareSimExp,'sim')
         if isfield(compareSimExp.sim,'metrics')
-          metrics = fieldnames(compareSimExp.sim.metrics);
+          metrics = fieldnames(compareSimExp.sim.spec.metrics);
           for m=1:length(metrics)
             sfigure(1); clf;
-            imagesc(compareSimExp.sim.metrics.(metrics{m})(:,:,1,1));
+            imagesc(compareSimExp.sim.spec.metrics.(metrics{m})(:,:,1,1));
             title(metrics{m})
             colormap hot;
             colorbar
-            if length(compareSimExp.sim.dimName)>1
-              xlabel(compareSimExp.sim.dimName{2})
-              set(gca,'XTick',1:length(compareSimExp.sim.dimLabels{2}));
-              set(gca,'XTickLabel',cellfun(@(x) num2str(x,'%10.1f'),compareSimExp.sim.dimLabels{2},'UniformOutput',false))
+            if length(compareSimExp.sim.spec.dimName)>1
+              xlabel(compareSimExp.sim.spec.dimName{2})
+              set(gca,'XTick',1:length(compareSimExp.sim.spec.dimLabels{2}));
+              set(gca,'XTickLabel',cellfun(@(x) num2str(x,'%10.1f'),compareSimExp.sim.spec.dimLabels{2},'UniformOutput',false))
             end
-            ylabel(compareSimExp.sim.dimName{1})
-            set(gca,'YTick',1:length(compareSimExp.sim.dimLabels{1}));
-            set(gca,'YTickLabel',compareSimExp.sim.dimLabels{1})
+            ylabel(compareSimExp.sim.spec.dimName{1})
+            set(gca,'YTick',1:length(compareSimExp.sim.spec.dimLabels{1}));
+            set(gca,'YTickLabel',compareSimExp.sim.spec.dimLabels{1})
             set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-            print('-dpng','-r72',fullfile(plotDir,[metrics{m} '.png']))
-          end
+%             print('-dpng','-r72',fullfile(plotDir,[metrics{m} '.png']))
+            export_fig(fullfile(plotDir,[metrics{m} '.pdf']), '-transparent', '-transparent', '-r72');
+         end
         end
+      end
+      
+      %% combine pdfs:
+      pdfFiles = dir(fullfile(plotDir, '*.pdf'));
+      pdfFiles = cellfun(@(x) fullfile(plotDir,x),{pdfFiles.name},'UniformOutput',false);
+      if exist([plotDir '.pdf'],'file')
+        delete([plotDir '.pdf']);
+      end
+      append_pdfs([plotDir '.pdf'], pdfFiles{:})
+      if p.deletePlotFolder
+        rmdir(plotDir,'s');
       end
       
     end
@@ -855,6 +897,97 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       coh = abs(crossspectrum ./ sqrt( autospectrum_eeg * autospectrum_sim' ));
     end
     
+    function plotCompareDistWithSC(structure,inSpec,dataSC,caption,filename,plotDir,excludePlotFieldsRegexp)
+      if isstruct(structure)
+        
+        %% load spec if exsits:
+        if isfield(structure,'spec')
+          inSpec = structure.spec;
+        end
+        
+        %% recursive call:
+        fnames = fieldnames(structure);
+        for f=1:length(fnames)
+          if ~strcmp('spec',fnames{f})
+            
+            if isempty(regexp(filename,excludePlotFieldsRegexp, 'once'))
+              ConnectomeEnvelopeReduce.plotCompareDistWithSC(structure.(fnames{f}), inSpec, dataSC, [caption '.' fnames{f}], [filename '_' fnames{f}], plotDir,excludePlotFieldsRegexp);
+            end
+            
+          end
+        end
+        
+      else
+        
+        %% plot:
+        sfigure(1);
+        clf;
+        
+        if sum(strcmp(inSpec.dimName,'roi'))==2
+          % compare with sc_dist:
+          trigIds = find(triu(ones(66,66),1));
+          if sum(strcmp(inSpec.dimName,'freq'))
+            dataSim = squeeze(cell2mat(cellfun(@(x) x(trigIds), num2cell(structure,[1 2]),'UniformOutput',false)));
+            dataExp = repmat(dataSC.avg_dist(trigIds),[1 3]);
+          else
+            dataSim = structure(trigIds);
+            dataExp = dataSC.avg_dist(trigIds);
+          end
+          plot(dataSim,dataExp,'.','MarkerSize', 12);
+          xlabel('SC roi distance');
+        else
+          % compare with sc_roi_size:
+          dataSim = structure;
+          dataExp = dataSC.avg_roi_size;
+          plot(dataSim,dataExp,'.','MarkerSize', 12);
+          xlabel('SC roi size');
+        end
+        
+        [RHO,PVAL] = corr(dataExp,dataSim);
+        
+        ylabel('difference between sim and eeg');
+        if isscalar(RHO)
+          title([caption ' corr=' num2str(RHO) ' pval=' num2str(PVAL)])
+        else
+          legend(['5 Hz corr=' num2str(RHO(1,1))],['11 Hz corr=' num2str(RHO(1,2))],['25 Hz corr=' num2str(RHO(1,3))])
+          title(caption)
+        end
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 8])
+%           print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
+        export_fig(fullfile(plotDir,[filename '.pdf']), '-transparent', '-r72');
+          
+      end
+      
+      
+    end
+    
+    function plotBestParams(structure)
+      
+      eegSubjDimId = find(strcmp(structure.spec.dimName,'subjEeg'));
+      simSubjDimId = find(strcmp(structure.spec.dimName,'subjId'));
+      if isempty(eegSubjDimId)
+        eegSubjDimId = length(structure.spec.dimName)+1;
+        numEegSubj = 1;
+      else
+        numEegSubj = structure.spec.dimSize(eegSubjDimId);
+      end
+      if isempty(simSubjDimId)
+        simSubjDimId = length(structure.spec.dimName)+1;
+        numSimSubj = 1;
+      else
+        numSimSubj = structure.spec.dimSize(simSubjDimId);
+      end
+      
+      for eegSubjId = 1:numEegSubj
+        for simSubjId = 1:numSimSubj
+          
+          structure.coh
+          
+        end
+      end
+      
+    end
+    
     function dispStructure(structure, caption, fileID, excludeFields)
       % use as follows:
       % fileID = fopen('permTestResults.txt','w');
@@ -876,19 +1009,32 @@ classdef ConnectomeEnvelopeReduce < Gridjob
     end
     
     
-    function plotStructure(structure, inSpec, caption, filename, plotDir, excludeFields, permutePlotDims)
+    function plotStructure(structure, inSpec, caption, filename, plotDir, excludeFields, permutePlotDims, excludePlotFieldsRegexp)
       
       if nargin<7
         permutePlotDims = [];
       end
       
+      if nargin<8
+        excludePlotFieldsRegexp = '';
+      end
+      
       if isstruct(structure)
+        
+        %% load spec if exsits:
+        if isfield(structure,'spec')
+          inSpec = structure.spec;
+        end
         
         %% recursive call:
         fnames = fieldnames(structure);
         for f=1:length(fnames)
-          if sum(strcmp(excludeFields,fnames{f}))==0
-            ConnectomeEnvelopeReduce.plotStructure(structure.(fnames{f}), inSpec, [caption '.' fnames{f}], [filename '_' fnames{f}], plotDir, excludeFields, permutePlotDims);
+          if sum(strcmp(excludeFields,fnames{f}))==0 && ~strcmp('spec',fnames{f})
+            
+            if isempty(regexp(filename,excludePlotFieldsRegexp, 'once'))
+              ConnectomeEnvelopeReduce.plotStructure(structure.(fnames{f}), inSpec, [caption '.' fnames{f}], [filename '_' fnames{f}], plotDir, excludeFields, permutePlotDims, excludePlotFieldsRegexp);
+            end
+            
           end
         end
         
@@ -949,18 +1095,25 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             minc = min(structure(:));
             maxc = max(structure(:));
             
-            sfigure(1)
+            sfigure(1);
             clf
             p = panel();
             p.pack(size(structure,3), size(structure,4));
             p.de.margin = 2;
-            p.margin = [25 25 20 2];
+            p.margin = [25 25 20 20];
             p.fontsize = 8;
+            p.title(caption);
             for m = 1:size(structure,3)
               for n = 1:size(structure,4)
                 p(m, n).select();
                 imagesc(structure(:,:,m,n));
-                colormap hot;
+                
+%                 [nr,nc] = size(structure(:,:,m,n));
+%                 pcolor([structure(:,:,m,n) nan(nr,1); nan(1,nc+1)]);
+%                 shading flat;
+%                 set(gca, 'ydir', 'reverse');
+                
+                colormap autumn;
                 if isnan(minc) || isnan(maxc) || minc==maxc || isinf(maxc) || isinf(minc) 
                   disp('cannot set caxis limits')
                 else
@@ -985,6 +1138,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                   end
                   %set(gca,'XTick',1:size(structure,1));
                   xticks = get(gca,'XTick');
+                  xticks(xticks>length(inSpecPerm.dimLabels{2})) = [];
+                  set(gca,'XTick',xticks);
                   set(gca,'XTickLabel',cellfun(@(x) num2str(x,'%.3g'),inSpecPerm.dimLabels{2}(xticks),'UniformOutput',false))
                   %set(gca,'XTickMode','auto')
                 else
@@ -1003,6 +1158,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                     end
                   end
                   yticks = get(gca,'YTick');
+                  yticks(yticks>length(inSpecPerm.dimLabels{1})) = [];
+                  set(gca,'YTick',yticks);
                   set(gca,'YTickLabel',inSpecPerm.dimLabels{1}(yticks))
                 else
                   set(gca, 'yticklabel', {});
@@ -1010,6 +1167,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                 
               end
             end
+            
             
 %             set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
 %             print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
@@ -1032,7 +1190,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           set(gca,'XTick',1:size(structure,1));
           set(gca,'XTickLabel',inSpecPerm.dimLabels{1})
           set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-          print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
+%           print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
+          export_fig(fullfile(plotDir,[filename '.pdf']), '-transparent', '-r72');
         else
           sfigure(1);clf;
           imagesc(structure);
@@ -1048,7 +1207,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           set(gca,'YTick',1:size(structure,1));
           set(gca,'YTickLabel',inSpecPerm.dimLabels{1})
           set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-          print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
+%           print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
+          export_fig(fullfile(plotDir,[filename '.pdf']), '-transparent', '-r72');
         end
         
       end
@@ -1060,7 +1220,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       if isstruct(structure)
         
         %% recursive call:
-        fnames = fieldnames(structure);
+        fnames = setdiff(fieldnames(structure),{'spec'});
         for f=1:length(fnames)
           if sum(strcmp(excludeFields,fnames{f}))==0
             ConnectomeEnvelopeReduce.plotStructureSubj(structure.(fnames{f}), inSpec, [caption '.' fnames{f}], [filename '_' fnames{f}], plotDir, excludeFields);
@@ -1101,7 +1261,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           xlim([0 10])
           legend('match','mean(nonmatch)','median(nonmatch)','nonmatch')
           set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 6])
-          print('-dpng','-r72',fullfile(plotDir,[filename '_fix' fixSubj{f} '.png']))
+%           print('-dpng','-r72',fullfile(plotDir,[filename '_fix' fixSubj{f} '.png']))
+          export_fig(fullfile(plotDir,[filename '_fix' fixSubj{f} '.pdf']), '-transparent', '-r72');
           
         end
       
@@ -1109,48 +1270,143 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       
     end
       
+    function [tensor, outSpec] = tensorCombineDims(tensor, dimNamesToCombine, method, newDimName, inSpec)
+      % method can be 'match', 'nonmatch', 'all', 'trig'
+      
+      if nargin<5
+        inSpec = [];
+      end
+      
+      if isstruct(tensor)
+        
+        %% load spec if exsits:
+        if isfield(tensor,'spec')
+          inSpec = tensor.spec;
+        end
+        
+        %% recursive call:
+        fnames = setdiff(fieldnames(tensor),{'spec'});
+        for f=1:length(fnames)
+          [tensor.(fnames{f}), outSpec] = ConnectomeEnvelopeReduce.tensorCombineDims(tensor.(fnames{f}), dimNamesToCombine, method, newDimName, inSpec);
+        end
+        
+        %% update spec from output:
+        if isfield(tensor,'spec')
+          tensor.spec = outSpec;
+        end
+        
+      else
+        
+        if iscell(dimNamesToCombine)
+          dimId1 = find(strcmp(dimNamesToCombine{1},inSpec.dimName));
+          dimId2 = find(strcmp(dimNamesToCombine{2},inSpec.dimName));
+          dimId1 = dimId1(1);
+          dimId2 = dimId2(end);
+        else
+          dimIds = find(strcmp(dimNamesToCombine,inSpec.dimName));
+          dimId1 = dimIds(1);
+          dimId2 = dimIds(2);
+        end
+        
+        
+        asCell = num2cell(tensor,[dimId1 dimId2]);
+        asCell = cellfun(@(x) squeeze(x), asCell,'UniformOutput', false);
+        if strcmp(method,'match')
+          asCell = cellfun(@(x) shiftdim(diag(x),-dimId1+1), asCell,'UniformOutput', false);
+        elseif strcmp(method,'nonmatch')
+          nonDiagIds=find(~eye([inSpec.dimSize(dimId1) inSpec.dimSize(dimId2)]));
+          asCell = cellfun(@(x) shiftdim(x(nonDiagIds),-dimId1+1), asCell,'UniformOutput', false); %#ok<FNDSB>
+        elseif strcmp(method,'all')
+          asCell = cellfun(@(x) shiftdim(x(:),-dimId1+1), asCell,'UniformOutput', false);
+        elseif strcmp(method,'trig')
+          trigIds=find(triu(ones([inSpec.dimSize(dimId1) inSpec.dimSize(dimId2)]),1));
+          asCell = cellfun(@(x) shiftdim(x(trigIds),-dimId1+1), asCell,'UniformOutput', false); %#ok<FNDSB>
+        end
+        tensor = permute(cell2mat(asCell),[setdiff(1:length(inSpec.dimSize),dimId2) dimId2]);
+        
+        outSpec = inSpec;
+          outSpec.dimName{dimId1} = newDimName;
+          outSpec.dimName(dimId2) = [];
+          outSpec.dimSize = size(tensor);
+          outSpec.dimLabels{dimId1} = num2cell(1:outSpec.dimSize(dimId1));
+          outSpec.dimLabels(dimId2) = [];
+
+        
+      end
+    end
     
-    
-    function [tensor, outSpec] = filterTensor(tensor, inSpec, filterSpec)
-%       tensor = rand([5,10,2]);
+    function [tensor, outSpec] = filterTensor(tensor, filterSpec, inSpec )
+%       tensor = rand([5,10,2]); or tensor structure
 %       filterSpec.subj.Ids = [1:4 7:10];
 %       filterSpec.subj.Avg = false;
+%       filterSpec.subj.Max = false;
 %       filterSpec.day.Ids = [];
 %       filterSpec.day.Avg = true;
 %       inSpec.dimName = {'day', 'subjEeg', 'cond'};
 %       inSpec.dimSize = [5 10 2];
 %       inSpec.dimLabels = {'', '', ''};
       
-      filtDimNames = fieldnames(filterSpec);
-      
-      %% calculate indices to filter over all dimensions at once:
-      indices = repmat({':'},size(inSpec.dimSize));
-      for l=1:length(filtDimNames)
-        curDimId = find(strcmp(inSpec.dimName,filtDimNames{l}));
-        if isfield(filterSpec.(filtDimNames{l}),'Ids') && ~isempty(filterSpec.(filtDimNames{l}).Ids)
-          indices{curDimId} = filterSpec.(filtDimNames{l}).Ids;
-          inSpec.dimLabels{curDimId} = inSpec.dimLabels{curDimId}(indices{curDimId});
-        end
+      if nargin<3
+        inSpec = [];
       end
       
-      %% now filter all dimensions at once:
-      tensor = tensor(indices{:});
-      
-      %% now compute average over some of the dimensions
-      for l=1:length(filtDimNames)
-        if filterSpec.(filtDimNames{l}).Avg
+      if isstruct(tensor)
+        
+        %% load spec if exsits:
+        if isfield(tensor,'spec')
+          inSpec = tensor.spec;
+        end
+        
+        %% recursive call:
+        fnames = setdiff(fieldnames(tensor),{'spec'});
+        for f=1:length(fnames)
+          [tensor.(fnames{f}), outSpec] = ConnectomeEnvelopeReduce.filterTensor(tensor.(fnames{f}), filterSpec, inSpec );
+        end
+        
+        %% update spec from output:
+        if isfield(tensor,'spec')
+          tensor.spec = outSpec;
+        end
+        
+      else
+        filtDimNames = fieldnames(filterSpec);
+
+        %% calculate indices to filter over all dimensions at once:
+        indices = repmat({':'},size(inSpec.dimSize));
+        for l=1:length(filtDimNames)
           curDimId = find(strcmp(inSpec.dimName,filtDimNames{l}));
-          tensor = mean(tensor,curDimId);
+          if isfield(filterSpec.(filtDimNames{l}),'Ids') && ~isempty(filterSpec.(filtDimNames{l}).Ids)
+            indices{curDimId} = filterSpec.(filtDimNames{l}).Ids;
+            inSpec.dimLabels{curDimId} = inSpec.dimLabels{curDimId}(indices{curDimId});
+          end
         end
+
+        %% now filter all dimensions at once:
+        tensor = tensor(indices{:});
+
+        %% now compute average over some of the dimensions
+        for l=1:length(filtDimNames)
+          
+          if isfield(filterSpec.(filtDimNames{l}),'Avg') && filterSpec.(filtDimNames{l}).Avg
+            curDimId = find(strcmp(inSpec.dimName,filtDimNames{l}));
+            tensor = mean(tensor,curDimId);
+          end
+          
+          if isfield(filterSpec.(filtDimNames{l}),'Max') &&  filterSpec.(filtDimNames{l}).Max
+            curDimId = find(strcmp(inSpec.dimName,filtDimNames{l}));
+            tensor = max(tensor,[],curDimId);
+          end
+          
+        end
+
+        %% squeeze dimensions and at the same time delete corresponding dimNames and dimLabels
+        dimsToReduce = find(size(tensor)==1);
+        dimsToKeep = find(size(tensor)~=1);
+        tensor = permute(tensor,[dimsToKeep dimsToReduce]);
+        outSpec.dimName = inSpec.dimName(dimsToKeep);
+        outSpec.dimSize = size(tensor);
+        outSpec.dimLabels = inSpec.dimLabels(dimsToKeep);
       end
-      
-      %% squeeze dimensions and at the same time delete corresponding dimNames and dimLabels
-      dimsToReduce = find(size(tensor)==1);
-      dimsToKeep = find(size(tensor)~=1);
-      tensor = permute(tensor,[dimsToKeep dimsToReduce]);
-      outSpec.dimName = inSpec.dimName(dimsToKeep);
-      outSpec.dimSize = size(tensor);
-      outSpec.dimLabels = inSpec.dimLabels(dimsToKeep);
       
     end
     
