@@ -25,6 +25,7 @@ classdef ConnectomeEnvelope < Gridjob
       this.params.ConnectomeEnvelope.saveSamples_t_end = Inf;
       this.params.ConnectomeEnvelope.env_t_start = 1;
       this.params.ConnectomeEnvelope.env_t_end = Inf;
+      this.params.ConnectomeEnvelope.applyLeadField = false;
       this.params.ConnectomeEnvelope.filtermethod = 'butter'; %or equiripple
       
       if length(this.params.ConnectomeEnvelope.sigBandpass)>1
@@ -58,6 +59,8 @@ classdef ConnectomeEnvelope < Gridjob
       this.params.ConnectomeEnvelope.saveSourceBP = false;
       this.params.ConnectomeEnvelope.saveEnvSig = false;
       this.params.ConnectomeEnvelope.saveEnvLP = false;
+      
+      this.params.ConnectomeEnvelope.deleteSimResult = false;
       
       
       %%%% END EDIT HERE:                                          %%%%
@@ -112,6 +115,20 @@ classdef ConnectomeEnvelope < Gridjob
       else
         rate = this.extracTimeWindows(input.rate,p.source_t_start,p.source_t_end);
         rate = rate{1};
+      end
+      
+      if p.applyLeadField
+        paths = dataPaths();
+        lf = load(fullfile(paths.databases,'SC_Bastian','20141006_lf_all.mat'));
+        lf = lf.lf_all{input.param.subjId};
+        lf = cell2mat(permute(lf,[1 3 2]));
+        
+        % first just use sum of 3 dimensions:
+        lf = sum(lf,2);
+        lf = permute(lf,[1 3 2]);
+        
+        rate = lf*rate;
+        phase = lf*phase;
       end
       
       if p.downsamplingFactor~=1
@@ -205,6 +222,10 @@ classdef ConnectomeEnvelope < Gridjob
       end
       
       save([savepath '/FCsimJob' num2str(this.currJobid)],'FCsim','PLVsim','ICOHsim');
+      
+      if p.deleteSimResult
+        delete(fullfile(this.workpath, this.params.ConnectomeEnvelope.inFileRates))
+      end
       
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

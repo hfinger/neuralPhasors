@@ -17,12 +17,16 @@ classdef ConnectomeSim < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat
+      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
       this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
       
+      this.params.ConnectomeSim.shuffleSC = false;
+      this.params.ConnectomeSim.shuffleD = false;
       this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
       this.params.ConnectomeSim.homotopic = 0;
+      this.params.ConnectomeSim.roiOutScales = []; % vector of scaling factors for each roi
+      this.params.ConnectomeSim.roiOutIds = []; % vector indicating the roiIds to scale
       this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
       this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR' or 'WilsonCowan'
       this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
@@ -148,6 +152,46 @@ classdef ConnectomeSim < Gridjob
         
         D(isnan(D)) = 0;
         D = D + D'; % scale unclear should be scaled to mm
+        
+      elseif param.dataset==3
+        ci = load(fullfile(paths.databases,'SC_Bastian','patients_t1_logCI_mul_20140924_preprocessed.mat'));
+        
+        if ~isempty(param.normRoisizeInterp)
+          samples = ci.samples{param.subjId};
+          roisize = ci.roisize{param.subjId};
+          roisizeMul = roisize * roisize';
+          roisizeAdd = bsxfun(@plus, roisize, roisize');
+          SC = samples ./ (param.normRoisizeInterp * roisizeMul + (1-param.normRoisizeInterp) * roisizeAdd);
+          D = ci.dist{param.subjId};
+        else
+          SC = ci.ci{param.subjId};
+          D = ci.dist{param.subjId};
+        end
+        
+        SC(isnan(SC)) = 0;
+%         SC = SC + SC';
+        
+        D(isnan(D)) = 0;
+%         D = D + D'; % scale unclear should be scaled to mm
+      end
+      
+      if param.shuffleSC || param.shuffleD
+        trigIds = find(triu(ones(size(SC)),1));
+        p = randperm(length(trigIds(:)),length(trigIds(:)));
+        if param.shuffleSC
+          tmp = SC(trigIds);
+          tmp= tmp(p);
+          SC = zeros(size(SC));
+          SC(trigIds) = tmp;
+          SC = SC + SC';
+        end
+        if param.shuffleD
+          tmp = D(trigIds);
+          tmp= tmp(p);
+          D = zeros(size(D));
+          D(trigIds) = tmp;
+          D = D + D';
+        end
       end
       
       if param.normRowBeforeHomotopic==1
@@ -158,6 +202,21 @@ classdef ConnectomeSim < Gridjob
       
       if param.homotopic
         SC = SC + param.homotopic * diag(ones(size(SC,1)/2,1),size(SC,1)/2) + param.homotopic * diag(ones(size(SC,1)/2,1),-size(SC,1)/2);
+      end
+      
+      numRois = size(SC,1);
+      if ~isempty(param.roiOutScales)
+        
+        if ~isempty(param.roiOutIds)
+          roiOutScales = ones(1,numRois); 
+          roiOutScales(param.roiOutIds) = param.roiOutScales;
+        else
+          roiOutScales = param.roiOutScales;
+        end
+        
+        roiOutScales = repmat(reshape(roiOutScales,[1 numRois]),[numRois 1]);
+        SC = SC .* roiOutScales;
+        
       end
       
       if param.normRow==1
@@ -232,6 +291,16 @@ classdef ConnectomeSim < Gridjob
       end
       
       
+      if isfield(param,'ConnectomeEnvelope')
+        for ceId=1:length(param.ConnectomeEnvelope)
+          ceParams.ConnectomeEnvelope = param.ConnectomeEnvelope(ceId);
+          ceParams.ConnectomeEnvelope.inFileRates = fullfile(this.params.ConnectomeSim.outFilenames,[num2str(this.currJobid) 'SimResult.mat']);
+          ce = ConnectomeEnvelope(ceParams);
+          ce.workpath = this.workpath;
+          ce.currJobid = this.currJobid;
+          ce.run();
+        end
+      end
       
       
       %%%% END EDIT HERE:                                %%%%

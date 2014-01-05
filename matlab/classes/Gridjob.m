@@ -376,6 +376,7 @@ classdef Gridjob
         end
       end
       
+      disp(['start jobid: ' num2str(jobid)]);
       run(this);
       fclose(fopen(fullfile(this.temppath,'isfinished',num2str(jobid)), 'w'));
       
