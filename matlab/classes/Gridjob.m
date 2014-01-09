@@ -42,6 +42,7 @@ classdef Gridjob
       this.params.Gridjob.requiredThreads = '4';%'2-8';
       this.params.Gridjob.matlabpool = 0;
       this.params.Gridjob.relativeWorkpath = [];
+      this.params.Gridjob.walltime = 3600;
       
       % save folder from which the object is constructed
       this.constructedFromFolder = pwd;
@@ -208,9 +209,50 @@ classdef Gridjob
         
       elseif this.params.Gridjob.runOnHPC
         
+        if isfield(paths,'hpc_pathToAddScriptPaths')
+          pathToAddScriptPaths = paths.hpc_pathToAddScriptPaths;
+        else
+          pathToAddScriptPaths = which('addScriptPaths');
+          pathToAddScriptPaths = pathToAddScriptPaths(1:end-17);
+        end
         
+        %generate job script:
+        jobscriptpath=fullfile(localTemppath,[this.params.Gridjob.jobname '.sh']);
+        jobscriptpathRemote=[this.temppath '/' this.params.Gridjob.jobname '.sh'];
+        fid=fopen(jobscriptpath, 'w'); 
+        fprintf(fid,'#!/bin/bash\n');
+        fprintf(fid,'#PBS -t 1:%u\n',this.numJobs);
+        fprintf(fid,'#PBS -N %s\n',this.params.Gridjob.jobname);
+        fprintf(fid,'#PBS -l ncpus=%s\n',this.params.Gridjob.requiredThreads);
+        fprintf(fid,'#PBS -l walltime=%s\n',this.params.Gridjob.walltime);
+        fprintf(fid,'#PBS -q workq\n');
         
+        fprintf(fid,['/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "'...
+          'cd ' this.workpath '; addpath(' char(39) pathToAddScriptPaths char(39) '); addScriptPaths(); '...
+          'Gridjob.startJobid(' char(39) this.temppath '/jobDesc.mat' char(39) ',$SGE_TASK_ID);" -c ~/ikw_license.dat\n']);
+        fprintf(fid,'exit 0');
+        fclose(fid);
         
+        %check if qsub command is missing
+        if system('command -v qsub >/dev/null 2>&1')
+          qsubMissing = true;
+        else
+          qsubMissing = false;
+        end
+        
+        %now start the grid job:
+        if qsubMissing || this.params.Gridjob.remoteStart
+          if ispc
+            systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
+            disp('Execute:');
+            disp(systemCmd);
+            system(systemCmd);
+          else
+            system(['ssh isonoe "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+          end
+        else
+          system(['qsub ' jobscriptpath]);
+        end
         
       else
         
