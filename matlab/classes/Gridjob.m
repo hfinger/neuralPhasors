@@ -221,10 +221,10 @@ classdef Gridjob
         jobscriptpathRemote=[this.temppath '/' this.params.Gridjob.jobname '.sh'];
         fid=fopen(jobscriptpath, 'w'); 
         fprintf(fid,'#!/bin/bash\n');
-        fprintf(fid,'#PBS -t 1:%u\n',this.numJobs);
+        fprintf(fid,'#PBS -J 1-%u\n',this.numJobs);
         fprintf(fid,'#PBS -N %s\n',this.params.Gridjob.jobname);
         fprintf(fid,'#PBS -l ncpus=%s\n',this.params.Gridjob.requiredThreads);
-        fprintf(fid,'#PBS -l walltime=%s\n',this.params.Gridjob.walltime);
+        fprintf(fid,'#PBS -l walltime=%u\n',this.params.Gridjob.walltime);
         fprintf(fid,'#PBS -q workq\n');
         
         fprintf(fid,['/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "'...
