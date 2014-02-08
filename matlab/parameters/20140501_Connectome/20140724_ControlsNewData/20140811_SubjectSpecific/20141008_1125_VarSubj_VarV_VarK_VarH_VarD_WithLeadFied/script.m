@@ -1,8 +1,8 @@
 clear paramsAll;
 
 clear params;
-params.Gridjob.runLocal = true;
-params.Gridjob.requiremf = 5000;
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 6000;
 % params.Gridjob.wc_host = [];
 params.Gridjob.jobname = 'ConnectomeSim';
 params.Gridjob.initRandStreamWithJobid = true;
@@ -32,7 +32,7 @@ params.ConnectomeSim.tau=20;
 
 %params for all models:
 params.ConnectomeSim.k=num2cell(100*2.^(0:1:3));
-params.ConnectomeSim.v=num2cell(2.^(-1:2));
+params.ConnectomeSim.v=num2cell(exp(-1:0.5:1));
 params.ConnectomeSim.delay=num2cell(0:0.5:1); %typically 0.3-0.5 ms up to 2 ms
 params.ConnectomeSim.t_max={290,290};
 params.ConnectomeSim.dt=0.0001;
@@ -53,6 +53,7 @@ ConnectomeEnvelopeParams.env_t_end = Inf;
 ConnectomeEnvelopeParams.filtermethod = 'butter'; %or equiripple
 
 ConnectomeEnvelopeParams.applyLeadField = true;
+ConnectomeEnvelopeParams.applyLeadFieldMethod = 'maxpower';
 
 ConnectomeEnvelopeParams.sigBandpass(1).Fst1 = 2.5;
 ConnectomeEnvelopeParams.sigBandpass(1).Fp1 = 3;
@@ -93,14 +94,28 @@ ConnectomeEnvelopeParams.saveEnvLP = false;
 ConnectomeEnvelopeParams.deleteSimResult = false;
 
 params.ConnectomeSim.ConnectomeEnvelope(1) = ConnectomeEnvelopeParams;
-params.ConnectomeSim.ConnectomeEnvelope(1).applyLeadField = true;
+params.ConnectomeSim.ConnectomeEnvelope(1).applyLeadField = false;
 params.ConnectomeSim.ConnectomeEnvelope(1).deleteSimResult = false;
-params.ConnectomeSim.ConnectomeEnvelope(1).outFilenames = 'ConnectomeEnvelopeLf';
+params.ConnectomeSim.ConnectomeEnvelope(1).outFilenames = 'ConnectomeEnvelope';
 
 params.ConnectomeSim.ConnectomeEnvelope(2) = ConnectomeEnvelopeParams;
-params.ConnectomeSim.ConnectomeEnvelope(2).applyLeadField = false;
-params.ConnectomeSim.ConnectomeEnvelope(2).deleteSimResult = true;
-params.ConnectomeSim.ConnectomeEnvelope(2).outFilenames = 'ConnectomeEnvelope';
+params.ConnectomeSim.ConnectomeEnvelope(2).applyLeadField = true;
+params.ConnectomeSim.ConnectomeEnvelope(2).applyLeadFieldMethod = 'sum';
+params.ConnectomeSim.ConnectomeEnvelope(2).deleteSimResult = false;
+params.ConnectomeSim.ConnectomeEnvelope(2).outFilenames = 'ConnectomeEnvelopeLfSum';
+
+params.ConnectomeSim.ConnectomeEnvelope(3) = ConnectomeEnvelopeParams;
+params.ConnectomeSim.ConnectomeEnvelope(3).applyLeadField = true;
+params.ConnectomeSim.ConnectomeEnvelope(3).applyLeadFieldMethod = 'eucl';
+params.ConnectomeSim.ConnectomeEnvelope(3).deleteSimResult = false;
+params.ConnectomeSim.ConnectomeEnvelope(3).outFilenames = 'ConnectomeEnvelopeLfEucl';
+
+params.ConnectomeSim.ConnectomeEnvelope(4) = ConnectomeEnvelopeParams;
+params.ConnectomeSim.ConnectomeEnvelope(4).applyLeadField = true;
+params.ConnectomeSim.ConnectomeEnvelope(4).applyLeadFieldMethod = 'maxpower';
+params.ConnectomeSim.ConnectomeEnvelope(4).deleteSimResult = true;
+params.ConnectomeSim.ConnectomeEnvelope(4).outFilenames = 'ConnectomeEnvelopeLfMaxpower';
+
 
 paramsAll{1} = params;
 
@@ -116,7 +131,7 @@ eeg.cond.Ids = 5:6;
 eeg.cond.Avg = true;
 
 clear params;
-params.Gridjob.runLocal = true;
+params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 14000;
 params.Gridjob.wc_host = '!ramsauer.ikw.uni-osnabrueck.de';
 params.Gridjob.jobname = 'CompareWithEEG_ConnFC';

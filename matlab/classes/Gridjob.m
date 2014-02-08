@@ -229,7 +229,7 @@ classdef Gridjob
         
         fprintf(fid,['/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "'...
           'cd ' this.workpath '; addpath(' char(39) pathToAddScriptPaths char(39) '); addScriptPaths(); '...
-          'Gridjob.startJobid(' char(39) this.temppath '/jobDesc.mat' char(39) ',$SGE_TASK_ID);" -c ~/ikw_license.dat\n']);
+          'Gridjob.startJobid(' char(39) this.temppath '/jobDesc.mat' char(39) ',$PBS_ARRAY_INDEX);" -c ~/ikw_license.dat\n']);
         fprintf(fid,'exit 0');
         fclose(fid);
         

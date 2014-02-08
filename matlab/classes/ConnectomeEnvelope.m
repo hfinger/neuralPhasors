@@ -26,6 +26,7 @@ classdef ConnectomeEnvelope < Gridjob
       this.params.ConnectomeEnvelope.env_t_start = 1;
       this.params.ConnectomeEnvelope.env_t_end = Inf;
       this.params.ConnectomeEnvelope.applyLeadField = false;
+      this.params.ConnectomeEnvelope.applyLeadFieldMethod = 'sum'; %or 'eucl'
       this.params.ConnectomeEnvelope.filtermethod = 'butter'; %or equiripple
       
       if length(this.params.ConnectomeEnvelope.sigBandpass)>1
@@ -124,11 +125,31 @@ classdef ConnectomeEnvelope < Gridjob
         lf = cell2mat(permute(lf,[1 3 2]));
         
         % first just use sum of 3 dimensions:
-        lf = sum(lf,2);
-        lf = permute(lf,[1 3 2]);
+        if strcmp(p.applyLeadFieldMethod,'sum')
+          lf = sum(lf,2);
+          lf = permute(lf,[1 3 2]);
+          rate = lf*rate;
+        elseif strcmp(p.applyLeadFieldMethod,'eucl')
+          lf = sqrt(sum(lf.^2,2));
+          lf = permute(lf,[1 3 2]);
+          rate = lf*rate;
+          rate = bsxfun(@minus, rate, mean(rate,2));
+        elseif strcmp(p.applyLeadFieldMethod,'maxpower')
+          % rate = [66 x 50000]
+          % lf = [63 x 3 x 66]
+          for o=1:3
+            tmp = squeeze(lf(:,o,:));
+            rate2(:,:,o) = tmp * rate;
+          end
+          sigPower = squeeze(rms(rate2,2));
+          [C,I] = max(sigPower,[],2);
+          
+          for chan=1:size(rate2,1)
+            rate(chan,:) = rate2(chan,:,I(chan));
+          end
+          
+        end
         
-        rate = lf*rate;
-        phase = lf*phase;
       end
       
       if p.downsamplingFactor~=1
@@ -180,15 +201,25 @@ classdef ConnectomeEnvelope < Gridjob
           end
         end
         
+        % phaseSig = [66 x 50000] = [ ROI x TIME ] 
+        
         disp('calc imag coherence ...');
         analyticSigForICOH = this.extracTimeWindows(analyticSig,p.env_t_start,p.env_t_end);
         ICOHsim{b}.bp = bp;
         for s=1:length(analyticSigForICOH)
           ICOHsim{b}.autospectrum{s} = mean( conj(analyticSigForICOH{s}) .* analyticSigForICOH{s} , 2 );
-          ICOHsim{b}.crossspectrum{s} = zeros(size(phaseSig,1),size(phaseSig,1));
-          for k=1:size(phaseSig,1)
-            ICOHsim{b}.crossspectrum{s}(k,:) = mean( bsxfun(@times, conj(analyticSigForICOH{s}(k,:)), analyticSigForICOH{s}) , 2 );
+          ICOHsim{b}.crossspectrum{s} = zeros(size(analyticSigForICOH{s},1),size(analyticSigForICOH{s},1));
+          ICOHsim{b}.meanImagCrossSpec{s} = zeros(size(analyticSigForICOH{s},1),size(analyticSigForICOH{s},1));
+          ICOHsim{b}.meanAbsImagCrossSpec{s} = zeros(size(analyticSigForICOH{s},1),size(analyticSigForICOH{s},1));
+          ICOHsim{b}.pli{s} = zeros(size(analyticSigForICOH{s},1),size(analyticSigForICOH{s},1));
+          for k=1:size(analyticSigForICOH{s},1)
+            X = bsxfun(@times, conj(analyticSigForICOH{s}(k,:)), analyticSigForICOH{s});
+            ICOHsim{b}.crossspectrum{s}(k,:) = mean( X , 2 );
+            ICOHsim{b}.meanImagCrossSpec{s}(k,:) = mean(imag(X),2);
+            ICOHsim{b}.meanAbsImagCrossSpec{s}(k,:) = mean(abs(imag(X)),2);
+            ICOHsim{b}.pli{s}(k,:) = mean(sign(imag(X)),2);
           end
+          ICOHsim{b}.wpli{s} = ICOHsim{b}.meanImagCrossSpec{s}./ICOHsim{b}.meanAbsImagCrossSpec{s};          
           ICOHsim{b}.coherency{s} = ICOHsim{b}.crossspectrum{s} ./ sqrt( ICOHsim{b}.autospectrum{s} * ICOHsim{b}.autospectrum{s}' );
           ICOHsim{b}.coherence{s} = abs(ICOHsim{b}.coherency{s});
           ICOHsim{b}.icoh{s} = imag(ICOHsim{b}.coherency{s});
