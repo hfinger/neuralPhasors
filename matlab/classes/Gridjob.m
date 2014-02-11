@@ -225,7 +225,7 @@ classdef Gridjob
         fprintf(fid,'#PBS -N %s\n',this.params.Gridjob.jobname);
         fprintf(fid,'#PBS -l ncpus=%s\n',this.params.Gridjob.requiredThreads);
         fprintf(fid,'#PBS -l walltime=%u\n',this.params.Gridjob.walltime);
-        fprintf(fid,'#PBS -q workq\n');
+        fprintf(fid,'#PBS -l mem=%umb\n',this.params.Gridjob.requiremf);
         
         fprintf(fid,['/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "'...
           'cd ' this.workpath '; addpath(' char(39) pathToAddScriptPaths char(39) '); addScriptPaths(); '...
