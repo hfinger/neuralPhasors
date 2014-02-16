@@ -9,7 +9,7 @@ function plotMultCompare( stats, dim, groupNames )
 [c0p01] = multcompare(stats,'dimension',dim,'alpha',0.01);
 [c0p001] = multcompare(stats,'dimension',dim,'alpha',0.001);
 
-figure; clf;
+sfigure(2); clf;
 bar(m(:,1))
 hold on;
 h=errorbar(1:size(m,1),m(:,1),1.96*m(:,2),'c'); 

@@ -26,7 +26,7 @@ classdef Gridjob
       this.params.Gridjob.exclusive = false;
       this.params.Gridjob.combParallel = false;
       this.params.Gridjob.requiremf = []; % in MB
-      this.params.Gridjob.wc_host = '!ramsauer';%'ananke|calvin|carpo|daphne|elara|erato|fred|hobbes|isonoe|jupiter|klio|kore|leda|mars|melete|mneme|neptune|saturn|shaggy|thebe|urania|velma|venus'; %|sinope
+      this.params.Gridjob.wc_host = '!(*ramsauer*)';%'ananke|calvin|carpo|daphne|elara|erato|fred|hobbes|isonoe|jupiter|klio|kore|leda|mars|melete|mneme|neptune|saturn|shaggy|thebe|urania|velma|venus'; %|sinope
       this.params.Gridjob.queue = []; % should be empty or 'nbp.q' or 'all.q'
       this.params.Gridjob.jobname = 'job';
       this.params.Gridjob.useAbsolutePaths = false;
@@ -42,7 +42,8 @@ classdef Gridjob
       this.params.Gridjob.requiredThreads = '4';%'2-8';
       this.params.Gridjob.matlabpool = 0;
       this.params.Gridjob.relativeWorkpath = [];
-      this.params.Gridjob.walltime = 3600;
+      this.params.Gridjob.walltime = []; %3600;
+      this.params.Gridjob.runOnlyJobIds = [];
       
       % save folder from which the object is constructed
       this.constructedFromFolder = pwd;
@@ -201,10 +202,16 @@ classdef Gridjob
       
       if this.params.Gridjob.runLocal
         
-        %start jobs sequentially in this matlab instance
-        for jobid=1:this.numJobs
-%           Gridjob.startJobid(jobDescPath,jobid);
-          Gridjob.startJobid(jobDesc,jobid);
+        if isempty(this.params.Gridjob.runOnlyJobIds)
+          %start jobs sequentially in this matlab instance
+          for jobid=1:this.numJobs
+            Gridjob.startJobid(jobDesc,jobid);
+          end
+        else
+          %start jobs sequentially in this matlab instance
+          for id=1:length(this.params.Gridjob.runOnlyJobIds)
+            Gridjob.startJobid(jobDesc,this.params.Gridjob.runOnlyJobIds(id));
+          end
         end
         
       elseif this.params.Gridjob.runOnHPC
@@ -224,7 +231,9 @@ classdef Gridjob
         fprintf(fid,'#PBS -J 1-%u\n',this.numJobs);
         fprintf(fid,'#PBS -N %s\n',this.params.Gridjob.jobname);
         fprintf(fid,'#PBS -l ncpus=%s\n',this.params.Gridjob.requiredThreads);
-        fprintf(fid,'#PBS -l walltime=%u\n',this.params.Gridjob.walltime);
+        if ~isempty(this.params.Gridjob.walltime)
+          fprintf(fid,'#PBS -l walltime=%u\n',this.params.Gridjob.walltime);
+        end
         fprintf(fid,'#PBS -l mem=%umb\n',this.params.Gridjob.requiremf);
         
         fprintf(fid,['/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "'...
@@ -268,11 +277,25 @@ classdef Gridjob
         jobscriptpathRemote=[this.temppath '/' this.params.Gridjob.jobname '.sh'];
         fid=fopen(jobscriptpath, 'w'); 
         fprintf(fid,'#!/bin/bash\n');
-        fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
+        
+        if isempty(this.params.Gridjob.runOnlyJobIds)
+          fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
+        end
+        
         fprintf(fid,'#$ -N %s\n',this.params.Gridjob.jobname);
         if this.params.Gridjob.exclusive
           fprintf(fid,'#$ -l excl=true\n');
         end
+        
+        if ~isempty(this.params.Gridjob.walltime)
+          if ischar(this.params.Gridjob.walltime)
+            fprintf(fid,'#$ -l h_rt=%s\n',this.params.Gridjob.walltime);
+          else
+            fprintf(fid,'#$ -l h_rt=%u\n',this.params.Gridjob.walltime);
+          end
+        end
+        
+        
         if this.params.Gridjob.newGrid
           if ~isempty(this.params.Gridjob.requiremf)
             fprintf(fid,'#$ -l mem=%uM\n',this.params.Gridjob.requiremf);
@@ -302,6 +325,9 @@ classdef Gridjob
         end
         
         fprintf(fid,'#$ -wd %s\n',this.temppath);
+        
+        fprintf(fid,'echo $(hostname)\n');
+        
         fprintf(fid,['matlab -nodisplay -r "'...
           'addpath(' char(39) pathToAddScriptPaths char(39) '); addScriptPaths(); '...
           'Gridjob.startJobid(' char(39) this.temppath '/jobDesc.mat' char(39) ',$SGE_TASK_ID);"\n']);
@@ -316,19 +342,39 @@ classdef Gridjob
         end
         
         %now start the grid job:
-        if qsubMissing || this.params.Gridjob.remoteStart
-          if ispc
-%             system(['putty.exe -ssh -2 -m c:"cd ' pwd '; qsub ' jobscriptpath '" shaggy']);
-%             systemCmd = ['plink.exe -ssh -i ' paths.puttyPrivateKey ' ' paths.sshUsername '@' paths.sshServer ' "qsub ' jobscriptpathRemote '"'];
-            systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
-            disp('Execute:');
-            disp(systemCmd);
-            system(systemCmd);
+        if isempty(this.params.Gridjob.runOnlyJobIds)
+          if qsubMissing || this.params.Gridjob.remoteStart
+            if ispc
+  %             system(['putty.exe -ssh -2 -m c:"cd ' pwd '; qsub ' jobscriptpath '" shaggy']);
+  %             systemCmd = ['plink.exe -ssh -i ' paths.puttyPrivateKey ' ' paths.sshUsername '@' paths.sshServer ' "qsub ' jobscriptpathRemote '"'];
+              systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
+              disp('Execute:');
+              disp(systemCmd);
+              system(systemCmd);
+            else
+              system(['ssh isonoe "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+            end
           else
-            system(['ssh isonoe "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+            system(['qsub ' jobscriptpath]);
           end
         else
-          system(['qsub ' jobscriptpath]);
+          for jid = 1:length(this.params.Gridjob.runOnlyJobIds)
+            
+            if qsubMissing || this.params.Gridjob.remoteStart
+              if ispc
+                systemCmd = ['plink.exe ' paths.plinkArg ' "qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"'];
+                disp('Execute:');
+                disp(systemCmd);
+                system(systemCmd);
+              else
+                system(['ssh isonoe "cd ' pwd '; qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"']);
+              end
+            else
+              system(['qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpath]);
+            end
+            pause(1);
+            
+          end
         end
       end
     end

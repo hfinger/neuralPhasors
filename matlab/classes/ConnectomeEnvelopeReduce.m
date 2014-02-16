@@ -23,7 +23,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       this.params.ConnectomeEnvelopeReduce.onlyFCsim = false; % do not use envelopes but the directly simulated FC
       this.params.ConnectomeEnvelopeReduce.compareSC = false;
       this.params.ConnectomeEnvelopeReduce.compareSC_shuffle = false;
+      this.params.ConnectomeEnvelopeReduce.compareSC_shufflePermutations = [];
       this.params.ConnectomeEnvelopeReduce.compareSC_db = 1;
+      this.params.ConnectomeEnvelopeReduce.useEnvFreqAsParamVar = false;
       
       this.params.ConnectomeEnvelopeReduce.eegDatabase = 1; 
       % 1=icoh_all_0_20140715.mat initial lcmv
@@ -39,6 +41,25 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       % 11=eeg_20141002_funcconn_bp_elor0_001_hilbert.mat
       % 12=eeg_20141003_funcconn_bp_mne_prewhit_0_001_hilbert.mat
       % 13=eeg_20141003_funcconn_bp_mne_noprewhit_0_001_hilbert.mat
+      % 14=eeg_20141008_funcconn_bp_lcmv0_001_hilbert_LPC.mat
+      % 15=20141006_conn_bp.mat this is in electrode space
+      % 16=eeg_20141028_funconn_bp11_lcmv_hilbert.mat includes wPLI and PLI
+      % 17=eeg_20141103_controls_fs_funconn_bp_lcmv_hilbert_3_30.mat includes wPLI and PLI
+      % 18=eeg_20141109_controls_fs_funconn_bp_pinvonall_hilbert_3_30.mat
+      % 19=eeg_20141109_controls_fs_funconn_bp_pinvperroi_hilbert_3_30.mat
+      % 20=eeg_20141212_controls_fs_funconn_bponetrial_lcmv_hilbert_3_30.mat
+      % 21=eeg_20150102_controls_fs_funconn_bponetrial_elor_hilbert_51122_020115.mat
+      % 22=eeg_20141124_controls_bponetrial_elor_hilbert_51122.mat
+      % 23=eeg_20150113_controls_fs_funconn_lcmv_bponetrial_hilbert_3_30.mat
+      
+      % 24=eeg_20150114_controls_fs_funconn_elor_bponetrial_hilbert_51122_120115.mat % from here fixed mirroring of FC
+      % 25=eeg_20150114_controls_fs_funconn_lcmv_bponetrial_hilbert_3_30.mat
+      % 26=eeg_20150114_conn_bponetrial_3_30.mat
+      % 27=eeg_20150125_controls_fs_funconn_bponetrial_lcmv_hilbert_3_30_entmirrored.mat
+      % 28=eeg_20150206_fc_patients_mne_bp_hilbert.mat
+      % 29=eeg_20150208_fc_patients_mne0_001_bp_hilbert.mat
+      
+      
       
       this.params.ConnectomeEnvelopeReduce.eeg = struct();
 %       this.params.ConnectomeEnvelopeReduce.eeg.subj.Ids = [1:4 7:10];
@@ -58,6 +79,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       
       this.params.ConnectomeEnvelopeReduce.outDirectory = 'results';
       this.params.ConnectomeEnvelopeReduce.outDirectoryPlotFolder = []; % if empty use jobid
+      this.params.ConnectomeEnvelopeReduce.savePreEvaluationData = false;
       
       this.params.ConnectomeEnvelopeReduce.resultsCombineSubjDims = 'no'; % 'no' or 'match' or 'nonmatch' or 'avgMatch'
       
@@ -72,6 +94,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       this.params.ConnectomeEnvelopeReduce.calcCrossFreq = false;
       this.params.ConnectomeEnvelopeReduce.calcPhaseLags = false;
       this.params.ConnectomeEnvelopeReduce.calcCompareAicohWithCoh = false;
+      this.params.ConnectomeEnvelopeReduce.calcFisher = false;
       this.params.ConnectomeEnvelopeReduce.doNormalizeSubjectMat = false;
       
       this.params.ConnectomeEnvelopeReduce.doPlot = true; 
@@ -206,20 +229,30 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       
       if p.compareSC
         paths = dataPaths( );
-        if p.compareSC_db==1
-          dataSCTmp = load([paths.databases '/SC_Bastian/dist_and_CI_controls_preprocessed.mat']);
+        if p.compareSC_db==1 || p.compareSC_db==4
+          
+          if p.compareSC_db==4
+            dataSCTmp = load([paths.databases '/SC_Bastian/dti_20141209_preprocessed.mat']);
+          elseif p.compareSC_db==1
+            dataSCTmp = load([paths.databases '/SC_Bastian/dist_and_CI_controls_preprocessed.mat']);
+          end
           
           numFreq = 1;
           numRois = 66;
           
-          
           if p.compareSC_shuffle
             trigIds = find(triu(ones(size(dataSCTmp.ci{1})),1));
-            p = randperm(length(trigIds(:)),length(trigIds(:)));
+            
+            if ~isempty(p.compareSC_shufflePermutations)
+              permuteTmp = p.compareSC_shufflePermutations;
+            else
+              permuteTmp = randperm(length(trigIds(:)),length(trigIds(:)));
+            end
+            
             for subj=1:length(dataSCTmp.ci)
               if ~isempty(dataSCTmp.ci{subj})
                 tmp = dataSCTmp.ci{subj}(trigIds);
-                tmp= tmp(p);
+                tmp = tmp(permuteTmp);
                 dataSCTmp.ci{subj} = zeros(size(dataSCTmp.ci{1}));
                 dataSCTmp.ci{subj}(trigIds) = tmp;
               end
@@ -235,10 +268,17 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           coh = SCs;
           cohy = SCs;
           FCsim = SCs;
+          lpc = SCs;
+          pli = SCs;
+          wpli = SCs;
           
           paramName{1} = 'subjId';
-          paramVar{1} = num2cell([1:4 6:10]);
-          dims = 9;
+          if p.compareSC_db==4
+            paramVar{1} = num2cell([1:4 6:13 15 17:22]);
+          elseif p.compareSC_db==1
+            paramVar{1} = num2cell([1:4 6:10]);
+          end
+          dims = length(paramVar{1});
         else
           paths = dataPaths( );
           dataSCTmp = load([paths.databases '/SC_Bastian/patients_t1_logCI_mul_20140924_preprocessed.mat']);
@@ -255,6 +295,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           coh = SCs;
           cohy = SCs;
           FCsim = SCs;
+          lpc = SCs;
+          pli = SCs;
+          wpli = SCs;
           
           paramName{1} = 'subjId';
           paramVar{1} = num2cell([7    12    14    15    16    22    24    25]);
@@ -264,68 +307,104 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       else
         varParam = load([this.workpath '/temp_' p.ConnectomeSimJobName '/jobDesc.mat'],'variableParams','paramComb','params');
       
-      for j=1:length(varParam.variableParams)
-        paramName{j} = varParam.variableParams{j}{2};
-        paramVar{j} = varParam.params.(varParam.variableParams{j}{1}).(varParam.variableParams{j}{2});
-        dims(j) = length(paramVar{j});
-      end
-      
-      numSims = size(varParam.paramComb,2);
-      
-      if p.onlyFCsim
-        if exist(fullfile(this.workpath, p.ConnectomeSimOut),'dir')
-          %load first dataset to get dimensions:
-          stats=load([this.workpath '/' p.ConnectomeSimOut '/1FC.mat']);
+        for j=1:length(varParam.variableParams)
+          paramName{j} = varParam.variableParams{j}{2};
+          paramVar{j} = varParam.params.(varParam.variableParams{j}{1}).(varParam.variableParams{j}{2});
+          dims(j) = length(paramVar{j});
+        end
 
-          numFreq = 1;
-          numRois = size(stats.FCsimNoBold,1);
+        numSims = size(varParam.paramComb,2);
+
+        if p.onlyFCsim
+          if exist(fullfile(this.workpath, p.ConnectomeSimOut),'dir')
+            %load first dataset to get dimensions:
+            stats=load([this.workpath '/' p.ConnectomeSimOut '/1FC.mat']);
+
+            numFreq = 1;
+            numRois = size(stats.FCsimNoBold,1);
+
+            plv = zeros(numRois,numRois,numFreq,numSims);
+            icoh = zeros(numRois,numRois,numFreq,numSims);
+            coh = zeros(numRois,numRois,numFreq,numSims);
+            cohy = zeros(numRois,numRois,numFreq,numSims);
+            FCsim = zeros(numRois,numRois,numFreq,numSims);
+            lpc = zeros(numRois,numRois,numFreq,numSims);
+            pli = zeros(numRois,numRois,numFreq,numSims);
+            wpli = zeros(numRois,numRois,numFreq,numSims);
+            for k=1:numSims
+              stats=load([this.workpath '/' p.ConnectomeSimOut '/' num2str(k) 'FC.mat']);
+
+              plv(:,:,1,k) = stats.FCsimNoBold;
+              icoh(:,:,1,k) = stats.FCsimNoBold;
+              coh(:,:,1,k) = stats.FCsimNoBold;
+              cohy(:,:,1,k) = stats.FCsimNoBold;
+              FCsim(:,:,1,k) = stats.FCsimNoBold;
+              lpc(:,:,1,k) = stats.FCsimNoBold;
+              pli(:,:,1,k) = stats.FCsimNoBold;
+              wpli(:,:,1,k) = stats.FCsimNoBold;
+            end
+          end
+        else
+          %load first dataset to get dimensions:
+          stats=load([this.workpath '/' p.ConnectomeEnvelopeOut '/FCsimJob1.mat']);
+          numFreq = length(stats.PLVsim);
+          numRois = size(stats.PLVsim{1}.PLV{1},1);
 
           plv = zeros(numRois,numRois,numFreq,numSims);
           icoh = zeros(numRois,numRois,numFreq,numSims);
           coh = zeros(numRois,numRois,numFreq,numSims);
           cohy = zeros(numRois,numRois,numFreq,numSims);
           FCsim = zeros(numRois,numRois,numFreq,numSims);
+          lpc = zeros(numRois,numRois,numFreq,numSims);
+          pli = zeros(numRois,numRois,numFreq,numSims);
+          wpli = zeros(numRois,numRois,numFreq,numSims);
+          meanOrderParam = zeros(1,numSims);
+          stdOrderParam = zeros(1,numSims);
           for k=1:numSims
-            stats=load([this.workpath '/' p.ConnectomeSimOut '/' num2str(k) 'FC.mat']);
+%             disp(k)
+            stats=load([this.workpath '/' p.ConnectomeEnvelopeOut '/FCsimJob' num2str(k) '.mat']);
+            for freq=1:numFreq
+              plv(:,:,freq,k) = stats.PLVsim{freq}.PLV{1};
+              icoh(:,:,freq,k) = stats.ICOHsim{freq}.icoh{1};
+              coh(:,:,freq,k) = stats.ICOHsim{freq}.coherence{1};
+              cohy(:,:,freq,k) = stats.ICOHsim{freq}.coherency{1};
+              FCsim(:,:,freq,k) = stats.FCsim{freq}.FC{1};
+              lpc(:,:,freq,k) = imag(stats.ICOHsim{freq}.coherency{1})./sqrt(1-real(stats.ICOHsim{freq}.coherency{1}).^2);
+              pli(:,:,freq,k) = stats.ICOHsim{freq}.pli{1};
+              wpli(:,:,freq,k) = stats.ICOHsim{freq}.wpli{1};
+            end
 
-            plv(:,:,1,k) = stats.FCsimNoBold;
-            icoh(:,:,1,k) = stats.FCsimNoBold;
-            coh(:,:,1,k) = stats.FCsimNoBold;
-            cohy(:,:,1,k) = stats.FCsimNoBold;
-            FCsim(:,:,1,k) = stats.FCsimNoBold;
+            if exist(fullfile(this.workpath, p.ConnectomeSimOut),'dir')
+              statsFile = [this.workpath '/' p.ConnectomeSimOut '/' num2str(k) 'KuramotoStats.mat'];
+              if exist(statsFile,'file')
+                simStats=load(statsFile);
+                meanOrderParam(k) = simStats.meanOrderParam;
+                stdOrderParam(k) = simStats.stdOrderParam;
+              end
+            end
           end
+
+
+          if p.useEnvFreqAsParamVar
+
+            plv = permute(plv,[1 2 5 4 3]);
+            icoh = permute(icoh,[1 2 5 4 3]);
+            coh = permute(coh,[1 2 5 4 3]);
+            cohy = permute(cohy,[1 2 5 4 3]);
+            FCsim = permute(FCsim,[1 2 5 4 3]);
+            lpc = permute(lpc,[1 2 5 4 3]);
+            pli = permute(pli,[1 2 5 4 3]);
+            wpli = permute(wpli,[1 2 5 4 3]);
+
+            dims(end+1) = numFreq;
+            paramName{end+1} = 'envFreq';
+            paramVar{end+1} = num2cell(cellfun(@(x) (x.bp.Fp1+x.bp.Fp2)/2, stats.ICOHsim));
+
+            numFreq = 1;
+          end
+
+
         end
-      else
-        %load first dataset to get dimensions:
-        stats=load([this.workpath '/' p.ConnectomeEnvelopeOut '/FCsimJob1.mat']);
-        numFreq = length(stats.PLVsim);
-        numRois = size(stats.PLVsim{1}.PLV{1},1);
-
-        plv = zeros(numRois,numRois,numFreq,numSims);
-        icoh = zeros(numRois,numRois,numFreq,numSims);
-        coh = zeros(numRois,numRois,numFreq,numSims);
-        cohy = zeros(numRois,numRois,numFreq,numSims);
-        FCsim = zeros(numRois,numRois,numFreq,numSims);
-        meanOrderParam = zeros(1,numSims);
-        stdOrderParam = zeros(1,numSims);
-        for k=1:numSims
-          stats=load([this.workpath '/' p.ConnectomeEnvelopeOut '/FCsimJob' num2str(k) '.mat']);
-          for freq=1:numFreq
-            plv(:,:,freq,k) = stats.PLVsim{freq}.PLV{1};
-            icoh(:,:,freq,k) = stats.ICOHsim{freq}.icoh{1};
-            coh(:,:,freq,k) = stats.ICOHsim{freq}.coherence{1};
-            cohy(:,:,freq,k) = stats.ICOHsim{freq}.coherency{1};
-            FCsim(:,:,freq,k) = stats.FCsim{freq}.FC{1};
-          end
-
-          if exist(fullfile(this.workpath, p.ConnectomeSimOut),'dir')
-            simStats=load([this.workpath '/' p.ConnectomeSimOut '/' num2str(k) 'KuramotoStats.mat']);
-            meanOrderParam(k) = simStats.meanOrderParam;
-            stdOrderParam(k) = simStats.stdOrderParam;
-          end
-        end
-      
-      end
       
       end
       plv = reshape(plv,[numRois numRois numFreq dims]);
@@ -333,12 +412,15 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       coh = reshape(coh,[numRois numRois numFreq dims]);
       cohy = reshape(cohy,[numRois numRois numFreq dims]);
       FCsim = reshape(FCsim,[numRois numRois numFreq dims]);
+      lpc = reshape(lpc,[numRois numRois numFreq dims]);
+      pli = reshape(pli,[numRois numRois numFreq dims]);
+      wpli = reshape(wpli,[numRois numRois numFreq dims]);
       
       if length(dims)==1
         dims=[dims 1];
       end
       
-      if exist('meanOrderParam','var')
+      if exist('meanOrderParam','var') && ~p.useEnvFreqAsParamVar
         meanOrderParam = reshape(meanOrderParam,dims);
         stdOrderParam = reshape(stdOrderParam,dims);
         ConnFC.meanOrderParam = meanOrderParam;
@@ -350,11 +432,14 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       ConnFC.sim.coh = coh;
       ConnFC.sim.cohy = cohy;
       ConnFC.sim.FCsim = FCsim;
+      ConnFC.sim.lpc = lpc;
+      ConnFC.sim.pli = pli;
+      ConnFC.sim.wpli = wpli;
       
       ConnFC.sim.spec.dimName = cat(2,{'roi','roi','freq'},paramName);
       ConnFC.sim.spec.dimLabels = [{num2cell(1:66),num2cell(1:66),{5,11,25}},paramVar];
       ConnFC.sim.spec.dimSize = size(plv);
-      ConnFC.sim.spec.metrics = {'icoh','coh','plv','cohy'};
+      ConnFC.sim.spec.metrics = {'icoh','coh','plv','cohy','lpc'};
       
       save([savepath '/ConnFC.mat'],'-v7.3','-struct','ConnFC')
       
@@ -389,6 +474,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           end
           data.eeg.spec.metrics = {'icoh','coh','plv'};
         end
+        
         for n=1:length(data.eeg.spec.metrics)
           % replace NaNs of subject 6 on day 2 with day 1:
           dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,2,:,:,:,:) = dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,1,:,:,:,:);
@@ -399,7 +485,30 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         data.eeg.spec.dimName = {'roi','roi','freq','subjEeg','day','prepost','task'};
         data.eeg.spec.dimLabels = {num2cell(1:66),num2cell(1:66),{5,11,25},num2cell(1:10),{1,2},{'pre','post'},{'co','ce'}};
         
-      elseif p.eegDatabase==4 || p.eegDatabase==5 || p.eegDatabase==6 || p.eegDatabase==7 || p.eegDatabase==10 || p.eegDatabase==11 || p.eegDatabase==12 || p.eegDatabase==13
+      elseif p.eegDatabase==4 || ...
+          p.eegDatabase==5 || ...
+          p.eegDatabase==6 || ...
+          p.eegDatabase==7 || ...
+          p.eegDatabase==10 || ...
+          p.eegDatabase==11 || ...
+          p.eegDatabase==12 || ...
+          p.eegDatabase==13 || ...
+          p.eegDatabase==14 || ...
+          p.eegDatabase==15 || ...
+          p.eegDatabase==16 || ...
+          p.eegDatabase==17 || ...
+          p.eegDatabase==18 || ...
+          p.eegDatabase==19 || ...
+          p.eegDatabase==20 || ...
+          p.eegDatabase==21 || ...
+          p.eegDatabase==22 || ...
+          p.eegDatabase==23 || ...
+          p.eegDatabase==24 || ...
+          p.eegDatabase==25 || ...
+          p.eegDatabase==26 || ...
+          p.eegDatabase==27 || ...
+          p.eegDatabase==28 || ...
+          p.eegDatabase==29
         
         if p.eegDatabase==4
           dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbertrest_20140807.mat']);
@@ -417,19 +526,97 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141003_funcconn_bp_mne_prewhit_0_001_hilbert.mat']);
         elseif p.eegDatabase==13
           dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141003_funcconn_bp_mne_noprewhit_0_001_hilbert.mat']);
+        elseif p.eegDatabase==14
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141008_funcconn_bp_lcmv0_001_hilbert_LPC.mat']);
+        elseif p.eegDatabase==15
+          dataEegTmp = load([paths.databases '/SC_Bastian/20141006_conn_bp.mat']);
+        elseif p.eegDatabase==16
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141028_funconn_bp11_lcmv_hilbert.mat']);
+        elseif p.eegDatabase==17
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141103_controls_fs_funconn_bp_lcmv_hilbert_3_30.mat']);
+        elseif p.eegDatabase==18
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141109_controls_fs_funconn_bp_pinvonall_hilbert_3_30.mat']);
+        elseif p.eegDatabase==19
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141109_controls_fs_funconn_bp_pinvperroi_hilbert_3_30.mat']);
+        elseif p.eegDatabase==20
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141212_controls_fs_funconn_bponetrial_lcmv_hilbert_3_30.mat']);
+        elseif p.eegDatabase==21
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150102_controls_fs_funconn_bponetrial_elor_hilbert_51122_020115.mat']);
+        elseif p.eegDatabase==22
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20141124_controls_bponetrial_elor_hilbert_51122.mat']);
+        elseif p.eegDatabase==23
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150113_controls_fs_funconn_lcmv_bponetrial_hilbert_3_30.mat']);
+        elseif p.eegDatabase==24
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150114_controls_fs_funconn_elor_bponetrial_hilbert_51122_120115.mat']);
+        elseif p.eegDatabase==25
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150114_controls_fs_funconn_lcmv_bponetrial_hilbert_3_30.mat']);
+        elseif p.eegDatabase==26
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150114_conn_bponetrial_3_30.mat']);
+        elseif p.eegDatabase==27
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150125_controls_fs_funconn_bponetrial_lcmv_hilbert_3_30_entmirrored.mat']);
+        elseif p.eegDatabase==28
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150206_fc_patients_mne_bp_hilbert.mat']);
+        elseif p.eegDatabase==29
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150208_fc_patients_mne0_001_bp_hilbert.mat']);
         end
-        data.eeg.spec.metrics = {'icoh','coh','plv','cohy'};
+        
+        if p.eegDatabase==14
+          data.eeg.spec.metrics = {'icoh','coh','plv','cohy','lpc'};
+        elseif p.eegDatabase==16 || p.eegDatabase==17 || p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==22 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
+          data.eeg.spec.metrics = {'icoh','coh','plv','cohy','lpc','pli','wpli'};
+        else
+          data.eeg.spec.metrics = {'icoh','coh','plv','cohy'};
+        end
+        
+        if p.eegDatabase==15 || p.eegDatabase==26
+          numRois=63;
+        else
+          numRois=66;
+        end
+        
         for n=1:length(data.eeg.spec.metrics)
+          metName = data.eeg.spec.metrics{n};
+          if strcmp(metName,'lpc')
+            metName = 'LPC';
+          end          
+          if strcmp(metName,'pli')
+            metName = 'PLI';
+          end          
+          if strcmp(metName,'wpli')
+            metName = 'WPLI';
+          end          
           % replace NaNs of subject 6 on day 2 with day 1:
-          dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,2,:,:,:,:) = dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(6,1,:,:,:,:);
+          dataEegTmp.([metName '_all'])(6,2,:,:,:,:) = dataEegTmp.([metName '_all'])(6,1,:,:,:,:);
           % replace NaNs of subject 7 on day 2 post_rs with day 1 post_rs:
-          dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(7,2,6,:,:,:) = dataEegTmp.([data.eeg.spec.metrics{n} '_all'])(7,1,6,:,:,:);
+          dataEegTmp.([metName '_all'])(7,2,6,:,:,:) = dataEegTmp.([metName '_all'])(7,1,6,:,:,:);
           
           % permute to format [roi, roi, freq, more-dims...]:
-          data.eeg.(data.eeg.spec.metrics{n}) = permute(dataEegTmp.([data.eeg.spec.metrics{n} '_all']),[4 5 6 1 2 3]);
+          data.eeg.(data.eeg.spec.metrics{n}) = permute(dataEegTmp.([metName '_all']),[4 5 6 1 2 3]);
         end
         data.eeg.spec.dimName = {'roi','roi','freq','subjEeg','day','cond'};
-        data.eeg.spec.dimLabels = {num2cell(1:66),num2cell(1:66),{5,11,25},num2cell(1:10),{1,2},{'gripper_ce','gripper_co','glove_ce','glove_co','pre_rs','post_rs'}};
+        if p.eegDatabase==17 || p.eegDatabase==18 || p.eegDatabase==19 || p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==23
+          freqz = num2cell(1:30);
+          dayz = {1};
+        elseif p.eegDatabase==22
+          freqz = num2cell(1:22);
+          dayz = {1};
+        elseif p.eegDatabase==24
+          freqz = num2cell(1:22);
+          dayz = {1,2};
+        elseif p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
+          freqz = num2cell(1:30);
+          dayz = {1,2};
+        else
+          freqz = {5,11,25};
+          dayz = {1,2};
+        end
+
+        if p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
+          subj=num2cell(1:20);
+        else
+          subj=num2cell(1:10);
+        end
+        data.eeg.spec.dimLabels = {num2cell(1:numRois),num2cell(1:numRois),freqz,subj,dayz,{'gripper_ce','gripper_co','glove_ce','glove_co','pre_rs','post_rs'}};
       
       elseif p.eegDatabase==8
         
@@ -475,6 +662,24 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         data.sim.aicoh = abs(data.sim.icoh);
       end
       
+      if isfield(data.eeg,'lpc') && isfield(data.sim,'lpc')
+        data.eeg.alpc = abs(data.eeg.lpc);
+        data.sim.alpc = abs(data.sim.lpc);
+      end
+      if isfield(data.eeg,'pli') && isfield(data.sim,'pli')
+        data.eeg.apli = abs(data.eeg.pli);
+        data.sim.apli = abs(data.sim.pli);
+      end
+      if isfield(data.eeg,'wpli') && isfield(data.sim,'wpli')
+        data.eeg.awpli = abs(data.eeg.wpli);
+        data.sim.awpli = abs(data.sim.wpli);
+      end
+      
+      %% save temp data
+      if p.savePreEvaluationData
+        save([savepath '/data.mat'],'-v7.3','-struct','data')
+      end
+      
       
       %% Start Evaluation:
       simMetrics = setdiff(fieldnames(data.sim),{'spec'});
@@ -497,7 +702,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       eegDimName = data.eeg.spec.dimName(3:end);
       
       specTotal.dimSize = [numRois numRois numFreq eegDimSize simDimSize];
-      specTotal.dimLabels = [{num2cell(1:66),num2cell(1:66)} data.eeg.spec.dimLabels(2) eegDimLabels simDimLabels];
+      specTotal.dimLabels = [{num2cell(1:numRois),num2cell(1:numRois)} data.eeg.spec.dimLabels(2) eegDimLabels simDimLabels];
       specTotal.dimName = [{'roi', 'roi', 'freq'} eegDimName simDimName];
       
       specWithoutFreq = specTotal;
@@ -525,14 +730,45 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       specOneRois.dimLabels(1) = [];
       specOneRois.dimName(1) = [];
       
+      if p.calcFisher && p.calcFisher<3
+        for m=1:length(metrics)
+          if p.calcFisher==2
+            if isreal(data.eeg.(metrics{m}))
+              data.eeg.(metrics{m}) = atanh(data.eeg.(metrics{m}));
+            end
+            if isreal(data.sim.(metrics{m}))
+              data.sim.(metrics{m}) = atanh(data.sim.(metrics{m}));
+            end
+          else
+            if isreal(data.eeg.(metrics{m}))
+              if sum(data.eeg.(metrics{m})(:)<=0)
+                data.eeg.(metrics{m}) = atanh(data.eeg.(metrics{m}));
+              else
+                data.eeg.(metrics{m}) = log(data.eeg.(metrics{m}));
+              end
+            end
+            if isreal(data.sim.(metrics{m}))
+              if sum(data.sim.(metrics{m})(:)<=0)
+                data.sim.(metrics{m}) = atanh(data.sim.(metrics{m}));
+              else
+                data.sim.(metrics{m}) = log(data.sim.(metrics{m}));
+              end
+            end
+          end
+        end
+      end
+      
+      
       if p.calcCompareAicohWithCoh
         metrics{end+1} = 'aicohcoh';
       end
       
+      numTrig = numRois*(numRois-1)/2;
       
       %% per freq:
       for m=1:length(metrics)
         
+        disp(['metric : ' num2str(m) '/' num2str(length(metrics))])
         if ~strcmp(metrics{m},'cohy') && ~strcmp(metrics{m},'aicohcoh')
           if p.calcSquaredDist
             compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
@@ -554,21 +790,31 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             simMetric = metrics{m};
           end
           
-          tmpEEG = reshape(data.eeg.(eegMetric)(:,freq,:,:,:,:,:),[2145 prod(eegDimSize)]);
+          
+          
+          
+          
+          tmpEEG = reshape(data.eeg.(eegMetric)(:,freq,:,:,:,:,:),[numTrig prod(eegDimSize)]);
           if sum(strcmp(data.sim.spec.dimName,'freq'))
-            tmpSIM = reshape(data.sim.(simMetric)(:,freq,:,:,:,:,:),[2145 prod(simDimSize)]);
+            tmpSIM = reshape(data.sim.(simMetric)(:,freq,:,:,:,:,:),[numTrig prod(simDimSize)]);
           else
-            tmpSIM = reshape(data.sim.(simMetric)(:,:,:,:,:,:),[2145 prod(simDimSize)]);
+            tmpSIM = reshape(data.sim.(simMetric)(:,:,:,:,:,:),[numTrig prod(simDimSize)]);
           end
+          
+          
           
           if p.calcCrossFreq
             for freqSim=1:numFreq
-              tmpSIM_otherFreq = reshape(data.sim.(simMetric)(:,freqSim,:,:,:,:,:),[2145 prod(simDimSize)]);
+              tmpSIM_otherFreq = reshape(data.sim.(simMetric)(:,freqSim,:,:,:,:,:),[numTrig prod(simDimSize)]);
               if strcmp(metrics{m},'cohy')
                 compareSimExp.crossFreq.(metrics{m}).coh(freq,freqSim,:,:) = ConnectomeEnvelopeReduce.calcCoherence(tmpEEG',tmpSIM_otherFreq');
               else
                 %% Corr:
-                [compareSimExp.crossFreq.(metrics{m}).rho(freq,freqSim,:,:), compareSimExp.crossFreq.(metrics{m}).pval(freq,freqSim,:,:)] = corr(tmpEEG,tmpSIM_otherFreq);
+                if p.calcFisher==3
+                  [compareSimExp.crossFreq.(metrics{m}).rho(freq,freqSim,:,:), compareSimExp.crossFreq.(metrics{m}).pval(freq,freqSim,:,:)] = corr(tmpEEG,tmpSIM_otherFreq,'type','Spearman');
+                else
+                  [compareSimExp.crossFreq.(metrics{m}).rho(freq,freqSim,:,:), compareSimExp.crossFreq.(metrics{m}).pval(freq,freqSim,:,:)] = corr(tmpEEG,tmpSIM_otherFreq);
+                end
               end
             end
           end
@@ -577,7 +823,11 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             compareSimExp.perFreq.(metrics{m}).coh(freq,:,:) = ConnectomeEnvelopeReduce.calcCoherence(tmpEEG',tmpSIM');
           else
             %% Corr:
-            [compareSimExp.perFreq.(metrics{m}).rho(freq,:,:), compareSimExp.perFreq.(metrics{m}).pval(freq,:,:)] = corr(tmpEEG,tmpSIM);
+            if p.calcFisher==3
+              [compareSimExp.perFreq.(metrics{m}).rho(freq,:,:), compareSimExp.perFreq.(metrics{m}).pval(freq,:,:)] = corr(tmpEEG,tmpSIM,'type','Spearman');
+            else
+              [compareSimExp.perFreq.(metrics{m}).rho(freq,:,:), compareSimExp.perFreq.(metrics{m}).pval(freq,:,:)] = corr(tmpEEG,tmpSIM);
+            end
             
             %% Partial Corr:
             if p.calcPartialCorrEuclDist
@@ -620,6 +870,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                     compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
                     compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
                   end
+                  
+                  
                   
                 end
               end
@@ -700,11 +952,11 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         end
         
         if sum(strcmp(data.sim.spec.dimName,'freq'))
-          tmpEEG = reshape(data.eeg.(eegMetric),[2145*numFreq prod(eegDimSize)]);
-          tmpSIM = reshape(data.sim.(simMetric),[2145*numFreq prod(simDimSize)]);
+          tmpEEG = reshape(data.eeg.(eegMetric),[numTrig*numFreq prod(eegDimSize)]);
+          tmpSIM = reshape(data.sim.(simMetric),[numTrig*numFreq prod(simDimSize)]);
         else
-          tmpEEG = reshape(mean(data.eeg.(eegMetric),2),[2145 prod(eegDimSize)]);
-          tmpSIM = reshape(data.sim.(simMetric),[2145 prod(simDimSize)]);
+          tmpEEG = reshape(mean(data.eeg.(eegMetric),2),[numTrig prod(eegDimSize)]);
+          tmpSIM = reshape(data.sim.(simMetric),[numTrig prod(simDimSize)]);
         end
         
         if strcmp(metrics{m},'cohy')
@@ -760,8 +1012,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       %% evaluate phase shifts in sim and eeg:
       if p.calcPhaseLags && sum(strcmp(metrics,'cohy')) && sum(strcmp(data.sim.spec.dimName,'freq'))
         
-        tmpEEG = reshape(data.eeg.cohy,[2145 numFreq prod(eegDimSize)]);
-        tmpSIM = reshape(data.sim.cohy,[2145 numFreq prod(simDimSize)]);
+        tmpEEG = reshape(data.eeg.cohy,[numTrig numFreq prod(eegDimSize)]);
+        tmpSIM = reshape(data.sim.cohy,[numTrig numFreq prod(simDimSize)]);
         
         phasediffEEG = angle(tmpEEG);
         phasediffSIM = angle(tmpSIM);
@@ -872,7 +1124,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         compareSimExp.sim.spec.metrics.orderParamMean = data.sim.meanOrderParam;
         compareSimExp.sim.spec.metrics.orderParamStd = data.sim.stdOrderParam;
       end
-      save(fullfile(savepath,['compareSimExp' num2str(this.currJobid)]),'-struct','compareSimExp')
+      save(fullfile(savepath,['compareSimExp' num2str(this.currJobid)]),'-v7.3','-struct','compareSimExp')
       
       
       
@@ -1187,7 +1439,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             dataSim = structure(trigIds);
             dataExp = dataSC.avg_dist(trigIds);
           end
-          plot(dataExp,dataSim,'.','MarkerSize', 12);
+          plot(dataExp,dataSim,'.','MarkerSize', 6);
           xlabel('SC roi distance');
         else
           % compare with sc_roi_size:
@@ -1206,7 +1458,10 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           legend(['5 Hz corr=' num2str(RHO(1,1))],['11 Hz corr=' num2str(RHO(1,2))],['25 Hz corr=' num2str(RHO(1,3))])
           title(caption)
         end
+        
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 8 8])
+        
+        
 %           print('-dpng','-r72',fullfile(plotDir,[filename '.png']))
         export_fig(fullfile(plotDir,[filename '.pdf']), '-transparent', '-r72');
           
@@ -1699,7 +1954,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                 
                 transpString = {'fixEeg','fixSim'};
                 for transp=1:2
-                  metricVal = atanh(tensor(indices{:}));
+                  metricVal = squeeze(atanh(tensor(indices{:})));
+%                   metricVal = squeeze((tensor(indices{:})));
                   
                   if transp==2
                     metricVal = metricVal';
@@ -1726,8 +1982,22 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                   fractionMatchLarger = numMatchLarger / (numMatchSmaller+numMatchLarger);
                   tensorPermTest.(transpString{transp}).(normString{normBefore}).fractionMatchLarger(iterDim1,iterDim2,iterDim3) = fractionMatchLarger;
                   
+                  %% how often is the match also the max in its column
+                  
+                  
+                  %% bootstrap max per column --> p-value ?????
+%                   numSubj = length(matching);
+%                   numIters = 500;
+%                   numSubjPerIter = 2;
+%                   for i=1:numIters
+%                     selSubj = randi(numSubj,numSubjPerIter);
+%                     tmp1 = matching(selSubj);
+%                     tmp2 = nonmatch(selSubj,:);
+%                     ....
+%                   end
+                  
                   %% signrank test
-                  if sum(isnan(matching(:))) || sum(isnan(nonmatch(:)))
+                  if sum(isnan(matching(:))) || sum(isnan(nonmatch(:))) || sum(isinf(matching(:))) || sum(isinf(nonmatch(:)))
                     disp(['NaN values in statistical test at iterDim1=' num2str(iterDim1) ' iterDim2=' num2str(iterDim2) ' iterDim3=' num2str(iterDim3) ' '  ])
                     tensorPermTest.(transpString{transp}).(normString{normBefore}).signrank_pval(iterDim1,iterDim2,iterDim3) = NaN;
                   else

@@ -79,7 +79,7 @@ end
 
 if d>0
   numSamplesDelete = round(d/(dt*sampling));
-  ys = ys(numSamplesDelete+1:end);
+  ys = ys(:,numSamplesDelete+1:end);
 end
 
 end
