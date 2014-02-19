@@ -1,7 +1,7 @@
 clear paramsAll;
 
 clear params;
-params.Gridjob.runLocal = false;
+params.Gridjob.runLocal = true;
 params.Gridjob.requiremf = 5000;
 % params.Gridjob.wc_host = [];
 params.Gridjob.jobname = 'ConnectomeSim';
@@ -370,6 +370,6 @@ params.ConnectomeEnvelopeReduce.plotPermTests = false;
 paramsAll{6} = params;
 
 clear params;
-gridjobs = Gridjob(paramsAll(6));
+gridjobs = Gridjob(paramsAll(1));
 start(gridjobs);
 
