@@ -92,5 +92,5 @@ params.ConnectomeEnvelopeReduce.doPlot = false;
 paramsAll{3} = params;
 
 clear params;
-gridjobs = Gridjob(paramsAll(3));
+gridjobs = Gridjob(paramsAll(1:3));
 start(gridjobs);
