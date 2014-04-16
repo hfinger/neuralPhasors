@@ -31,8 +31,12 @@ copyfile('20140501_Connectome/20150217_ExampleSimulation','YOURNAME/20150217_Exa
 %change to that directory (replace YOURNAME):
 cd YOURNAME/20150217_ExampleSimulation
 
+%open the file which contains all paramters...
+edit script_SAR
+
 %run the simulation:
 script_SAR
 
-%edit the parameters in the file... maybe set a breakpoint in the last line of that file where the job is started, so that you can step through the code:
-edit script_SAR
+%the results of that simulation can then be found in the directory: 
+/net/store/nbp/phasesim/workdir/YOURNAME/20150217_ExampleSimulation/CompareWithEEG
+
