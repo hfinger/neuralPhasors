@@ -20,7 +20,8 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
       this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
-      
+      this.params.ConnectomeSim.dtiDistanceCorrection = false;
+
       this.params.ConnectomeSim.shuffleSC = false;
       this.params.ConnectomeSim.shuffleD = false;
       this.params.ConnectomeSim.shufflePermutations = [];
@@ -229,6 +230,11 @@ classdef ConnectomeSim < Gridjob
             D(trigIds) = tmp;
             D = D + D';
           end
+        end
+        
+        
+        if param.dtiDistanceCorrection
+          SC = SC.*D;
         end
         
         if param.normRowBeforeHomotopic==1
