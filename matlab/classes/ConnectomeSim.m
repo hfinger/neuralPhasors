@@ -174,14 +174,21 @@ classdef ConnectomeSim < Gridjob
               SC = ci.avg_ci;
               D = ci.avg_dist;
             else
-              SC = ci.ci{param.subjId};
-              D = ci.dist{param.subjId};
+              if length(param.subjId)>1
+                SC = nanmean(cell2mat(permute(ci.ci(param.subjId),[1 3 2])),3);
+                D = nanmean(cell2mat(permute(ci.dist(param.subjId),[1 3 2])),3);
+              else
+                SC = ci.ci{param.subjId};
+                D = ci.dist{param.subjId};
+              end
             end
           end
           
+          SC(logical(tril(ones(size(SC))))) = 0;
           SC(isnan(SC)) = 0;
           SC = SC + SC';
           
+          D(logical(tril(ones(size(D))))) = 0;
           D(isnan(D)) = 0;
           D = D + D'; % scale unclear should be scaled to mm
           
