@@ -240,6 +240,12 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           numFreq = 1;
           numRois = 66;
           
+          for subj=1:length(dataSCTmp.ci)
+            if ~isempty(dataSCTmp.ci{subj})
+              dataSCTmp.ci{subj}(logical(tril(ones(size(dataSCTmp.ci{1}))))) = 0;
+            end
+          end
+          
           if p.compareSC_shuffle
             trigIds = find(triu(ones(size(dataSCTmp.ci{1})),1));
             
