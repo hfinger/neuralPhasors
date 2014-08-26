@@ -11,7 +11,7 @@ params.Gridjob.requiredThreads = '3';
 
 params.ConnectomeSim.dataset = 4; % 4 --> 17 Controls
 params.ConnectomeSim.subjId = [1:4 6:10 11:13 15 17:20];
-params.ConnectomeSim.normRoisizeInterp = num2cell(0:0.1:1);
+params.ConnectomeSim.normRoisizeInterp = {0, 1};
 
 params.ConnectomeSim.normRowBeforeHomotopic = 1;
 params.ConnectomeSim.homotopic = num2cell(0:0.02:0.22);
@@ -26,7 +26,7 @@ paramsAll{1} = params;
 [variableParams, paramComb] = getVariableParams(params,false);
 
 clear params;
-params.Gridjob.runLocal = true;
+params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 5000;
 params.Gridjob.wc_host = '!ramsauer.ikw.uni-osnabrueck.de';
 params.Gridjob.jobname = 'CompareWithEEG_ConnFC';
@@ -65,7 +65,7 @@ params.Gridjob.runOnlyJobIds = [];
 params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'ConnectomeEnvelope';
-params.ConnectomeEnvelopeReduce.eegDatabase = 25;
+params.ConnectomeEnvelopeReduce.eegDatabase = {24,25,27,28,29};
 params.ConnectomeEnvelopeReduce.compareSC = false;
 params.ConnectomeEnvelopeReduce.onlyFCsim = true;
 params.ConnectomeEnvelopeReduce.eeg = eeg;
@@ -93,5 +93,5 @@ params.ConnectomeEnvelopeReduce.doPlot = false;
 paramsAll{3} = params;
 
 clear params;
-gridjobs = Gridjob(paramsAll(3));
+gridjobs = Gridjob(paramsAll(1:3));
 start(gridjobs);

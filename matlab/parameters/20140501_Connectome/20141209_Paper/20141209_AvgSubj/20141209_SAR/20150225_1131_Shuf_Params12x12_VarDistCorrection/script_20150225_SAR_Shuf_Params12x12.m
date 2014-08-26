@@ -33,7 +33,7 @@ paramsAll{1} = params;
 [variableParams, paramComb] = getVariableParams(params,false);
 
 clear params;
-params.Gridjob.runLocal = true;
+params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 5000;
 params.Gridjob.wc_host = '!ramsauer.ikw.uni-osnabrueck.de';
 params.Gridjob.jobname = 'CompareWithEEG_ConnFC';
@@ -72,7 +72,7 @@ params.Gridjob.runOnlyJobIds = [];
 params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'ConnectomeEnvelope';
-params.ConnectomeEnvelopeReduce.eegDatabase = 25;
+params.ConnectomeEnvelopeReduce.eegDatabase = {24,25,27,28,29};
 params.ConnectomeEnvelopeReduce.compareSC = false;
 params.ConnectomeEnvelopeReduce.onlyFCsim = true;
 params.ConnectomeEnvelopeReduce.eeg = eeg;
