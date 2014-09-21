@@ -17,7 +17,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
       this.params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
-      this.params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
+      this.params.C.ConnectomeSimOut = 'ConnectomeSim';
       this.params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeJobName = 'ConnectomeEnvelope';
       this.params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'connEnv';
       this.params.ConnectomeEnvelopeReduce.onlyFCsim = false; % do not use envelopes but the directly simulated FC
@@ -216,11 +216,11 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         [stat, mess, id]=rmdir([this.workpath '/' p.ConnectomeSimOut],'s');
       end
       
-      %%%% END EDIT HERE:                                %%%%
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
     end
     
+    %%%% END EDIT HERE:                                %%%%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
     function ConnFC = gatherResults(this)
       
       p = this.params.ConnectomeEnvelopeReduce;
@@ -285,7 +285,11 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             paramVar{1} = num2cell([1:4 6:10]);
           end
           dims = length(paramVar{1});
-        else
+        
+        elseif p.compareSC_db==5 
+          a = 42;
+        
+        else % ~ p.compareSC_db NOT 1, 4, 5
           paths = dataPaths( );
           dataSCTmp = load([paths.databases '/SC_Bastian/patients_t1_logCI_mul_20140924_preprocessed.mat']);
           
@@ -309,6 +313,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           paramVar{1} = num2cell([7    12    14    15    16    22    24    25]);
           dims = 8;
         end
+        
+        
         
       else
         varParam = load([this.workpath '/temp_' p.ConnectomeSimJobName '/jobDesc.mat'],'variableParams','paramComb','params');
@@ -859,29 +865,37 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             
             %% Linear Regression using Total Least-Squared:
             if p.calcSquaredDist || p.calcSquaredDistAvg
-              for eegId=1:size(tmpEEG,2)
-                for simId=1:size(tmpSIM,2)
-                  [~, ~, d] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
-                  squaredDist = zeros(numRois,numRois);
-                  squaredDist(trigIds) = d;
-                  
-                  absDist = zeros(numRois,numRois);
-                  absDist(trigIds) = abs(tmpSIM(:,simId) - tmpEEG(:,eegId));
-                  
-                  if p.calcSquaredDist
-                    compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDist;
-                    compareSimExp.distRoiPair.absDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = absDist;
-                  end
-                  if p.calcSquaredDistAvg
-                    compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
-                    compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
-                  end
-                  
-                  
-                  
+                for eegId=1:size(tmpEEG,2)
+                    for simId=1:size(tmpSIM,2)
+                        
+                        if true % use this to perform ordinary linear regression to obtain y-residuals
+                            [coeff, s] = polyfit(tmpEEG(:,eegId), tmpSIM(:,simId), 1); % fit polynome of order 1, i.e. line
+                            yhat = coeff(1)*(tmpEEG(:,eegId)) + coeff(2);
+                            d = tmpSIM(:,simId) - yhat;
+                            
+                        else % use this to perform orthogonal regression
+                            [~, ~, d] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
+                        end
+                        squaredDist = zeros(numRois,numRois);
+                        squaredDist(trigIds) = d;
+                        
+                        absDist = zeros(numRois,numRois);
+                        absDist(trigIds) = abs(tmpSIM(:,simId) - tmpEEG(:,eegId));
+                        
+                        if p.calcSquaredDist
+                            compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDist;
+                            compareSimExp.distRoiPair.absDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = absDist;
+                        end
+                        if p.calcSquaredDistAvg
+                            compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
+                            compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
+                        end
+                        
+                        
+                        
+                    end
                 end
-              end
-              
+                
             end
             
             

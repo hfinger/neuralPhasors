@@ -22,7 +22,7 @@ classdef ConnectomeMetrics < Gridjob
       this.params.ConnectomeMetrics.hScale = 1;                             % vary over scaling of homotopic connections
       
       this.params.ConnectomeMetrics.graphH0 = 1000;                         % vd Heuvel & Sporns (2011) used 1000 permutation networks
-      this.params.ConnectomeMetrics.outFilenames = 'results';
+      this.params.ConnectomeMetrics.outFilenames = 'ConnectomeMetrics';
       
       % concerning this.params.ConnectomeMetrics.sparse:
         % tic; SPRS = metricsGlobal_wu(SC06, nSamples); toc;                  graph permutation is very expensive
@@ -67,16 +67,6 @@ classdef ConnectomeMetrics < Gridjob
       % our matrices have way more connections than data used in van den Heuvel & Sporns (2011)
       % resulting in differences of metrics. --> threshold connections/
       
-      % mat = zeros(66,66);
-      % for i = 1:22
-      %     if (isempty(ci{1,i})) continue; end
-      %     ci{1,i}(isnan(ci{1,i}))=0;
-      %     mat = mat + ci{1,i};
-      %
-      % end
-      % mat = mat/(22-3);
-      
-      
       SC = avg_ci;
       SC(isnan(SC)) = 0;
       SC = SC + SC';                                                        % make SC symmetric --
@@ -90,7 +80,7 @@ classdef ConnectomeMetrics < Gridjob
           mkdir(path);
       end
       
-      SCNorm = normGraph(SC, avg_roi_size, 'ROIsum', false, param.sparse);
+      SCNorm = normGraph(SC, avg_roi_size, 'ROIprd', false, param.sparse);
       SCMetr = graphMetrics(SCNorm, param.graphH0, path);                                 
       
      %%
@@ -100,7 +90,7 @@ classdef ConnectomeMetrics < Gridjob
       end
       
       hSC = homotopHeur(SCNorm, SCMetr, param.heuristics, param.hScale, param.graphH0);
-      hSC = normGraph(hSC, avg_roi_size, 'ROIsum', false, param.sparse);
+      hSC = normGraph(hSC, avg_roi_size, 'ROIprd', false, param.sparse+42); % sparse > 1 disables modification of sparseness
       hMetr = graphMetrics(hSC, param.graphH0, path);
       hSC = bsxfun(@rdivide,hSC,sum(hSC,2))';                               % norm rows, i.e. input, to sum(CIJ) == 1 
 
@@ -112,10 +102,7 @@ classdef ConnectomeMetrics < Gridjob
       savefilename = fullfile(path,num2str(this.currJobid));
       %save([savefilename 'SC.mat' ],'SCNorm','SCMetr');                    % removed: take case hScale = 0 as SC matrix, only when add == true in homotopHeur!     
       save([savefilename 'SC.mat'],'hSC','hMetr');                          % hSC is row-normalized
-      
-      
-      this.params.ConnectomeSim.outFilenames = 'results';
-            
+                  
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       

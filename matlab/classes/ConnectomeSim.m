@@ -34,7 +34,12 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR' or 'WilsonCowan'
       this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
 
-      %params specific for Kuramoto:
+      %params for loading dataset 5:
+      this.params.ConnectomeSim.loadSp = 0.6;                          
+      this.params.ConnectomeSim.loadHeur = 1;                         
+      this.params.ConnectomeSim.loadHscale = 1;  
+      
+      %params specific for Kuramoto model:
       this.params.ConnectomeSim.approx=false;
       this.params.ConnectomeSim.invertSin=false;
       this.params.ConnectomeSim.f=60;
@@ -212,6 +217,18 @@ classdef ConnectomeSim < Gridjob
           
           D(isnan(D)) = 0;
           %         D = D + D'; % scale unclear should be scaled to mm
+        
+        elseif param.dataset==5
+          
+          jb = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','temp_ConnectomeMetrics','jobDesc.mat'));
+          % xy.paramComb % column-wise representation of jobIDs 
+          % xy.variableParams{variable,1}{1,2};
+          
+          getId = find(sum(ismember(cell2mat(jb.paramComb),[param.loadSp; param.loadHeur; param.loadHscale]),1) == length(jb.variableParams),1);    
+
+          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','results',strcat(num2str(getId),'SC.mat')));        
+          SC = ci.hSC;
+          D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
         end
         
         if param.shuffleSC || param.shuffleD

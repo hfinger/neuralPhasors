@@ -25,9 +25,7 @@ classdef ConnectomeAnalysis < Gridjob
       this.params.ConnectomeAnalysis.loadSp = 0.6;                          
       this.params.ConnectomeAnalysis.loadHeur = 1;                         
       this.params.ConnectomeAnalysis.loadHscale = 1;
-      this.params.ConnectomeAnalysis.loadKscale = 1;
-      
-      
+      this.params.ConnectomeAnalysis.loadKscale = 1;      
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
