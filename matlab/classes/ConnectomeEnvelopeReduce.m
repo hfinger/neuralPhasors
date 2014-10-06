@@ -778,10 +778,20 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         if ~strcmp(metrics{m},'cohy') && ~strcmp(metrics{m},'aicohcoh')
           if p.calcSquaredDist
             compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distRoiPair.sqrDistAbs.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distRoiPair.tlsDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distRoiPair.tlsDistAbs.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distRoiPair.linDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distRoiPair.linDistAbs.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
             compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
           end
           if p.calcSquaredDistAvg
             compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distAvgPerRoi.sqrDistAbs.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distAvgPerRoi.tlsDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distAvgPerRoi.tlsDistAbs.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distAvgPerRoi.linDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
+            compareSimExp.distAvgPerRoi.linDistAbs.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
             compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
           end
         end
@@ -859,21 +869,48 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             
             %% Linear Regression using Total Least-Squared:
             if p.calcSquaredDist || p.calcSquaredDistAvg
+              
+              warning('off','stats:regress:RankDefDesignMat')
+              
               for eegId=1:size(tmpEEG,2)
                 for simId=1:size(tmpSIM,2)
-                  [~, ~, d] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
+                  [~, ~, d, dcorrect] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
+                  
                   squaredDist = zeros(numRois,numRois);
                   squaredDist(trigIds) = d;
+                  squaredDistAbs = zeros(numRois,numRois);
+                  squaredDistAbs(trigIds) = abs(d);
+                  
+                  tlsDist = zeros(numRois,numRois);
+                  tlsDist(trigIds) = dcorrect;
+                  tlsDistAbs = zeros(numRois,numRois);
+                  tlsDistAbs(trigIds) = abs(dcorrect);
+                  
+                  [~, ~, dLin] = regress(tmpSIM(:,simId), tmpEEG(:,eegId));
+                  linDist = zeros(numRois,numRois);
+                  linDist(trigIds) = dLin;
+                  linDistAbs = zeros(numRois,numRois);
+                  linDistAbs(trigIds) = abs(dLin);
                   
                   absDist = zeros(numRois,numRois);
                   absDist(trigIds) = abs(tmpSIM(:,simId) - tmpEEG(:,eegId));
                   
                   if p.calcSquaredDist
                     compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDist;
+                    compareSimExp.distRoiPair.sqrDistAbs.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDistAbs;
+                    compareSimExp.distRoiPair.tlsDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = tlsDist;
+                    compareSimExp.distRoiPair.tlsDistAbs.perFreq.(metrics{m})(:,:,freq,eegId,simId) = tlsDistAbs;
+                    compareSimExp.distRoiPair.linDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = linDist;
+                    compareSimExp.distRoiPair.linDistAbs.perFreq.(metrics{m})(:,:,freq,eegId,simId) = linDistAbs;
                     compareSimExp.distRoiPair.absDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = absDist;
                   end
                   if p.calcSquaredDistAvg
                     compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
+                    compareSimExp.distAvgPerRoi.sqrDistAbs.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDistAbs(:,2:end) + squaredDistAbs(1:end-1,:)',2);
+                    compareSimExp.distAvgPerRoi.tlsDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(tlsDist(:,2:end) + tlsDist(1:end-1,:)',2);
+                    compareSimExp.distAvgPerRoi.tlsDistAbs.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(tlsDistAbs(:,2:end) + tlsDistAbs(1:end-1,:)',2);
+                    compareSimExp.distAvgPerRoi.linDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(linDist(:,2:end) + linDist(1:end-1,:)',2);
+                    compareSimExp.distAvgPerRoi.linDistAbs.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(linDistAbs(:,2:end) + linDistAbs(1:end-1,:)',2);
                     compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
                   end
                   
@@ -881,6 +918,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                   
                 end
               end
+              
+              warning('on','stats:regress:RankDefDesignMat')
               
             end
             
@@ -904,17 +943,18 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         end
         
         if ~strcmp(metrics{m},'cohy')
+          distMetricNames = fieldnames(compareSimExp.distRoiPair);
           if p.calcSquaredDist
-            compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
-            compareSimExp.distRoiPair.sqrDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}))) 3]);
-            compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
-            compareSimExp.distRoiPair.absDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}))) 3]);
+            for b=1:length(distMetricNames)
+              compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
+              compareSimExp.distRoiPair.(distMetricNames{b}).perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}))) 3]);
+            end
           end
           if p.calcSquaredDistAvg
-            compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
-            compareSimExp.distAvgPerRoi.sqrDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}))) 2]);
-            compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
-            compareSimExp.distAvgPerRoi.absDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}))) 2]);
+            for b=1:length(distMetricNames)
+              compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
+              compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}))) 2]);
+            end
           end
         end
       end
@@ -923,16 +963,18 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       compareSimExp.perFreq.spec = specWithoutRois;
       compareSimExp.perFreqAvg.spec = specWithoutRoisFreq;
       if p.calcSquaredDist
-        compareSimExp.distRoiPair.sqrDist.perFreq.spec = specTotal;
-        compareSimExp.distRoiPair.sqrDist.perFreqAvg.spec = specWithoutFreq;
-        compareSimExp.distRoiPair.absDist.perFreq.spec = specTotal;
-        compareSimExp.distRoiPair.absDist.perFreqAvg.spec = specWithoutFreq;
+        distMetricNames = fieldnames(compareSimExp.distRoiPair);
+        for b=1:length(distMetricNames)
+          compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.spec = specTotal;
+          compareSimExp.distRoiPair.(distMetricNames{b}).perFreqAvg.spec = specWithoutFreq;
+        end
       end
       if p.calcSquaredDistAvg
-        compareSimExp.distAvgPerRoi.sqrDist.perFreq.spec = specOneRoisFreq;
-        compareSimExp.distAvgPerRoi.sqrDist.perFreqAvg.spec = specOneRois;
-        compareSimExp.distAvgPerRoi.absDist.perFreq.spec = specOneRoisFreq;
-        compareSimExp.distAvgPerRoi.absDist.perFreqAvg.spec = specOneRois;
+        distMetricNames = fieldnames(compareSimExp.distRoiPair);
+        for b=1:length(distMetricNames)
+          compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.spec = specOneRoisFreq;
+          compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreqAvg.spec = specOneRois;
+        end
       end
       if p.calcCrossFreq
         compareSimExp.crossFreq.spec = specWithoutRois;
