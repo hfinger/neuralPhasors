@@ -27,7 +27,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.shufflePermutations = [];
       
       this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
-      this.params.ConnectomeSim.homotopic = 0;
+      this.params.ConnectomeSim.homotopic = 0; %how much of additional homotpic connections we add to the SC (0=no, 1=50%)
       this.params.ConnectomeSim.roiOutScales = []; % vector of scaling factors for each roi
       this.params.ConnectomeSim.roiOutIds = []; % vector indicating the roiIds to scale
       this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
@@ -37,7 +37,7 @@ classdef ConnectomeSim < Gridjob
       %params specific for Kuramoto:
       this.params.ConnectomeSim.approx=false;
       this.params.ConnectomeSim.invertSin=false;
-      this.params.ConnectomeSim.f=60;
+      this.params.ConnectomeSim.f=60; %oscillator frequency in Hz
       this.params.ConnectomeSim.startState = [];
       this.params.ConnectomeSim.saveRelativePhase = false;
      
@@ -48,7 +48,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.normStd=false;
       
       %params for all models:
-      this.params.ConnectomeSim.k=0.8;
+      this.params.ConnectomeSim.k=0.8; % global scaling of structural connectivity
       
       %params for all models but SAR model:
       this.params.ConnectomeSim.v=10; % in m/sec

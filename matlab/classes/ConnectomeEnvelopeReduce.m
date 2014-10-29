@@ -58,6 +58,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       % 27=eeg_20150125_controls_fs_funconn_bponetrial_lcmv_hilbert_3_30_entmirrored.mat
       % 28=eeg_20150206_fc_patients_mne_bp_hilbert.mat
       % 29=eeg_20150208_fc_patients_mne0_001_bp_hilbert.mat
+      % 30=eeg_20150329_controls_fs_funconn_elor_bponetrial_hilbert_3_30_290315.mat
       
       
       
@@ -514,7 +515,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           p.eegDatabase==26 || ...
           p.eegDatabase==27 || ...
           p.eegDatabase==28 || ...
-          p.eegDatabase==29
+          p.eegDatabase==29 || ...
+          p.eegDatabase==30
         
         if p.eegDatabase==4
           dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbertrest_20140807.mat']);
@@ -564,11 +566,13 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150206_fc_patients_mne_bp_hilbert.mat']);
         elseif p.eegDatabase==29
           dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150208_fc_patients_mne0_001_bp_hilbert.mat']);
+        elseif p.eegDatabase==30
+          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150329_controls_fs_funconn_elor_bponetrial_hilbert_3_30_290315.mat']);
         end
         
         if p.eegDatabase==14
           data.eeg.spec.metrics = {'icoh','coh','plv','cohy','lpc'};
-        elseif p.eegDatabase==16 || p.eegDatabase==17 || p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==22 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
+        elseif p.eegDatabase==16 || p.eegDatabase==17 || p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==22 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29 || p.eegDatabase==30
           data.eeg.spec.metrics = {'icoh','coh','plv','cohy','lpc','pli','wpli'};
         else
           data.eeg.spec.metrics = {'icoh','coh','plv','cohy'};
@@ -609,7 +613,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         elseif p.eegDatabase==24
           freqz = num2cell(1:22);
           dayz = {1,2};
-        elseif p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
+        elseif p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29 || p.eegDatabase==30
           freqz = num2cell(1:30);
           dayz = {1,2};
         else
@@ -617,7 +621,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           dayz = {1,2};
         end
 
-        if p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
+        if p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29 || p.eegDatabase==30
           subj=num2cell(1:20);
         else
           subj=num2cell(1:10);
@@ -927,7 +931,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           end
         end
         
-        if ~strcmp(metrics{m},'cohy')
+        if p.calcSquaredDist && ~strcmp(metrics{m},'cohy')
           distMetricNames = fieldnames(compareSimExp.distRoiPair);
           if p.calcSquaredDist
             for b=1:length(distMetricNames)
