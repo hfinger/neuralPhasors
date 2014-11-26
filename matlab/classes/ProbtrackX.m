@@ -55,14 +55,46 @@ classdef ProbtrackX < Gridjob
       disp(this.currJobid);
       disp(this.params.ProbtrackX.param1);
       
-      for i=1:this.params.ProbtrackX.numberPerSplit
-        
-        roiId = (this.params.ProbtrackX.split-1) * this.params.ProbtrackX.numberPerSplit + i;
-        
-        % insert here
-        
+      compl_fs_mask = load_untouch_nii('/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/compl_fs_mask.nii');
+      new_tract_space = load('/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/new_tract_space.mat');
+      first_voxel = ((this.params.ProbtrackX.split-1) * 1000) +1;
+      
+      if this.params.ProbtrackX.split ~= 53
+        for i=first_voxel:first_voxel+this.params.ProbtrackX.numberPerSplit-1
+                x = new_tract_space(i,1:3);
+  
+                if compl_fs_mask.img(x(1),x(2),x(3)) == 1
+    
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 0;
+                    save_untouch_nii(compl_fs_mask, ['/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/voxel' num2str(i)]);
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 1;
+                    
+                    %include call for probtrackx2
+                   
+                else
+                    disp('voxel', i, 'is not populated in the fs mask');
+                end
+        end
+      else
+        for i = first_voxel:size(new_tract_space)
+                x = new_tract_space(i,1:3);
+  
+                if compl_fs_mask.img(x(1),x(2),x(3)) == 1 
+    
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 0;
+                    save_untouch_nii(compl_fs_mask, ['/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/voxel' num2str(i)]);
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 1;
+                    
+                    %include call for probtrackx2
+                    
+                else
+                    disp('voxel', i, 'is not populated in the fs mask');
+                end
+        end
       end
       
+      
+         
       save(fullfile(this.workpath,[this.currJobid '.mat']));
       
       %%%% END EDIT HERE:                                %%%%
