@@ -2096,9 +2096,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
     
     function [tensor, outSpec] = filterTensor(tensor, filterSpec, inSpec )
 %       tensor = rand([5,10,2]); or tensor structure
-%       filterSpec.subj.Ids = [1:4 7:10];
-%       filterSpec.subj.Avg = false;
-%       filterSpec.subj.Max = false;
+%       filterSpec.subjEeg.Ids = [1:4 7:10];
+%       filterSpec.subjEeg.Avg = false;
+%       filterSpec.subjEeg.Max = false;
 %       filterSpec.day.Ids = [];
 %       filterSpec.day.Avg = true;
 %       inSpec.dimName = {'day', 'subjEeg', 'cond'};
