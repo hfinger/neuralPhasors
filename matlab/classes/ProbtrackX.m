@@ -1,5 +1,5 @@
-classdef GridjobExample < Gridjob
-  %GRIDJOBEXAMPLE Summary of this class goes here
+classdef ProbtrackX < Gridjob
+  %ProbtrackX Summary of this class goes here
   %   Detailed explanation goes here
   
   properties
@@ -9,7 +9,7 @@ classdef GridjobExample < Gridjob
   methods
     
     %% Subclass Constructor: initialize standard parameters:
-    function this = GridjobExample(varargin)
+    function this = ProbtrackX(varargin)
       
       % Call superclass constructor:
       this = this@Gridjob(varargin{:});
@@ -17,13 +17,9 @@ classdef GridjobExample < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.GridjobExample.param1 = 1;
-      this.params.GridjobExample.param2 = true;
-      this.params.GridjobExample.param3 = 'some text';
-      
-      this.comments.GridjobExample.param1 = 'this is some test number parameter';
-      this.comments.GridjobExample.param2 = 'this is some test boolean parameter';
-      this.comments.GridjobExample.param3 = 'this is some test string parameter';
+      this.params.ProbtrackX.split = cell2mat(1:53);
+      this.params.ProbtrackX.numberPerSplit = 1000;
+      this.params.ProbtrackX.numberRegions = 52442;
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,8 +53,49 @@ classdef GridjobExample < Gridjob
       disp(this.temppath);
       disp(this.resultpath);
       disp(this.currJobid);
-      pause(10)
-      disp(this.params.GridjobExample.param1);
+      disp(this.params.ProbtrackX.param1);
+      
+      compl_fs_mask = load_untouch_nii('/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/compl_fs_mask.nii');
+      new_tract_space = load('/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/new_tract_space.mat');
+      first_voxel = ((this.params.ProbtrackX.split-1) * 1000) +1;
+      
+      if this.params.ProbtrackX.split ~= 53
+        for i=first_voxel:first_voxel+this.params.ProbtrackX.numberPerSplit-1
+                x = new_tract_space(i,1:3);
+  
+                if compl_fs_mask.img(x(1),x(2),x(3)) == 1
+    
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 0;
+                    save_untouch_nii(compl_fs_mask, ['/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/voxel' num2str(i)]);
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 1;
+                    
+                    %include call for probtrackx2
+                   
+                else
+                    disp('voxel', i, 'is not populated in the fs mask');
+                end
+        end
+      else
+        for i = first_voxel:size(new_tract_space)
+                x = new_tract_space(i,1:3);
+  
+                if compl_fs_mask.img(x(1),x(2),x(3)) == 1 
+    
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 0;
+                    save_untouch_nii(compl_fs_mask, ['/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/voxel' num2str(i)]);
+                    compl_fs_mask.img(x(1),x(2),x(3)) = 1;
+                    
+                    %include call for probtrackx2
+                    
+                else
+                    disp('voxel', i, 'is not populated in the fs mask');
+                end
+        end
+      end
+      
+      
+         
+      save(fullfile(this.workpath,[this.currJobid '.mat']));
       
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,6 +107,8 @@ classdef GridjobExample < Gridjob
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
+      
+      
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

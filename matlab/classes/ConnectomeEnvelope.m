@@ -28,6 +28,7 @@ classdef ConnectomeEnvelope < Gridjob
       this.params.ConnectomeEnvelope.applyLeadField = false;
       this.params.ConnectomeEnvelope.applyLeadFieldMethod = 'sum'; %or 'eucl' or 'maxpower' or 'perROI' or 'perVertex'
       this.params.ConnectomeEnvelope.filtermethod = 'butter'; %or equiripple
+      this.params.ConnectomeEnvelope.sigBandpass = [];
       
       if length(this.params.ConnectomeEnvelope.sigBandpass)>1
         for b=1:length(this.params.ConnectomeEnvelope.sigBandpass)

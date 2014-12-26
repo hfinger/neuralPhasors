@@ -111,6 +111,18 @@ classdef Gridjob
         end
       end
       
+      % for backwards compatibility:
+      if ~isempty(this.workpath)
+        this.workpath = strrep(this.workpath, '/net/store/projects/', '/net/store/nbp/');
+        this.resultpath = strrep(this.resultpath, '/net/store/projects/', '/net/store/nbp/');
+        this.temppath = strrep(this.temppath, '/net/store/projects/', '/net/store/nbp/');
+      end
+      
+    end
+    
+    
+    function tmp = isfield(this, fname)
+      tmp = any(strcmp(properties(this), fname));
     end
     
     
