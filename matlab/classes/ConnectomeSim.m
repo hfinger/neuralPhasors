@@ -17,7 +17,7 @@ classdef ConnectomeSim < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed
+      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed, 5=load_metric_SC, 6=dti_20150410_highResConnmat
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
       this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
       this.params.ConnectomeSim.dtiDistanceCorrection = false;
@@ -27,7 +27,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.shufflePermutations = [];
       
       this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
-      this.params.ConnectomeSim.homotopic = 0;
+      this.params.ConnectomeSim.homotopic = 0; %how much of additional homotpic connections we add to the SC (0=no, 1=50%)
       this.params.ConnectomeSim.roiOutScales = []; % vector of scaling factors for each roi
       this.params.ConnectomeSim.roiOutIds = []; % vector indicating the roiIds to scale
       this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
@@ -42,7 +42,7 @@ classdef ConnectomeSim < Gridjob
       %params specific for Kuramoto model:
       this.params.ConnectomeSim.approx=false;
       this.params.ConnectomeSim.invertSin=false;
-      this.params.ConnectomeSim.f=60;
+      this.params.ConnectomeSim.f=60; %oscillator frequency in Hz
       this.params.ConnectomeSim.startState = [];
       this.params.ConnectomeSim.saveRelativePhase = false;
      
@@ -53,7 +53,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.normStd=false;
       
       %params for all models:
-      this.params.ConnectomeSim.k=0.8;
+      this.params.ConnectomeSim.k=0.8; % global scaling of structural connectivity
       
       %params for all models but SAR model:
       this.params.ConnectomeSim.v=10; % in m/sec
@@ -68,6 +68,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.statsRemoveInitialT = 0;
             
       this.params.ConnectomeSim.outFilenames = 'results';
+      this.params.ConnectomeSim.outReduceToOneFile = false;
       this.params.ConnectomeSim.forceOverwrite = false;
 
       
@@ -229,6 +230,9 @@ classdef ConnectomeSim < Gridjob
           ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','results',strcat(num2str(getId),'SC.mat')));        
           SC = ci.hSC;
           D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
+        elseif param.dataset==6
+          SC = load(fullfile(paths.databases,'SC_Bastian','dti_20150410_highResConnmat.mat'));
+          SC = double(SC.connmat);
         end
         
         if param.shuffleSC || param.shuffleD
@@ -395,6 +399,17 @@ classdef ConnectomeSim < Gridjob
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
+      
+      if this.params.ConnectomeSim.outReduceToOneFile
+      disp('collect results...');
+      savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
+      allResults = cell(1,this.numJobs);
+      for jobid=1:this.numJobs
+        allResults{jobid} = load([fullfile(savepath,num2str(jobid)) 'FC.mat'],'FCsimNoBold');
+       delete([fullfile(savepath,num2str(jobid)) 'FC.mat']);
+      end
+      save(fullfile(savepath,'allResults.mat'),'allResults');
+      end
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
