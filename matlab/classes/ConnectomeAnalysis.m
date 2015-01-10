@@ -67,7 +67,7 @@ classdef ConnectomeAnalysis < Gridjob
           mkdir(path);
         end
         
-        abc=squeeze(overFreq.coh.rho(param.loadSp*10+1,param.loadHeur,:,:)); % Sparse x Heur x hScale x kScale
+        abc=squeeze(overFreq.coh.rho(uint8(param.loadSp*10+1),param.loadHeur,:,:)); % Sparse x Heur x hScale x kScale
         imagesc(abc)                                                         % plot hScale vs kScale
         colorbar()
         print(strcat(path,'/perfHvsK'),'-dpng')

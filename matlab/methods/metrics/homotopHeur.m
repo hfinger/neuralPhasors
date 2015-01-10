@@ -36,6 +36,7 @@ switch heuristics
     hInp1 = SCMetr.perROI.inpStrength(1:length(SC)/2);
     hInp2 = SCMetr.perROI.inpStrength(length(SC)/2 + 1:length(SC));
     hInp  = mean(horzcat(hInp1, hInp2), 2);                         % take mean to conserve symmetry
+    hInp  = hInp./max(hInp);                                        % percentual change
     
     hConn1 = hInp;                                                  % see ConnectomeSim.m, line 240
     hConn2 = hInp;
