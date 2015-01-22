@@ -227,7 +227,7 @@ classdef ConnectomeSim < Gridjob
           
           getId = find(sum(ismember(cell2mat(jb.paramComb),[param.loadSp; param.loadHeur; param.loadHscale]),1) == length(jb.variableParams),1);    
 
-          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','results',strcat(num2str(getId),'SC.mat')));        
+          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','ConnectomeMetrics',strcat(num2str(getId),'SC.mat')));        
           SC = ci.hSC;
           D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
         elseif param.dataset==6

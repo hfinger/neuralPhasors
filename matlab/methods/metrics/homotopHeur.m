@@ -14,15 +14,16 @@ h2 = logical(diag(ones(length(SC)/2,1),-length(SC)/2));                     % RH
 
 % PARAMETERS:   (1) network sparseness                                      CHECK
 %               (2) overall connection scaling k                            CHECK
-%               (3) homotop connection scaling h
+%               (3) homotop connection scaling h                            individual per heuristics
+%                   ---> validity of individual scaling can be checked by HvsK performance plot, local maximum? blob?
 %               (4) rich-club connectedness, number of modules
 
 switch heuristics
   case 1  % (a) set all weights (uniformly), see Messe et al (2014)
     add = false;                                                    % resets distribution
     %a = 5e-5;    b = 5e-4;                                         % use informed interval values or ...
-    a = max(mean(mean(SC)) - hScale*mean(std(SC)), 0);              % ... set statistically, but
-    b =     mean(mean(SC)) + hScale*mean(std(SC));                  % -> sensitive to % sparseness!
+    a = max(mean(mean(SC)) - 2*mean(std(SC)), 0);                   % ... set statistically, but
+    b =     mean(mean(SC)) + 2*mean(std(SC));                       % -> sensitive to % sparseness and size of graph!
    
     hConn1 = 1;
     hConn2 = 1;
@@ -33,17 +34,19 @@ switch heuristics
     a = 0.0;                                                        % h = linspace(0.0,0.22,12); --> linspace(0.02,.22, 11)
     b = 0.22;                                                       % 'fraction of additional homotopic input per ROI'
     
-    hInp1 = SCMetr.perROI.inpStrength(1:length(SC)/2);
-    hInp2 = SCMetr.perROI.inpStrength(length(SC)/2 + 1:length(SC));
-    hInp  = mean(horzcat(hInp1, hInp2), 2);                         % take mean to conserve symmetry
-    hInp  = hInp./max(hInp);                                        % percentual change
+    SC = bsxfun(@rdivide,SC,SCMetr.perROI.inpStrength);             % norm before !!!
     
-    hConn1 = hInp;                                                  % see ConnectomeSim.m, line 240
-    hConn2 = hInp;
+    hInp1 = SCMetr.perROI.inpStrength(1:length(SC)/2);
+    hInp2 = SCMetr.perROI.inpStrength(length(SC)/2+1:length(SC));
+    hInp  = mean(horzcat(hInp1, hInp2), 2);                         % take mean to conserve symmetry
+    hInp  = hInp./max(hInp);                                        % and make percentual change
+    
+    hConn1 = 1;%hInp;                                               % see ConnectomeSim.m, line 240
+    hConn2 = 1;%hInp;
     
   case 3  % (c) set all weights (euclid. dist. between homologous regions)
     add = false;
-    a = 0.0;   b = 0.22;
+    a = 0.0;   b = 1e-3; % 2.2e-3; % till hScale=4
     
     hDist1 = 1./SCMetr.perConn.euclDist(h1);                        % map euclidean distance to connection weight,
     hDist2 = 1./SCMetr.perConn.euclDist(h2);                        % avg_dist is not symmetric, why? Pearson corr' .999
@@ -114,7 +117,7 @@ switch heuristics
 end
 
 % if no permutation graphs provided, set heuristics parameters to generic values
-if ~(graphH0>0)
+if ~(graphH0>0) && heuristics == (5|6)
   add = false;
   a = 0.0;      b = 0.22;
   hConn1 = 1;   hConn2 = 1;
@@ -124,8 +127,8 @@ end
 maxRes  = 12;
 scaling = linspace(a,b,maxRes);
 
-SC(h1) = SC(h1)*add + scaling(min(12,hScale)) * hConn1;
-SC(h2) = SC(h2)*add + scaling(min(12,hScale)) * hConn2;
+SC(h1) = SC(h1)*add + scaling(min(maxRes,hScale)) * hConn1;
+SC(h2) = SC(h2)*add + scaling(min(maxRes,hScale)) * hConn2;
 
 % inserting homotopic connections affects sparseness! how to control for this?
 effSparse = sum(sum(SC == 0)) / numel(SC);                          % determine effective sparseness of resulting graph
