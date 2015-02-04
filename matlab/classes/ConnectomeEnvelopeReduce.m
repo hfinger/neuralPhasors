@@ -221,7 +221,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
     end
-    
+   
     function ConnFC = gatherResults(this)
       
       p = this.params.ConnectomeEnvelopeReduce;
@@ -286,7 +286,11 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             paramVar{1} = num2cell([1:4 6:10]);
           end
           dims = length(paramVar{1});
-        else
+        
+        elseif p.compareSC_db==5 
+          a = 42;
+        
+        else % ~ p.compareSC_db NOT 1, 4, 5
           paths = dataPaths( );
           dataSCTmp = load([paths.databases '/SC_Bastian/patients_t1_logCI_mul_20140924_preprocessed.mat']);
           
@@ -310,6 +314,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           paramVar{1} = num2cell([7    12    14    15    16    22    24    25]);
           dims = 8;
         end
+        
+        
         
       else
         varParam = load([this.workpath '/temp_' p.ConnectomeSimJobName '/jobDesc.mat'],'variableParams','paramComb','params');
@@ -2096,9 +2102,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
     
     function [tensor, outSpec] = filterTensor(tensor, filterSpec, inSpec )
 %       tensor = rand([5,10,2]); or tensor structure
-%       filterSpec.subj.Ids = [1:4 7:10];
-%       filterSpec.subj.Avg = false;
-%       filterSpec.subj.Max = false;
+%       filterSpec.subjEeg.Ids = [1:4 7:10];
+%       filterSpec.subjEeg.Avg = false;
+%       filterSpec.subjEeg.Max = false;
 %       filterSpec.day.Ids = [];
 %       filterSpec.day.Avg = true;
 %       inSpec.dimName = {'day', 'subjEeg', 'cond'};
