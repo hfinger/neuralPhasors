@@ -54,13 +54,21 @@ classdef ProbtrackX < Gridjob
       disp(this.resultpath);
       disp(this.currJobid);
       
+      [~, username] = system('whoami');
+      userfolder = fullfile('/work', username);
+      jobdirectory = fullfile(userfolder, 'tempProbtrackX');
+      temppath = fullfile(jobdirectory, this.currJobid);
+      mkdir(temppath);
+      
+      
+      
 %       run('/net/store/nbp/projects/phasesim/src_Arushi/matlab/addScriptPaths.m') 
       compl_fs_mask = load_untouch_nii('/net/store/nbp/projects/phasesim/workdir/Arushi/20150423gridjob/compl_fs_mask.nii');
       load('/net/store/nbp/projects/phasesim/workdir/Arushi/20150423gridjob/new_tract_space.mat');
       first_voxel = ((this.params.ProbtrackX.split-1) * 1000) +1;
-      probtrackx2Call = '. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2 -x /work/agarg/wimat2optionsinglemask/seedmask.nii -V 1 -l --onewaycondition --omatrix2 --target2=/work/agarg/wimat2optionsinglemask/termmask.nii -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --avoid=/net/store/nbp/projects/phasesim/databases/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz --stop=/work/agarg/wimat2optionsinglemask/termmask.nii --forcedir --opd -s /net/store/nbp/projects/phasesim/databases/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/merged -m /net/store/nbp/projects/phasesim/databases/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/nodif_brain_mask --dir=/work/agarg/wimat2optionsinglemask/data';      
+      probtrackx2Call = ['. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2 -x ' temppath '/seedmask.nii -V 1 -l --onewaycondition --omatrix2 --target2=' temppath '/termmask.nii -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --avoid=/net/store/nbp/projects/phasesim/databases/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz --stop=' temppath '/termmask.nii --forcedir --opd -s /net/store/nbp/projects/phasesim/databases/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/merged -m /net/store/nbp/projects/phasesim/databases/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/nodif_brain_mask --dir=' temppath '/data'];      
       connmat = zeros(size(new_tract_space,1),size(new_tract_space,1));
-      mkdir('/work/agarg/wimat2optionsinglemask')
+      
       
       if this.params.ProbtrackX.split ~= 53
         for i=first_voxel:first_voxel+this.params.ProbtrackX.numberPerSplit-1
@@ -72,8 +80,8 @@ classdef ProbtrackX < Gridjob
     
                     % set the voxel to 0 for term mask and save mask for probtrackx2 run
                     compl_fs_mask.img(x(1),x(2),x(3)) = 0;     
-                    delete('/work/agarg/wimat2optionsinglemask/termmask.nii')
-                    save_untouch_nii(compl_fs_mask, '/work/agarg/wimat2optionsinglemask/termmask');
+                    delete([temppath '/termmask.nii'])
+                    save_untouch_nii(compl_fs_mask, [temppath '/termmask']);
                     
                     %set the value in the matrix back to 1 for the next
                     %runs
@@ -81,8 +89,8 @@ classdef ProbtrackX < Gridjob
                     seed_voxel = compl_fs_mask;
                     seed_voxel.img(:) = 0;
                     seed_voxel.img(x(1),x(2),x(3)) = 1;
-                    delete('/work/agarg/wimat2optionsinglemask/seedmask.nii')
-                    save_untouch_nii(seed_voxel, '/work/agarg/wimat2optionsinglemask/seedmask');
+                    delete([temppath '/seedmask.nii'])
+                    save_untouch_nii(seed_voxel, [temppath '/seedmask']);
                     
                     % call for probtrackx2
                     status = system(probtrackx2Call);
@@ -91,12 +99,12 @@ classdef ProbtrackX < Gridjob
                         %save error to file including mentioning the voxel
                         %number
                     else
-                        fdt_matrix = load('/work/agarg/wimat2optionsinglemask/data/fdt_matrix2.dot');
+                        fdt_matrix = load([temppath '/fdt_matrix2.dot']);
                         
                         for j = 1 : size(fdt_matrix,1)
                             connmat(i,fdt_matrix(j,2)) = connmat(i,fdt_matrix(j,2)) + fdt_matrix(j,3);
                         end
-                        rmdir('/work/agarg/wimat2optionsinglemask/data','s');
+                        rmdir([temppath '/data'],'s');
                     end
                              
                     
@@ -116,8 +124,8 @@ classdef ProbtrackX < Gridjob
     
                    % set the voxel to 0 for term mask and save mask for probtrackx2 run
                     compl_fs_mask.img(x(1),x(2),x(3)) = 0;     
-                    delete('/work/agarg/wimat2optionsinglemask/termmask.nii')
-                    save_untouch_nii(compl_fs_mask, '/work/agarg/wimat2optionsinglemask/termmask');
+                    delete([temppath '/termmask.nii'])
+                    save_untouch_nii(compl_fs_mask, [temppath '/termmask']);
                     
                     %set the value in the matrix back to 1 for the next
                     %runs
@@ -126,8 +134,8 @@ classdef ProbtrackX < Gridjob
                     seed_voxel = compl_fs_mask;
                     seed_voxel.img(:) = 0;
                     seed_voxel.img(x(1),x(2),x(3)) = 1;
-                    delete('/work/agarg/wimat2optionsinglemask/seedmask.nii')
-                    save_untouch_nii(seed_voxel, '/work/agarg/wimat2optionsinglemask/seedmask');
+                    delete([temppath '/seedmask.nii'])
+                    save_untouch_nii(seed_voxel, [temppath '/seedmask']);
                     
                    % call for probtrackx2
                     status = system(probtrackx2Call);
@@ -135,15 +143,15 @@ classdef ProbtrackX < Gridjob
                         %save error to file including mentioning the voxel
                         %number
                     else
-                          fdt_matrix = load('/work/agarg/wimat2optionsinglemask/data/fdt_matrix2.dot');
-                          waytotal = load('work/agarg/wimat2optionsinglemask/data/waytotal');
+                          fdt_matrix = load([temppath '/data/fdt_matrix2.dot']);
+                          waytotal = load([temppath '/data/waytotal']);
                           waytotaltotal = waytotaltotal + waytotal;
                           
                         
                         for j = 1 : size(fdt_matrix,1)
                             connmat(i,fdt_matrix(j,2)) = connmat(i,fdt_matrix(j,2)) + fdt_matrix(j,3);
                         end
-                        rmdir('/work/agarg/wimat2optionsinglemask/data','s');
+                        rmdir([temppath '/data'],'s');
                     end
                     
                 else
@@ -154,7 +162,9 @@ classdef ProbtrackX < Gridjob
       
       save(['/net/store/projects/phasesim/workdir/Arushi/20150423gridjob/connmat' this.params.ProbtrackX.split], 'connmat', '-v7.3'); 
       save(['/net/store/projects/phasesim/workdir/Arushi/20150423gridjob/waytotal' this.params.ProbtrackX.split], 'waytotaltotal');
-      rmdir('/work/agarg','s');
+      rmdir(temppath,'s');
+      rmdir(jobdirectory);
+      rmdir(userfolder);
                     
       save(fullfile(this.workpath,[this.currJobid '.mat']));
       
