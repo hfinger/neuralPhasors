@@ -21,9 +21,9 @@ data.paramdir = [basepath '/' srcFolder '/matlab/parameters'];
 data.workdir = [basepath '/workdir'];
 data.resultsdir = [basepath '/results'];
 
-data.sge_workdir = ['/net/store/nbp/projects/phasesim/workdir'];
-data.sge_resultsdir = ['/net/store/nbp/projects/phasesim/results'];
-data.sge_pathToAddScriptPaths = ['/net/store/nbp/projects/phasesim/' srcFolder '/matlab'];
+data.sge_workdir = [basepath '/workdir'];
+data.sge_resultsdir = [basepath '/results'];
+data.sge_pathToAddScriptPaths = [basepath '/' srcFolder '/matlab'];
 
 % data.plinkArg = '-ssh -i D:\Daten\putty\puttyUOS\putty_nopw.ppk hofinger@gate.ikw.uni-osnabrueck.de';
 % use putty gateway instead:
