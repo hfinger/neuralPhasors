@@ -7,7 +7,13 @@ else
 end
 
 p = mfilename('fullpath');
-p = strsplit(p,filesep);
+
+if exist('strsplit')
+  p = strsplit(p,filesep);
+else
+  p = strread(p,'%s','delimiter',['\' filesep]);
+end
+
 srcFolder = p{end-3};
 
 data.HOMEIMAGES = [basepath '/databases/LabelMeImages'];
