@@ -63,10 +63,69 @@ classdef ProbtrackX < Gridjob
       datapaths = dataPaths();
       datapaths.workdir
       
+      
+      first_voxel = ((this.params.ProbtrackX.split-1) * 1000) +1;
+     
+      
+      %call program to wait
+      waitForServer();
+      
+      %system call & calculations for retrieving memory of work directory
+      [status, result] = system('df -h | grep /work'); 
+            disp(result);
+            
+            resultwospace = strread(result, '%s');
+            disp(resultwospace);
+            freememory = resultwospace(4);
+            freememory = cell2mat(freememory);
+            
+
+%       resultwospace = textscan(result, '%s');
+%       disp(resultwospace);
+%       
+%       freememory = resultwospace{1,1};
+%       freememory = freememory(4);
+%       freememory = cell2mat(freememory);
+      
+      disp(freememory);
+      numfreememory = freememory(1:regexp(freememory,'\D')-1);
+      powerfreememory = freememory(regexp(freememory,'\D'));
+      disp(powerfreememory);
+      disp(numfreememory);
+      
+           
+        %set flag to move to local if memory is more than 500 MB
+      if powerfreememory == 'M'
+          %check if it is more than 500MB
+          if numfreememory > 500
+          storelocalflag = 1;  %set flag to move to local
+          end
+      elseif powerfreememory == 'G'
+          storelocalflag = 1; %set flag to move to local
+      elseif powerfreememory == 'T'
+          storelocalflag = 1;
+      else
+          storelocalflag = 0;
+      end
+       
       compl_fs_mask = load_untouch_nii([datapaths.workdir '/Arushi/20150423gridjob/compl_fs_mask.nii']);
       load([datapaths.workdir '/Arushi/20150423gridjob/new_tract_space.mat']);
-      first_voxel = ((this.params.ProbtrackX.split-1) * 1000) +1;
-      probtrackx2Call = ['. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2'...
+      connmat = zeros(this.params.ProbtrackX.numberPerSplit,size(new_tract_space,1));
+      waytotal = zeros(this.params.ProbtrackX.numberPerSplit,1);
+    
+          if storelocalflag 
+            copyfile([datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz']...
+          , [temppath '/ca01_1_FA_thr0.12.nii.gz']);
+      copyfile([datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX']...
+          ,[temppath '/bedpost.bedpostX']);
+            capath = [temppath '/ca01_1_FA_thr0.12.nii.gz'];
+            bedpostpath = [temppath '/bedpost.bedpostX'];
+          else
+              capath = [datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz'];
+              bedpostpath = [datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX'];
+          end
+          
+           probtrackx2Call = ['. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2'...
         ' -x ' temppath '/seedmask.nii'...
         ' -V 1'...
         ' -l --onewaycondition --omatrix2'...
@@ -74,14 +133,11 @@ classdef ProbtrackX < Gridjob
         ' -c 0.2 -S 2000 --steplength=0.5'...
         ' -P 5000'...
         ' --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 '...
-        ' --avoid=' datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz'...
+        ' --avoid=' capath...
         ' --stop=' temppath '/termmask.nii --forcedir --opd'...
-        ' -s ' datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/merged'...
-        ' -m ' datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/nodif_brain_mask'...
+        ' -s ' bedpostpath '/merged'...
+        ' -m ' bedpostpath '/nodif_brain_mask'...
         ' --dir=' temppath '/data'];
-      
-      connmat = zeros(this.params.ProbtrackX.numberPerSplit,size(new_tract_space,1));
-      waytotal = zeros(this.params.ProbtrackX.numberPerSplit,1);
       
       for k=1:this.params.ProbtrackX.numberPerSplit
         
