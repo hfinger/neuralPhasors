@@ -17,7 +17,7 @@ classdef ConnectomeSim < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed
+      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed, 5=dti_20150410_highResConnmat
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
       this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
       this.params.ConnectomeSim.dtiDistanceCorrection = false;
@@ -212,6 +212,9 @@ classdef ConnectomeSim < Gridjob
           
           D(isnan(D)) = 0;
           %         D = D + D'; % scale unclear should be scaled to mm
+        elseif param.dataset==5
+          SC = load(fullfile(paths.databases,'SC_Bastian','dti_20150410_highResConnmat.mat'));
+          SC = double(SC.connmat);
         end
         
         if param.shuffleSC || param.shuffleD
@@ -378,6 +381,15 @@ classdef ConnectomeSim < Gridjob
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
+      
+      disp('collect results...');
+      savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
+      allResults = cell(1,this.numJobs);
+      for jobid=1:this.numJobs
+        allResults{jobid} = load([fullfile(savepath,num2str(jobid)) 'FC.mat'],'FCsimNoBold');
+%         delete([fullfile(savepath,num2str(jobid)) 'FC.mat']);
+      end
+      save(fullfile(savepath,'allResults.mat'),'allResults');
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

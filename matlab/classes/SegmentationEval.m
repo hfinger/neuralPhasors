@@ -153,11 +153,11 @@ classdef SegmentationEval < Gridjob
       
       if params.initRandstream
         if isinteger(params.initRandstream)
-          reset(RandStream.getDefaultStream,params.initRandstream);
+          reset(RandStream.getGlobalStream,params.initRandstream);
         elseif ischar(params.initRandstream) && strcmp(params.initRandstream,'clock')
-          reset(RandStream.getDefaultStream,sum(100*clock));
+          reset(RandStream.getGlobalStream,sum(100*clock));
         else %is boolean
-          reset(RandStream.getDefaultStream,this.currJobid);
+          reset(RandStream.getGlobalStream,this.currJobid);
         end
       end
       
