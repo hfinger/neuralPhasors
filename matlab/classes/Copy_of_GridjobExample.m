@@ -1,4 +1,4 @@
-classdef GridjobExample < Gridjob
+classdef Copy_of_GridjobExample < Gridjob
   %GRIDJOBEXAMPLE Summary of this class goes here
   %   Detailed explanation goes here
   
@@ -9,7 +9,7 @@ classdef GridjobExample < Gridjob
   methods
     
     %% Subclass Constructor: initialize standard parameters:
-    function this = GridjobExample(varargin)
+    function this = Copy_of_GridjobExample(varargin)
       
       % Call superclass constructor:
       this = this@Gridjob(varargin{:});
@@ -17,9 +17,9 @@ classdef GridjobExample < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.GridjobExample.param1 = 1;
-      this.params.GridjobExample.param2 = true;
-      this.params.GridjobExample.param3 = 'some text';
+      this.params.Copy_of_GridjobExample.param1 = 1;
+      this.params.Copy_of_GridjobExample.param2 = true;
+      this.params.Copy_of_GridjobExample.param3 = 'some text';
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,8 +53,16 @@ classdef GridjobExample < Gridjob
       disp(this.temppath);
       disp(this.resultpath);
       disp(this.currJobid);
-      disp(this.params.GridjobExample.param1);
-
+      
+      disp('Example parameters: ');
+      disp(this.params.Copy_of_GridjobExample.param1);
+      disp(this.params.Copy_of_GridjobExample.param2);
+      disp(this.params.Copy_of_GridjobExample.param3);
+      
+      disp('Types:')
+      isnumeric(this.params.Copy_of_GridjobExample.param1)
+      islogical(this.params.Copy_of_GridjobExample.param2)
+      ischar(this.params.Copy_of_GridjobExample.param3)
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
