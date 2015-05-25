@@ -17,7 +17,7 @@ classdef ConnectomeSim < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed, 5=dti_20150410_highResConnmat
+      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed, 5=load_metric_SC, 6=dti_20150410_highResConnmat
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
       this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
       this.params.ConnectomeSim.dtiDistanceCorrection = false;
@@ -34,7 +34,12 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR' or 'WilsonCowan'
       this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
 
-      %params specific for Kuramoto:
+      %params for loading dataset 5:
+      this.params.ConnectomeSim.loadSp = 0.6;                          
+      this.params.ConnectomeSim.loadHeur = 1;                         
+      this.params.ConnectomeSim.loadHscale = 1;  
+      
+      %params specific for Kuramoto model:
       this.params.ConnectomeSim.approx=false;
       this.params.ConnectomeSim.invertSin=false;
       this.params.ConnectomeSim.f=60; %oscillator frequency in Hz
@@ -63,6 +68,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.statsRemoveInitialT = 0;
             
       this.params.ConnectomeSim.outFilenames = 'results';
+      this.params.ConnectomeSim.outReduceToOneFile = false;
       this.params.ConnectomeSim.forceOverwrite = false;
 
       
@@ -212,7 +218,19 @@ classdef ConnectomeSim < Gridjob
           
           D(isnan(D)) = 0;
           %         D = D + D'; % scale unclear should be scaled to mm
+        
         elseif param.dataset==5
+          
+          jb = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','temp_ConnectomeMetrics','jobDesc.mat'));
+          % xy.paramComb % column-wise representation of jobIDs 
+          % xy.variableParams{variable,1}{1,2};
+          
+          getId = find(sum(ismember(cell2mat(jb.paramComb),[param.loadSp; param.loadHeur; param.loadHscale]),1) == length(jb.variableParams),1);    
+
+          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','results',strcat(num2str(getId),'SC.mat')));        
+          SC = ci.hSC;
+          D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
+        elseif param.dataset==6
           SC = load(fullfile(paths.databases,'SC_Bastian','dti_20150410_highResConnmat.mat'));
           SC = double(SC.connmat);
         end
@@ -382,14 +400,16 @@ classdef ConnectomeSim < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
       
+      if this.params.ConnectomeSim.outReduceToOneFile
       disp('collect results...');
       savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
       allResults = cell(1,this.numJobs);
       for jobid=1:this.numJobs
         allResults{jobid} = load([fullfile(savepath,num2str(jobid)) 'FC.mat'],'FCsimNoBold');
-%         delete([fullfile(savepath,num2str(jobid)) 'FC.mat']);
+       delete([fullfile(savepath,num2str(jobid)) 'FC.mat']);
       end
       save(fullfile(savepath,'allResults.mat'),'allResults');
+      end
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

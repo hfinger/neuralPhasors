@@ -3,7 +3,7 @@ classdef ProbtrackX < Gridjob
   %   Detailed explanation goes here
   
   properties
-
+    
   end
   
   methods
@@ -17,7 +17,7 @@ classdef ProbtrackX < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ProbtrackX.split = cell2mat(1:53);
+      this.params.ProbtrackX.split = num2cell(1:53);
       this.params.ProbtrackX.numberPerSplit = 1000;
       this.params.ProbtrackX.numberRegions = 52442;
       
@@ -25,7 +25,7 @@ classdef ProbtrackX < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
       this = this.init(varargin{:});
-
+      
     end
     
     %% Start: is executed before all individual parameter jobs are started
@@ -33,7 +33,7 @@ classdef ProbtrackX < Gridjob
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some preprocessing (not parallel) %%%%
-
+      
       disp('this excecutes before the parallel job is started');
       
       %%%% END EDIT HERE:                                        %%%%
@@ -53,49 +53,91 @@ classdef ProbtrackX < Gridjob
       disp(this.temppath);
       disp(this.resultpath);
       disp(this.currJobid);
-      disp(this.params.ProbtrackX.param1);
       
-      compl_fs_mask = load_untouch_nii('/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/compl_fs_mask.nii');
-      new_tract_space = load('/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/new_tract_space.mat');
+      [~, username] = system('whoami');
+      userfolder = fullfile('/work', username(1:end-1));
+      jobdirectory = fullfile(userfolder, 'tempProbtrackX');
+      temppath = fullfile(jobdirectory, num2str(this.currJobid));
+      mkdir(temppath);
+      
+      datapaths = dataPaths();
+      datapaths.workdir
+      
+      compl_fs_mask = load_untouch_nii([datapaths.workdir '/Arushi/20150423gridjob/compl_fs_mask.nii']);
+      load([datapaths.workdir '/Arushi/20150423gridjob/new_tract_space.mat']);
       first_voxel = ((this.params.ProbtrackX.split-1) * 1000) +1;
+      probtrackx2Call = ['. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2'...
+        ' -x ' temppath '/seedmask.nii'...
+        ' -V 1'...
+        ' -l --onewaycondition --omatrix2'...
+        ' --target2=' temppath '/termmask.nii'...
+        ' -c 0.2 -S 2000 --steplength=0.5'...
+        ' -P 5000'...
+        ' --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 '...
+        ' --avoid=' datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz'...
+        ' --stop=' temppath '/termmask.nii --forcedir --opd'...
+        ' -s ' datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/merged'...
+        ' -m ' datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/bedpost.bedpostX/nodif_brain_mask'...
+        ' --dir=' temppath '/data'];
       
-      if this.params.ProbtrackX.split ~= 53
-        for i=first_voxel:first_voxel+this.params.ProbtrackX.numberPerSplit-1
-                x = new_tract_space(i,1:3);
-  
-                if compl_fs_mask.img(x(1),x(2),x(3)) == 1
-    
-                    compl_fs_mask.img(x(1),x(2),x(3)) = 0;
-                    save_untouch_nii(compl_fs_mask, ['/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/voxel' num2str(i)]);
-                    compl_fs_mask.img(x(1),x(2),x(3)) = 1;
-                    
-                    %include call for probtrackx2
-                   
-                else
-                    disp('voxel', i, 'is not populated in the fs mask');
-                end
+      connmat = zeros(this.params.ProbtrackX.numberPerSplit,size(new_tract_space,1));
+      waytotal = zeros(this.params.ProbtrackX.numberPerSplit,1);
+      
+      for k=1:this.params.ProbtrackX.numberPerSplit
+        
+        i = k+first_voxel-1;
+        
+        % break if i is greater than
+        if i > this.params.ProbtrackX.numberRegions
+          break;
         end
-      else
-        for i = first_voxel:size(new_tract_space)
-                x = new_tract_space(i,1:3);
-  
-                if compl_fs_mask.img(x(1),x(2),x(3)) == 1 
-    
-                    compl_fs_mask.img(x(1),x(2),x(3)) = 0;
-                    save_untouch_nii(compl_fs_mask, ['/net/store/nbp/phasesim/workdir/Arushi/20150323 - single voxel run with term mask/voxel' num2str(i)]);
-                    compl_fs_mask.img(x(1),x(2),x(3)) = 1;
-                    
-                    %include call for probtrackx2
-                    
-                else
-                    disp('voxel', i, 'is not populated in the fs mask');
-                end
+        
+        %Fetching coordinates of the ith voxel
+        x = new_tract_space(i,1:3);
+        
+        %Check if the ith voxel is 1
+        if compl_fs_mask.img(x(1),x(2),x(3)) == 1
+          
+          % set the voxel to 0 for term mask and save mask for probtrackx2 run
+          compl_fs_mask.img(x(1),x(2),x(3)) = 0;
+          delete([temppath '/termmask.nii'])
+          save_untouch_nii(compl_fs_mask, [temppath '/termmask']);
+          
+          %set the value in the matrix back to 1 for the next
+          %runs
+          compl_fs_mask.img(x(1),x(2),x(3)) = 1;
+          seed_voxel = compl_fs_mask;
+          seed_voxel.img(:) = 0;
+          seed_voxel.img(x(1),x(2),x(3)) = 1;
+          delete([temppath '/seedmask.nii'])
+          save_untouch_nii(seed_voxel, [temppath '/seedmask']);
+          
+          % call for probtrackx2
+          status = system(probtrackx2Call);
+          
+          if status
+            %save error to file including mentioning the voxel
+            %number
+          else
+            fdt_matrix = load([temppath '/data/fdt_matrix2.dot']);
+            waytotal(k) = load([temppath '/data/waytotal']);
+            
+            for j = 1 : size(fdt_matrix,1)
+              connmat(k,fdt_matrix(j,2)) = connmat(k,fdt_matrix(j,2)) + fdt_matrix(j,3);
+            end
+            rmdir([temppath '/data'],'s');
+          end
+          
+        else
+          disp('voxel', i, 'is not populated in the fs mask');
         end
       end
       
-      
-         
-      save(fullfile(this.workpath,[this.currJobid '.mat']));
+      save([this.workpath '/connmat' num2str(this.params.ProbtrackX.split)], 'connmat', '-v7.3');
+      save([this.workpath '/waytotal' num2str(this.params.ProbtrackX.split)], 'waytotal');
+      rmdir(temppath,'s');
+      rmdir(jobdirectory);
+      status = rmdir(userfolder);
       
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,7 +150,23 @@ classdef ProbtrackX < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
       
+      % TODO: do this in another job, because it requires much more RAM...
       
+%       connmat = zeros(this.params.ProbtrackX.numberRegions,this.params.ProbtrackX.numberRegions);
+%       waytotal = zeros(this.params.ProbtrackX.numberRegions,1);
+%       
+%       for i = 1:53
+%         minIdx = (i-1)*this.params.ProbtrackX.numberPerSplit+1;
+%         maxIdx = i*this.params.ProbtrackX.numberPerSplit;
+%         
+%         temp = load([this.workpath '/connmat' i '.mat']);
+%         connmat(minIdx:maxIdx,:) = connmat(minIdx:maxIdx,:) + temp.connmat;
+%         save([this.workpath '/connmat'] , 'connmat','-v7.3')
+%         
+%         tempwaytotal = load([this.workpath '/waytotal' i '.mat']);
+%         waytotal(minIdx:maxIdx) = waytotal(minIdx:maxIdx) + tempwaytotal.waytotal;
+%         save([this.workpath '/waytotal'],'waytotal');
+%       end
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
