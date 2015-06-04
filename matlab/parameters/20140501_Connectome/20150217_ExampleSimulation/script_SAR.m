@@ -88,9 +88,9 @@ params.ConnectomeEnvelopeReduce.permutePlotDims = [];
 params.ConnectomeEnvelopeReduce.plotPermTests = false;
 params.ConnectomeEnvelopeReduce.excludePlotFieldsRegexp = 'overFreq';
 params.ConnectomeEnvelopeReduce.deletePlotFolder = false;
-params.ConnectomeEnvelopeReduce.doPlot = false;
+params.ConnectomeEnvelopeReduce.doPlot = true;
 paramsAll{3} = params;
 
 clear params;
-gridjobs = Gridjob(paramsAll(1:3));
+gridjobs = Gridjob(paramsAll(3));
 start(gridjobs);

@@ -30,6 +30,8 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.homotopic = 0; %how much of additional homotpic connections we add to the SC (0=no, 1=50%)
       this.params.ConnectomeSim.roiOutScales = []; % vector of scaling factors for each roi
       this.params.ConnectomeSim.roiOutIds = []; % vector indicating the roiIds to scale
+      this.params.ConnectomeSim.connScales = []; % vector of scaling factors for each connection
+      this.params.ConnectomeSim.connIds = []; % vector indicating the roiIds to connection
       this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
       this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR' or 'WilsonCowan'
       this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
@@ -227,7 +229,7 @@ classdef ConnectomeSim < Gridjob
           
           getId = find(sum(ismember(cell2mat(jb.paramComb),[param.loadSp; param.loadHeur; param.loadHscale]),1) == length(jb.variableParams),1);    
 
-          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','results',strcat(num2str(getId),'SC.mat')));        
+          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','ConnectomeMetrics',strcat(num2str(getId),'SC.mat')));        
           SC = ci.hSC;
           D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
         elseif param.dataset==6

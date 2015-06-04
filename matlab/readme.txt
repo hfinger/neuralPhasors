@@ -4,17 +4,17 @@ Edit the paths in "include/dataPaths.m" to match your system setup...
 start a shell/terminal
 
 %change your directory to our project folder on the IKW server:
-cd /net/store/nbp/phasesim/
+cd /net/store/nbp/projects/phasesim/
 
 %checkout the source code into a new folder where you will edit your code. 
 %Replace YOURNAME with your name, so that everyone has their own copy of the source code:
-git clone file:////net/store/nbp/phasesim/remote/repo.git/ src_YOURNAME
+git clone file:////net/store/nbp/projects/phasesim/remote/repo.git/ src_YOURNAME
 
 %start matlab (you might also want to create a shortcut on your desktop):
 matlab
 
 %In matlab change the directory to your checked out source code folder (replace YOURNAME):
-cd /net/store/nbp/phasesim/src_YOURNAME/matlab
+cd /net/store/nbp/projects/phasesim/src_YOURNAME/matlab
 
 %To add all required folders to your matlab path run:
 addScriptPaths();
@@ -38,5 +38,5 @@ edit script_SAR
 script_SAR
 
 %the results of that simulation can then be found in the directory: 
-/net/store/nbp/phasesim/workdir/YOURNAME/20150217_ExampleSimulation/CompareWithEEG
+/net/store/nbp/projects/phasesim/workdir/YOURNAME/20150217_ExampleSimulation/CompareWithEEG
 
