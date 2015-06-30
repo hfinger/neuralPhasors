@@ -652,6 +652,7 @@ while ~matching
     end
     if matching
         constructedFromFolder = partsPwd(length(partsParamdir)+1:end);
+        constructedFromFolder = fullfile(constructedFromFolder{:});
     else
         constructedFromFolder = selected_dir;
         response = warndlg('Path has to be working directory!');
