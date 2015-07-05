@@ -23,7 +23,7 @@ function varargout = SimulationGUI(varargin)
 
 % Edit the above text to modify the response to help SimulationGUI
 
-% Last Modified by GUIDE v2.5 04-Jun-2015 18:00:44
+% Last Modified by GUIDE v2.5 18-Jun-2015 18:50:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,7 +66,10 @@ selected = 0;
 % status refreshing
 global running;
 running = false;
-
+global allJobs;
+allJobs = {};
+global stopSelec;
+stopSelec = 0;
 p = config;
 % Choose default command line output for SimulationGUI
 handles.output = hObject;
@@ -165,7 +168,6 @@ end
 
 % --- Updates Status table every 5 seconds to show job status
 function show_status(hObject,handles,jobs)
-
 [~,user] = system('whoami'); %find executing user
 con = config;
 
@@ -233,7 +235,7 @@ while running
             job = jobs{j};
             name = job.params.Gridjob.jobname;
             filename = fullfile(con.work_path,constructedFromFolder,strcat('temp_',char(name)));
-            allFiles = dir(filename{1});
+            allFiles = dir(filename);
             allNames = {allFiles.name};
             %look for file isfinished - if its deleted the job has finished
             if ~ismember(allNames,'isfinished')
@@ -264,6 +266,7 @@ while running
     oldsize = newsize;
     pause(5);
 end
+
 
 
 % --- Populates Table with chosen parameters and respective values
@@ -431,7 +434,8 @@ if ~ismember(current,obj.params.Gridjob.jobname) %don't add job with same name (
         allJobs{num_jobs}.params.Gridjob.relativeWorkpath = char(constructedFromFolder); %set workpath as selected
     end
 
-
+    [fields values] = build_table(hObject,handles,allJobs{num_jobs},val(1:end-2));
+    set(handles.table1,'data',[fields, values']);
     set(handles.table1,'ColumnEditable',[false true false]);
 end
 
@@ -655,7 +659,7 @@ while ~matching
         constructedFromFolder = fullfile(constructedFromFolder{:});
     else
         constructedFromFolder = selected_dir;
-        response = warndlg('Path has to be working directory!');
+        response = modaldlg('Path has to be working directory!');
         uiwait(response);
     end
 end
@@ -711,6 +715,7 @@ function status_CellSelectionCallback(hObject, eventdata, handles)
 %	Indices: row and column indices of the cell(s) currently selecteds
 % handles    structure with handles and user data (see GUIDATA)
 global constructedFromFolder;
+global stopSelec;
 c = config;
 data = get(handles.status,'data');
 if eventdata.Indices
@@ -724,6 +729,8 @@ if eventdata.Indices
         if exist(filename{1},'file')
             open(filename{1});
         end
+    else
+        stopSelec = eventdata.Indices(1);
     end
 end
 
@@ -755,3 +762,21 @@ else
     finish = false;
 end
 
+
+% --- Executes on button press in stop_proc.
+% --- Deletes job selected in status-table
+function stop_proc_Callback(hObject, eventdata, handles)
+% hObject    handle to stop_proc (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global stopSelec;
+if stopSelec
+    data = get(handles.status,'data');
+    id = data{stopSelec,1};
+    task = data{stopSelec,4};
+    if strcmp(data{stopSelec,3},'qw')
+        system(['qdel ', id]);
+    else
+        system(['qdel ', id, '.',task]);
+    end
+end
