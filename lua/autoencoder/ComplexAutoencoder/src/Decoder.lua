@@ -1,0 +1,56 @@
+local Decoder, Parent = torch.class('nn.Decoder', 'nn.Module')
+
+function Decoder:__init(n_input, n_hidden, kernel_size)
+   Parent.__init(self)
+   self.input = n_input 
+   self.hidden = n_hidden
+   self.kernel_size = kernel_size
+   self.decoder = self:build_dec()
+end
+
+--@inp Tensor of size n_input with input to be encoded
+function Decoder:updateOutput(inp)
+    self.decoder:forward(inp)
+    self.output = self.decoder.output 
+    return self.output
+end
+
+--@input Tensor with input of Backward-call of previous module
+--@gradOutput Gradient output of previous module
+function Decoder:updateGradInput(inp, gradOutput)
+    self.decoder:backward(inp, gradOutput)
+    self.gradInput = self.decoder.gradInput
+    return self.gradInput
+end
+
+--Function to build decoder Network
+function Decoder:build_dec()
+
+    --initialize Decoder
+    local dec = nn.ParallelTable()
+    local declin1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    local declin2 = nn.SpatialConvolution(self.input,self.hidden, self.kernel_size, self.kernel_size)
+    
+    local zeroPad = (self.kernel_size-1)/2
+    local decConv1 = nn.Sequential()
+    decConv1:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
+    decConv1:add(declin1)
+    
+    local decConv2 = nn.Sequential()
+    decConv2:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
+    decConv2:add(declin2)
+    
+    declin1:share(declin2,'weight')
+    declin1:share(declin2,'gradWeight')
+    declin1.bias = torch.Tensor(1):zero()
+    declin1.gradBias = torch.Tensor(1):zero() 
+    declin2.bias = torch.Tensor(1):zero()
+    declin2.gradBias = torch.Tensor(1):zero() 
+    self.convBias = declin1.bias
+    self.convGradBias = declin1.gradBias
+    
+    dec:add(decConv1)
+    dec:add(decConv2)
+    
+    return dec
+end

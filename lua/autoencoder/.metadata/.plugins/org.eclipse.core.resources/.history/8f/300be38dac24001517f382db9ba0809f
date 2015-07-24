@@ -1,0 +1,8 @@
+require 'Cos'
+require 'Sin'
+require 'Atan2'
+local function main()
+
+
+end
+main()

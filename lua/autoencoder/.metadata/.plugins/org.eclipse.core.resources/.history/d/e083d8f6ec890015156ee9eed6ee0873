@@ -1,0 +1,3 @@
+require 'image'
+require 'qt'
+image.display(image.lena())

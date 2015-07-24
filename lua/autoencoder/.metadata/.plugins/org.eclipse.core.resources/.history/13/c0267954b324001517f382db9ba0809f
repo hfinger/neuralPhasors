@@ -1,0 +1,5 @@
+
+require 'torch'
+
+t = torch.Tensor(5):zero()
+print(t)

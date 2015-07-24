@@ -1,0 +1,33 @@
+
+function loadData(normalizeMean)
+  
+  train = torch.load('mnist.t7/train_32x32.t7', 'ascii')
+  test = torch.load('mnist.t7/test_32x32.t7', 'ascii')
+  
+  train = train.data
+  test = test.data
+
+  traindata = torch.Tensor(train:size()[1],1,32,32)
+  for i = 1,train:size()[1] do   
+    traindata[i] = train[i]
+  end
+  traindata:div(traindata:std())
+  
+  testdata = torch.Tensor(test:size()[1],1,32,32)
+  for i = 1,test:size()[1] do   
+    testdata[i] = test[i]
+  end
+  testdata:div(testdata:std())
+  
+  if normalizeMean then
+    traindata:add(-traindata:mean())
+    traindata:add(-traindata:mean())
+  end
+  
+  return traindata, testdata
+end
+
+function train(steps, batchsize, parameters, gradParameters, config)
+    
+    
+end

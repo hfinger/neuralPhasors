@@ -1,0 +1,2 @@
+a = arg[1] or 'bla'
+print(a)

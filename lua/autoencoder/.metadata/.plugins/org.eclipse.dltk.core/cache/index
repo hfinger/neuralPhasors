@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ASCII"?>
+<cache:CacheIndex xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:cache="http://eclipse.org/dltk/cache_model" lastIndex="56" environment="org.eclipse.dltk.core.environment.localEnvironment">
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/Test/src" timestamp="1436278700000" lastAccessTime="1447156931102">
+    <attributes name=".dltk.core.archive.cache.lastaccess" location="2838196607/3584580380/21.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/Test/src/Sin.lua" timestamp="1436275852000" lastAccessTime="1447156637995">
+    <attributes name="indexed" location="2838196607/2891031591/23.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/Test/src/Atan2.lua" timestamp="1436275860000" lastAccessTime="1447156638260">
+    <attributes name="indexed" location="2838196607/2891031591/27.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/Test/src/Cos.lua" timestamp="1436275862000" lastAccessTime="1447156638303">
+    <attributes name="indexed" location="2838196607/2891031591/31.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src" timestamp="1447421560000" lastAccessTime="1447759368956">
+    <attributes name=".dltk.core.archive.cache.lastaccess" location="2838196607/1230888424/55.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/functions.lua" timestamp="1447758462000" lastAccessTime="1447758463503"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/eval.lua" timestamp="1447759362000" lastAccessTime="1447759362573"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/main.lua" timestamp="1447759368000" lastAccessTime="1447759368956"/>
+</cache:CacheIndex>

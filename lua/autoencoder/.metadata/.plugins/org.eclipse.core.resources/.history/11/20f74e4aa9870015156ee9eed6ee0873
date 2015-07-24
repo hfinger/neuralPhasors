@@ -1,0 +1,12 @@
+require 'unsup';
+require 'nn';
+require 'gnuplot';
+require 'Encoder';
+require 'nngraph';
+require 'image';
+require 'optim';
+
+
+
+test,train = loadData{normalizeMean = false}
+print(#train)

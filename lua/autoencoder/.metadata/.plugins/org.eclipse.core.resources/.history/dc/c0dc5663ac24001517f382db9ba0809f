@@ -1,0 +1,19 @@
+local Sin, Parent = torch.class('nn.Sin', 'nn.Module')
+ 
+function Sin:__init()
+   Parent.__init(self)
+end
+
+function Sin:updateOutput(input)
+    self.output = torch.cos(input) 
+    return self.output
+end
+ 
+function Sin:updateGradInput(input, gradOutput)
+    self.gradInput = torch.cmul(gradOutput,torch.cos(input))
+    return self.gradInput
+end
+ 
+ 
+function Sin:reset()
+end
