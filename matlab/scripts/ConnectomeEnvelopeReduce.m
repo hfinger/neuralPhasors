@@ -17,7 +17,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
       this.params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
-      this.params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
+      this.params.C.ConnectomeSimOut = 'ConnectomeSim';
       this.params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeJobName = 'ConnectomeEnvelope';
       this.params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'connEnv';
       this.params.ConnectomeEnvelopeReduce.onlyFCsim = false; % do not use envelopes but the directly simulated FC
@@ -58,7 +58,6 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       % 27=eeg_20150125_controls_fs_funconn_bponetrial_lcmv_hilbert_3_30_entmirrored.mat
       % 28=eeg_20150206_fc_patients_mne_bp_hilbert.mat
       % 29=eeg_20150208_fc_patients_mne0_001_bp_hilbert.mat
-      % 30=eeg_20150329_controls_fs_funconn_elor_bponetrial_hilbert_3_30_290315.mat
       
       
       
@@ -144,7 +143,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
     function run(this)
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      %%%% START EDIT HERE: implement the algorithm
+      %%%% START EDIT HERE: implement the algori
       
       p = this.params.ConnectomeEnvelopeReduce;
       %% for backwards compatibility:
@@ -221,7 +220,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
     end
-   
+    
     function ConnFC = gatherResults(this)
       
       p = this.params.ConnectomeEnvelopeReduce;
@@ -286,11 +285,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             paramVar{1} = num2cell([1:4 6:10]);
           end
           dims = length(paramVar{1});
-        
-        elseif p.compareSC_db==5 
-          a = 42;
-        
-        else % ~ p.compareSC_db NOT 1, 4, 5
+        else
           paths = dataPaths( );
           dataSCTmp = load([paths.databases '/SC_Bastian/patients_t1_logCI_mul_20140924_preprocessed.mat']);
           
@@ -314,8 +309,6 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           paramVar{1} = num2cell([7    12    14    15    16    22    24    25]);
           dims = 8;
         end
-        
-        
         
       else
         varParam = load([this.workpath '/temp_' p.ConnectomeSimJobName '/jobDesc.mat'],'variableParams','paramComb','params');
@@ -521,8 +514,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           p.eegDatabase==26 || ...
           p.eegDatabase==27 || ...
           p.eegDatabase==28 || ...
-          p.eegDatabase==29 || ...
-          p.eegDatabase==30
+          p.eegDatabase==29
         
         if p.eegDatabase==4
           dataEegTmp = load([paths.databases '/SC_Bastian/icoh_all_lcmvhilbertrest_20140807.mat']);
@@ -572,13 +564,11 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150206_fc_patients_mne_bp_hilbert.mat']);
         elseif p.eegDatabase==29
           dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150208_fc_patients_mne0_001_bp_hilbert.mat']);
-        elseif p.eegDatabase==30
-          dataEegTmp = load([paths.databases '/SC_Bastian/eeg_20150329_controls_fs_funconn_elor_bponetrial_hilbert_3_30_290315.mat']);
         end
         
         if p.eegDatabase==14
           data.eeg.spec.metrics = {'icoh','coh','plv','cohy','lpc'};
-        elseif p.eegDatabase==16 || p.eegDatabase==17 || p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==22 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29 || p.eegDatabase==30
+        elseif p.eegDatabase==16 || p.eegDatabase==17 || p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==22 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
           data.eeg.spec.metrics = {'icoh','coh','plv','cohy','lpc','pli','wpli'};
         else
           data.eeg.spec.metrics = {'icoh','coh','plv','cohy'};
@@ -619,7 +609,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         elseif p.eegDatabase==24
           freqz = num2cell(1:22);
           dayz = {1,2};
-        elseif p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29 || p.eegDatabase==30
+        elseif p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
           freqz = num2cell(1:30);
           dayz = {1,2};
         else
@@ -627,7 +617,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           dayz = {1,2};
         end
 
-        if p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29 || p.eegDatabase==30
+        if p.eegDatabase==20 || p.eegDatabase==21 || p.eegDatabase==23 || p.eegDatabase==24 || p.eegDatabase==25 || p.eegDatabase==26 || p.eegDatabase==27 || p.eegDatabase==28 || p.eegDatabase==29
           subj=num2cell(1:20);
         else
           subj=num2cell(1:10);
@@ -718,7 +708,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       eegDimName = data.eeg.spec.dimName(3:end);
       
       specTotal.dimSize = [numRois numRois numFreq eegDimSize simDimSize];
-      specTotal.dimLabels = [{num2cell(1:numRois),num2cell(1:numRois)} 'freq' eegDimLabels simDimLabels];
+      specTotal.dimLabels = [{num2cell(1:numRois),num2cell(1:numRois)} data.eeg.spec.dimLabels(2) eegDimLabels simDimLabels];
       specTotal.dimName = [{'roi', 'roi', 'freq'} eegDimName simDimName];
       
       specWithoutFreq = specTotal;
@@ -788,16 +778,10 @@ classdef ConnectomeEnvelopeReduce < Gridjob
         if ~strcmp(metrics{m},'cohy') && ~strcmp(metrics{m},'aicohcoh')
           if p.calcSquaredDist
             compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
-            compareSimExp.distRoiPair.sqrDistAbs.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
-            compareSimExp.distRoiPair.linDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
-            compareSimExp.distRoiPair.linDistAbs.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
             compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}) = zeros(numRois,numRois,numFreq,prod(eegDimSize),prod(simDimSize));
           end
           if p.calcSquaredDistAvg
             compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
-            compareSimExp.distAvgPerRoi.sqrDistAbs.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
-            compareSimExp.distAvgPerRoi.linDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
-            compareSimExp.distAvgPerRoi.linDistAbs.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
             compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}) = zeros(numRois,numFreq,prod(eegDimSize),prod(simDimSize));
           end
         end
@@ -875,47 +859,37 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             
             %% Linear Regression using Total Least-Squared:
             if p.calcSquaredDist || p.calcSquaredDistAvg
-              
-              warning('off','stats:regress:RankDefDesignMat')
-              
-              for eegId=1:size(tmpEEG,2)
-                for simId=1:size(tmpSIM,2)
-                  [~, ~, d] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
-                  
-                  squaredDist = zeros(numRois,numRois);
-                  squaredDist(trigIds) = d;
-                  squaredDistAbs = zeros(numRois,numRois);
-                  squaredDistAbs(trigIds) = abs(d);
-                                    
-                  [~, ~, dLin] = regress(tmpSIM(:,simId), tmpEEG(:,eegId));
-                  linDist = zeros(numRois,numRois);
-                  linDist(trigIds) = dLin;
-                  linDistAbs = zeros(numRois,numRois);
-                  linDistAbs(trigIds) = abs(dLin);
-                  
-                  absDist = zeros(numRois,numRois);
-                  absDist(trigIds) = abs(tmpSIM(:,simId) - tmpEEG(:,eegId));
-                  
-                  if p.calcSquaredDist
-                    compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDist;
-                    compareSimExp.distRoiPair.sqrDistAbs.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDistAbs;
-                    compareSimExp.distRoiPair.linDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = linDist;
-                    compareSimExp.distRoiPair.linDistAbs.perFreq.(metrics{m})(:,:,freq,eegId,simId) = linDistAbs;
-                    compareSimExp.distRoiPair.absDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = absDist;
-                  end
-                  if p.calcSquaredDistAvg
-                    compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
-                    compareSimExp.distAvgPerRoi.sqrDistAbs.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDistAbs(:,2:end) + squaredDistAbs(1:end-1,:)',2);
-                    compareSimExp.distAvgPerRoi.linDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(linDist(:,2:end) + linDist(1:end-1,:)',2);
-                    compareSimExp.distAvgPerRoi.linDistAbs.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(linDistAbs(:,2:end) + linDistAbs(1:end-1,:)',2);
-                    compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
-                  end
-                  
+                for eegId=1:size(tmpEEG,2)
+                    for simId=1:size(tmpSIM,2)
+                        
+                        if true % use this to perform ordinary linear regression to obtain y-residuals
+                            [coeff, s] = polyfit(tmpEEG(:,eegId), tmpSIM(:,simId), 1); % fit polynome of order 1, i.e. line
+                            yhat = coeff(1)*(tmpEEG(:,eegId)) + coeff(2);
+                            d = tmpSIM(:,simId) - yhat;
+                            
+                        else % use this to perform orthogonal regression
+                            [~, ~, d] = fit_2D_data(tmpSIM(:,simId), tmpEEG(:,eegId), 'no');
+                        end
+                        squaredDist = zeros(numRois,numRois);
+                        squaredDist(trigIds) = d;
+                        
+                        absDist = zeros(numRois,numRois);
+                        absDist(trigIds) = abs(tmpSIM(:,simId) - tmpEEG(:,eegId));
+                        
+                        if p.calcSquaredDist
+                            compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = squaredDist;
+                            compareSimExp.distRoiPair.absDist.perFreq.(metrics{m})(:,:,freq,eegId,simId) = absDist;
+                        end
+                        if p.calcSquaredDistAvg
+                            compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(squaredDist(:,2:end) + squaredDist(1:end-1,:)',2);
+                            compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m})(:,freq,eegId,simId) = mean(absDist(:,2:end) + absDist(1:end-1,:)',2);
+                        end
+                        
+                        
+                        
+                    end
                 end
-              end
-              
-              warning('on','stats:regress:RankDefDesignMat')
-              
+                
             end
             
             
@@ -937,19 +911,18 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           end
         end
         
-        if p.calcSquaredDist && ~strcmp(metrics{m},'cohy')
-          distMetricNames = fieldnames(compareSimExp.distRoiPair);
+        if ~strcmp(metrics{m},'cohy')
           if p.calcSquaredDist
-            for b=1:length(distMetricNames)
-              compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
-              compareSimExp.distRoiPair.(distMetricNames{b}).perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.(metrics{m}))) 3]);
-            end
+            compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distRoiPair.sqrDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.sqrDist.perFreq.(metrics{m}))) 3]);
+            compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}) = reshape(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}),[numRois numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distRoiPair.absDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}),3),[1 2 4:length(size(compareSimExp.distRoiPair.absDist.perFreq.(metrics{m}))) 3]);
           end
           if p.calcSquaredDistAvg
-            for b=1:length(distMetricNames)
-              compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
-              compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.(metrics{m}))) 2]);
-            end
+            compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distAvgPerRoi.sqrDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.sqrDist.perFreq.(metrics{m}))) 2]);
+            compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}) = reshape(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}),[numRois numFreq eegDimSize simDimSize]);
+            compareSimExp.distAvgPerRoi.absDist.perFreqAvg.(metrics{m}) = permute(mean(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}),2),[1 3:length(size(compareSimExp.distAvgPerRoi.absDist.perFreq.(metrics{m}))) 2]);
           end
         end
       end
@@ -958,18 +931,16 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       compareSimExp.perFreq.spec = specWithoutRois;
       compareSimExp.perFreqAvg.spec = specWithoutRoisFreq;
       if p.calcSquaredDist
-        distMetricNames = fieldnames(compareSimExp.distRoiPair);
-        for b=1:length(distMetricNames)
-          compareSimExp.distRoiPair.(distMetricNames{b}).perFreq.spec = specTotal;
-          compareSimExp.distRoiPair.(distMetricNames{b}).perFreqAvg.spec = specWithoutFreq;
-        end
+        compareSimExp.distRoiPair.sqrDist.perFreq.spec = specTotal;
+        compareSimExp.distRoiPair.sqrDist.perFreqAvg.spec = specWithoutFreq;
+        compareSimExp.distRoiPair.absDist.perFreq.spec = specTotal;
+        compareSimExp.distRoiPair.absDist.perFreqAvg.spec = specWithoutFreq;
       end
       if p.calcSquaredDistAvg
-        distMetricNames = fieldnames(compareSimExp.distRoiPair);
-        for b=1:length(distMetricNames)
-          compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreq.spec = specOneRoisFreq;
-          compareSimExp.distAvgPerRoi.(distMetricNames{b}).perFreqAvg.spec = specOneRois;
-        end
+        compareSimExp.distAvgPerRoi.sqrDist.perFreq.spec = specOneRoisFreq;
+        compareSimExp.distAvgPerRoi.sqrDist.perFreqAvg.spec = specOneRois;
+        compareSimExp.distAvgPerRoi.absDist.perFreq.spec = specOneRoisFreq;
+        compareSimExp.distAvgPerRoi.absDist.perFreqAvg.spec = specOneRois;
       end
       if p.calcCrossFreq
         compareSimExp.crossFreq.spec = specWithoutRois;
@@ -1010,10 +981,6 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           [compareSimExp.overFreq.(metrics{m}).rho, compareSimExp.overFreq.(metrics{m}).pval] = corr(tmpEEG,tmpSIM);
           compareSimExp.overFreq.(metrics{m}).rho = reshape(compareSimExp.overFreq.(metrics{m}).rho,eegSimDimSize);
           compareSimExp.overFreq.(metrics{m}).pval = reshape(compareSimExp.overFreq.(metrics{m}).pval,eegSimDimSize);
-          
-          % correlation for inter- and intrahemispherical connections
-          [compareSimExp.overFreq.(metrics{m}).rhoInter, ~] = corr(tmpEEG,tmpSIM);
-          compareSimExp.overFreq.(metrics{m}).rhoInter = reshape(compareSimExp.overFreq.(metrics{m}).rhoInter,eegSimDimSize);
           
           %% Jaccard similarity coefficient (only for positive real valued metrics):
           if ~strcmp(metrics{m},'icoh')
@@ -2106,9 +2073,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
     
     function [tensor, outSpec] = filterTensor(tensor, filterSpec, inSpec )
 %       tensor = rand([5,10,2]); or tensor structure
-%       filterSpec.subjEeg.Ids = [1:4 7:10];
-%       filterSpec.subjEeg.Avg = false;
-%       filterSpec.subjEeg.Max = false;
+%       filterSpec.subj.Ids = [1:4 7:10];
+%       filterSpec.subj.Avg = false;
+%       filterSpec.subj.Max = false;
 %       filterSpec.day.Ids = [];
 %       filterSpec.day.Avg = true;
 %       inSpec.dimName = {'day', 'subjEeg', 'cond'};

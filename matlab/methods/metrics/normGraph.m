@@ -1,4 +1,14 @@
 function   SC = normGraph(SC, avg_roi_size,ROInorm, ROWnorm, sparse)
+%% norm connections by ROI sizes to get connectivity density
+
+if strcmp(ROInorm,'ROIprd')
+  ROIprd = avg_roi_size*avg_roi_size';                                      % normalize by product of ROI sizes
+  SC = SC ./ ROIprd;                                                        % RCsignif more sensitive to sparseness in normSum than in normROI
+elseif strcmp(ROInorm,'ROIsum')
+  ROIsum = bsxfun(@plus,avg_roi_size,avg_roi_size');                        % normalize by sum of ROI sizes
+  SC = SC ./ ROIsum;
+end
+
 %% make connectivity of SC sparse                                  do this before or after matrix normalizations?
 
 % values of sparse = [0.6, 0.7, 0.75[, half-open interval (no sign. RC for boundaries)
@@ -17,15 +27,7 @@ end
 
 effSparse = sum(sum(SC == 0)) / numel(SC);                                  % determine effective sparseness of resulting graph
 
-%% norm connections by ROI sizes to get connectivity density
-
-if strcmp(ROInorm,'ROIprd')
-  ROIprd = avg_roi_size*avg_roi_size';                                      % normalize by product of ROI sizes
-  SC = SC ./ ROIprd;                                                        % RCsignif more sensitive to sparseness in normSum than in normROI
-elseif strcmp(ROInorm,'ROIsum')
-  ROIsum = bsxfun(@plus,avg_roi_size,avg_roi_size');                        % normalize by sum of ROI sizes
-  SC = SC ./ ROIsum;
-end
+%% norm connections row-wise to set sum of input weights to 1
 
 if ROWnorm
   % norm rows, i.e. input, to sum(CIJ) == 1:                                % remove this from connectivity data
