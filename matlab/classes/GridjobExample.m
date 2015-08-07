@@ -21,9 +21,9 @@ classdef GridjobExample < Gridjob
       this.params.GridjobExample.param2 = true;
       this.params.GridjobExample.param3 = 'some text';
       
-      this.comments.GridjobExample.param1 = 'this is some test number parameter';
-      this.comments.GridjobExample.param2 = 'this is some test boolean parameter';
-      this.comments.GridjobExample.param3 = 'this is some test string parameter';
+%      this.comments.GridjobExample.param1 = 'this is some test number parameter';
+%      this.comments.GridjobExample.param2 = 'this is some test boolean parameter';
+%      this.comments.GridjobExample.param3 = 'this is some test string parameter';
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +59,7 @@ classdef GridjobExample < Gridjob
       disp(this.currJobid);
       pause(10)
       disp(this.params.GridjobExample.param1);
-      
+
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
