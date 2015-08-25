@@ -1,10 +1,11 @@
 clear paramsAll; 
 
 % global representation of parameter values
-glob.a = num2cell(0.0:0.1:0.7);
-glob.b = num2cell(1:1:2);
-glob.c = num2cell(1:1:4);
-glob.d = num2cell(0.4:0.05:0.95);
+glob.a = num2cell(0.5:0.1:0.7);                                             % levels of sparseness
+glob.b = num2cell([2,7]);%num2cell(1:1:2);                                  % heuristics to be applied
+glob.c = num2cell(1:1:12);                                                  % interval of values of h
+glob.d = num2cell([0.4:0.05:0.95]); % num2cell([0.4:0.05:0.95]*1e5);        % interval of values of k
+glob.e = 0;                                                                 % number of h0 graphs 
 
 %%
 
@@ -20,7 +21,7 @@ params.Gridjob.requiredThreads = '3';
 params.ConnectomeMetrics.sparse = glob.a;
 params.ConnectomeMetrics.heuristics = glob.b;
 params.ConnectomeMetrics.hScale = glob.c;
-params.ConnectomeMetrics.graphH0 = 0; 
+params.ConnectomeMetrics.graphH0 = glob.e; 
 paramsAll{1} = params;
 
 %%
@@ -34,7 +35,8 @@ params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '3';
 
-params.ConnectomeSim.dataset = 5;                                          
+params.ConnectomeSim.dataset = 5;    
+params.ConnectomeSim.forceOverwrite = true;
 params.ConnectomeSim.loadSp = glob.a;                         
 params.ConnectomeSim.loadHeur = glob.b;                         
 params.ConnectomeSim.loadHscale = glob.c;
@@ -61,7 +63,7 @@ params.Gridjob.wc_host = '!ramsauer.ikw.uni-osnabrueck.de';
 params.Gridjob.jobname = 'CompareWithEEG_ConnFC';
 params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '6';
-params.Gridjob.combParallel = true;
+params.Gridjob.combParallel = false;                                         % set combParallel = true: pairwise parameter combination
 
 params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
 params.ConnectomeEnvelopeReduce.ConnectomeSimOut = 'ConnectomeSim';
@@ -95,7 +97,7 @@ params.Gridjob.wc_host = '!ramsauer.ikw.uni-osnabrueck.de';
 params.Gridjob.jobname = 'CompareWithEEG';
 params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '6';
-params.Gridjob.combParallel = true;
+params.Gridjob.combParallel = false;
 params.Gridjob.runOnlyJobIds = [5];
 
 params.ConnectomeEnvelopeReduce.ConnectomeSimJobName = 'ConnectomeSim';
@@ -137,15 +139,17 @@ params.Gridjob.runLocal = true;
 params.Gridjob.requiremf = 5000;
 params.Gridjob.wc_host = '!ramsauer.ikw.uni-osnabrueck.de';
 params.Gridjob.jobname = 'ConnectomeAnalysis';
+params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '6';
-params.Gridjob.combParallel = true;
-params.Gridjob.runOnlyJobIds = [5];
+params.Gridjob.combParallel = false;                                        % set true for pairwise combination of params
+%params.Gridjob.runOnlyJobIds = [5];
 
 params.ConnectomeAnalysis.loadSp = glob.a;                         
 params.ConnectomeAnalysis.loadHeur = glob.b;                         
-params.ConnectomeAnalysis.loadHscale = glob.c;
-params.ConnectomeAnalysis.loadKscale = glob.d;
+%params.ConnectomeAnalysis.loadHscale = glob.c;
+%params.ConnectomeAnalysis.loadKscale = glob.d;
+params.ConnectomeAnalysis.graphH0 = glob.e; 
 paramsAll{5} = params;
 
 % write a script for post-simulation analysis that plots metrics as fct of parameters
@@ -154,5 +158,5 @@ paramsAll{5} = params;
 
 %%
 clear params;
-gridjobs = Gridjob(paramsAll);
+gridjobs = Gridjob(paramsAll);% Gridjob(paramsAll{5});
 start(gridjobs);

@@ -1,0 +1,3 @@
+[submodule "lua/char-rnn"]
+	path = lua/char-rnn
+	url = https://github.com/hfinger/char-rnn.git

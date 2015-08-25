@@ -17,7 +17,7 @@ classdef ConnectomeSim < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed, 5=load_metric_SC, 6=dti_20150410_highResConnmat
+      this.params.ConnectomeSim.dataset = 0; % 0=datasimu from Arnaud, 1=SC_Bastian1, 2=dist_and_CI_controls.mat, 3=patients_t1_logCI_mul_20140924_preprocessed, 4=dti_20141209_preprocessed
       this.params.ConnectomeSim.subjId = 1; % or -1 for average subject
       this.params.ConnectomeSim.normRoisizeInterp = []; % 0 = addition, 1 = multiplication
       this.params.ConnectomeSim.dtiDistanceCorrection = false;
@@ -27,24 +27,17 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.shufflePermutations = [];
       
       this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
-      this.params.ConnectomeSim.homotopic = 0; %how much of additional homotpic connections we add to the SC (0=no, 1=50%)
+      this.params.ConnectomeSim.homotopic = 0;          
       this.params.ConnectomeSim.roiOutScales = []; % vector of scaling factors for each roi
       this.params.ConnectomeSim.roiOutIds = []; % vector indicating the roiIds to scale
-      this.params.ConnectomeSim.connScales = []; % vector of scaling factors for each connection
-      this.params.ConnectomeSim.connIds = []; % vector indicating the roiIds to connection
       this.params.ConnectomeSim.normRow = 1; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
       this.params.ConnectomeSim.model = 'kuramoto'; % 'kuramoto' or 'rate' or 'SAR' or 'WilsonCowan'
       this.params.ConnectomeSim.useNetworkFokkerPlanck = false;
 
-      %params for loading dataset 5:
-      this.params.ConnectomeSim.loadSp = 0.6;                          
-      this.params.ConnectomeSim.loadHeur = 1;                         
-      this.params.ConnectomeSim.loadHscale = 1;  
-      
-      %params specific for Kuramoto model:
+      %params specific for Kuramoto:
       this.params.ConnectomeSim.approx=false;
       this.params.ConnectomeSim.invertSin=false;
-      this.params.ConnectomeSim.f=60; %oscillator frequency in Hz
+      this.params.ConnectomeSim.f=60;
       this.params.ConnectomeSim.startState = [];
       this.params.ConnectomeSim.saveRelativePhase = false;
      
@@ -55,7 +48,7 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.normStd=false;
       
       %params for all models:
-      this.params.ConnectomeSim.k=0.8; % global scaling of structural connectivity
+      this.params.ConnectomeSim.k=0.8;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% overall scaling of weights?
       
       %params for all models but SAR model:
       this.params.ConnectomeSim.v=10; % in m/sec
@@ -70,7 +63,6 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.statsRemoveInitialT = 0;
             
       this.params.ConnectomeSim.outFilenames = 'results';
-      this.params.ConnectomeSim.outReduceToOneFile = false;
       this.params.ConnectomeSim.forceOverwrite = false;
 
       
@@ -104,7 +96,7 @@ classdef ConnectomeSim < Gridjob
       param = this.params.ConnectomeSim;
       
       paths = dataPaths( );
-            
+      
       savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
       if param.forceOverwrite || ~exist(fullfile(savepath,[num2str(this.currJobid) 'FC.mat']),'file')
         
@@ -220,24 +212,16 @@ classdef ConnectomeSim < Gridjob
           
           D(isnan(D)) = 0;
           %         D = D + D'; % scale unclear should be scaled to mm
-        
-        elseif param.dataset==5
           
-          jb = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','temp_ConnectomeMetrics','jobDesc.mat'));
-          % xy.paramComb % column-wise representation of jobIDs 
-          % xy.variableParams{variable,1}{1,2};
           
-          getId = find(sum(cell2mat(jb.paramComb) == repmat([param.loadSp; param.loadHeur; param.loadHscale], 1,length(jb.paramComb))) == length(jb.variableParams),1);
-          
-          ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','ConnectomeMetrics',strcat(num2str(getId),'SC.mat')));        
-          SC = ci.hSC;
-          D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
-        
-        elseif param.dataset==6
-          
-          SC = load(fullfile(paths.databases,'SC_Bastian','dti_20150410_highResConnmat.mat'));
-          SC = double(SC.connmat);
+        elseif param.dataset==5 % has to load both SC and SCh!
+          ci = load(fullfile(paths.workdir,'SC_Bastian','patients_t1_logCI_mul_20140924_preprocessed.mat'));
+          % ci = load(fullfile(paths.databases,'SC_Bastian','dist_and_CI_controls_preprocessed.mat')); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+          SC = ci.ci{param.subjId};
+          D = ci.dist{param.subjId}; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
         end
+        
+       %% post- loading of SC matrix, now do 
         
         if param.shuffleSC || param.shuffleD
           trigIds = find(triu(ones(size(SC)),1));
@@ -265,6 +249,7 @@ classdef ConnectomeSim < Gridjob
         end
         
         
+       %%
         if param.dtiDistanceCorrection
           SC = SC.*D;
         end
@@ -278,6 +263,7 @@ classdef ConnectomeSim < Gridjob
         if param.homotopic
           SC = SC + param.homotopic * diag(ones(size(SC,1)/2,1),size(SC,1)/2) + param.homotopic * diag(ones(size(SC,1)/2,1),-size(SC,1)/2);
         end
+       %%
         
         numRois = size(SC,1);
         if ~isempty(param.roiOutScales)
@@ -294,6 +280,7 @@ classdef ConnectomeSim < Gridjob
           
         end
         
+       %%
         if param.normRow==1
           C = bsxfun(@rdivide,SC,sum(SC,2));
         elseif param.normRow==2
@@ -303,7 +290,7 @@ classdef ConnectomeSim < Gridjob
         end
         
         if param.delay
-          %% incorporate the fixed time delay offset into the distance matrix
+          % incorporate the fixed time delay offset into the distance matrix
           % 1. convert distance (in mm) to delay (in ms) via velocity:
           timeDelays = D / param.v;
           % 2. add constant delay offset (in ms)
@@ -317,7 +304,17 @@ classdef ConnectomeSim < Gridjob
           mkdir(savepath);
         end
         savefilename = fullfile(savepath,num2str(this.currJobid));
+       %%
         
+        % do for loops here? over..
+        % sparseness level sp 0:0.7
+        % heuristics heur
+        % scaling h of heuristics
+        
+        % then come the model-specific parameters, i.e. SAR use only param.k,the overall scaling of weights
+        % ...
+       
+        % (1) Kuramoto model        
         if strcmp(param.model,'kuramoto')
           if param.useNetworkFokkerPlanck
             phase = Network_FokkerPlanckKuramoto(C,D,param.k,param.f,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose,param.approx,param.invertSin,param.startState);
@@ -339,15 +336,16 @@ classdef ConnectomeSim < Gridjob
             save([savefilename 'SimResultRelativePhase.mat'],'phase','param');
           end
           
+        % (2) WilsonCowan model
         elseif strcmp(param.model,'WilsonCowan')
-          
           [u, v] = runWilsonCowan(C,D,param.k,param.f,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose,param.approx,param.invertSin,param.startState);
           
           
+        % (3) Breakspear model
         elseif strcmp(param.model,'Breakspear')
+        % ----
           
-          
-          
+        % (4) FokkerPlanck model
         elseif strcmp(param.model,'rate')
           if param.useNetworkFokkerPlanck
             rate = Network_FokkerPlanck(C,D,param.k,param.tau,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose);
@@ -355,9 +353,9 @@ classdef ConnectomeSim < Gridjob
             rate = runRatemodel(C,D,param.k,param.tau,param.v,param.t_max,param.dt,param.sampling,param.sig_n,param.d,param.verbose);
           end
           save([savefilename 'SimResult.mat'],'rate','param');
-          
           FCsimNoBold = corr(rate');
           
+        % (5) SAR model
         elseif strcmp(param.model,'SAR')
           
           tmp = eye(size(C))-param.k*C;
@@ -403,17 +401,6 @@ classdef ConnectomeSim < Gridjob
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
-      
-      if this.params.ConnectomeSim.outReduceToOneFile
-      disp('collect results...');
-      savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
-      allResults = cell(1,this.numJobs);
-      for jobid=1:this.numJobs
-        allResults{jobid} = load([fullfile(savepath,num2str(jobid)) 'FC.mat'],'FCsimNoBold');
-       delete([fullfile(savepath,num2str(jobid)) 'FC.mat']);
-      end
-      save(fullfile(savepath,'allResults.mat'),'allResults');
-      end
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
