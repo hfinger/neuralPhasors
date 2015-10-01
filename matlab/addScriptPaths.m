@@ -41,7 +41,12 @@ addpath(fullfile(pathstr, 'methods', 'grid'));
 addpath(fullfile(pathstr, 'methods', 'odeSolver'));
 addpath(fullfile(pathstr, 'methods', 'plotFeatures'));
 addpath(fullfile(pathstr, 'methods', 'connectome'));
+<<<<<<< HEAD
+compileDir_simple;
+
+=======
 addpath(fullfile(pathstr, 'methods', 'metrics'));
+>>>>>>> 3d502ad4f0c9f6cb2c1ce3537ce58c296284cd53
 
 end
 
