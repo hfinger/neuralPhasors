@@ -1,13 +1,77 @@
 clear paramsAll;
 
+folderlist = { ...
+'05june05_static_street_boston',...
+'05june05_static_street_porter',...
+'10feb04_static_cars_highland'};
+
+% folderlist = { ...
+% '05june05_static_street_boston',...
+% '05june05_static_street_porter',...
+% '10feb04_static_cars_highland',...
+% '30may05_static_street_cambridge',...
+% 'april21_static_outdoor_davis',...
+% 'april21_static_outdoor_kendall',...
+% 'barcelona_static_street',...
+% 'boston_static_march',...
+% 'dec_static_street',...
+% 'madrid_static_street',...
+% 'nov25_static_street',...
+% 'nov6_static_outdoor',...
+% 'nov7_static_outdoor',...
+% 'oct6_static_outdoor',...
+% 'paris_static_street',...
+% 'static_barcelona_street_city_outdoor_2005',...
+% 'static_harvard_outdoor_street',...
+% 'static_outdoor_anchorage_alaska_usa'};
+
+
 clear params;
-params.Gridjob.runLocal = false;
+params.Gridjob.runLocal = true;
+params.Gridjob.jobname = 'labelMeInput';
+params.LoadLabelMe.catName = folderlist;
+params.LoadLabelMe.fileid = [];
+params.LoadLabelMe.outActFolder = 'labelMeInput';
+paramsAll{1} = params;
+
+clear params;
+params.Gridjob.runLocal = true;
+params.Gridjob.jobname = 'labelMeWhiteningWeights';
+params.Gridjob.requiremf = 12000;
+params.Whitening.inActFolder = 'labelMeInput';
+params.Whitening.outWeightsFolder = 'labelMeWhiteningWeights';
+params.Whitening.inNumChannels = 3;
+params.Whitening.maxCorrLengthDim1 = 64;
+params.Whitening.maxCorrLengthDim2 = 64;
+params.Whitening.convKernelDim1 = 51;
+params.Whitening.convKernelDim2 = 51;
+params.Whitening.reduceToConv = true;
+params.Whitening.epsilon = 0.1;
+params.Whitening.numPatches = 10000;
+params.Whitening.matchFilenames = 'act.*.mat';
+params.Whitening.borderBuffer = 0;
+paramsAll{2} = params;
+
+clear params;
+params.Gridjob.runLocal = true;
+params.Gridjob.requiremf = 13000;
+params.Gridjob.jobname = 'labelMeWhite';
+params.ApplyWeights.inActFolder = 'labelMeInput';
+params.ApplyWeights.inActFilenames = 'act.*.mat';
+params.ApplyWeights.fileid = [];
+params.ApplyWeights.outActFolder = 'labelMeWhite';
+params.ApplyWeights.weightsFile = 'labelMeWhiteningWeights/weights.mat';
+params.ApplyWeights.convType = 'same';
+paramsAll{3} = params;
+
+clear params;
+params.Gridjob.runLocal = true;
 params.Gridjob.requiremf = 5000;
 params.Gridjob.wc_host = [];
 params.Gridjob.jobname = 'ReLuDAE100';
 params.Gridjob.initRandStreamWithSeed = 12345;
 
-params.Autoencoder.inActFolder = '../../20131220_MoreImages/labelMeWhite';
+params.Autoencoder.inActFolder = 'labelMeWhite';
 params.Autoencoder.inActFilenames = 'act.*.mat';
 params.Autoencoder.outWeightsFolder = 'ReLuDAE100';
 params.Autoencoder.continue = false;
@@ -74,7 +138,7 @@ params.minFunc.display = 'on';
 params.minFunc.optTol = 1e-6;
 params.minFunc.progTol = 1e-14;
 
-paramsAll{1} = params;
+paramsAll{4} = params;
 
 clear params;
 gridjobs = Gridjob(paramsAll);
