@@ -160,6 +160,11 @@ classdef OptimizeSARSC < Gridjob
       p = this.params.OptimizeSARSC;
       loadpath = fullfile(this.workpath, p.savefolder);
       
+      if ~exist(loadpath,'dir')
+          % check if we find the files in a relative path:
+          loadpath = uigetdir(pwd);
+      end
+      
       if exist(fullfile(loadpath,'results.mat'),'file')
         
         results = load(fullfile(loadpath,'results.mat'));
@@ -283,6 +288,9 @@ classdef OptimizeSARSC < Gridjob
             'facecol','no',...
             'edgecol','interp',...
             'linew',2);
+        
+          %plot last iters
+          plot3(Y3(SCids(end),1),Y3(SCids(end),2),Y3(SCids(end),3),'ro','LineWidth',3)
         end
         
         % find all first iters of all these dim1(i1) runs:
@@ -292,23 +300,36 @@ classdef OptimizeSARSC < Gridjob
         
       end
       
-      plot3(Y3(1,1),Y3(1,2),Y3(1,3),'bo')
-      title('3D MDS')
+      plot3(Y3(1,1),Y3(1,2),Y3(1,3),'ko','LineWidth',3)
+      %title('3D MDS')
+      uicontrol(gcf,'style','text','units','normalized','pos',[0.3 0.95 0.4 0.05],'string','MDS 3D','FontSize',16)
       colorbar
 %       set(gca,'clim',[0 1])
       axis equal;
+      set(gca,'FontSize',16')
+      set(gca,'xticklabel',[])
+      set(gca,'yticklabel',[])
+      set(gca,'zticklabel',[])
       
       
       %%
       choice = questdlg('Create Video?','Video', 'Yes','No','No');
       switch choice
         case 'Yes'
-          daObj=VideoWriter(['mds3d_' distMet{s} '.avi']);
-          daObj.FrameRate=6;
+          if ispc
+            daObj=VideoWriter(['mds3d_' distMet{s} '.mp4'],'MPEG-4');
+          else
+            daObj=VideoWriter(['mds3d_' distMet{s} '.avi']);
+          end
+          daObj.FrameRate=12;
           open(daObj);
           
-          az = 0;
+          box on
+          grid on
+          az = 45;
           el = 30;
+          view(az,el);
+          axis vis3d
           for t=1:90
             az=az+4;
             view(az,el);
