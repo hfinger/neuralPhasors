@@ -174,6 +174,7 @@ classdef OptimizeSARSC < Gridjob
         results.learnedSC = cell(1,this.numJobs);
         results.itersSaved = cell(1,this.numJobs);
         results.dev = cell(1,this.numJobs);
+        results.cc = cell(1,this.numJobs);
         results.numSaved = zeros(1,this.numJobs);
 
         for i=1:this.numJobs
@@ -196,11 +197,13 @@ classdef OptimizeSARSC < Gridjob
           %% save deviance at the corresponding positions:
           % add 1 because we gathered the dev within the next run.
           dev = tmp.dev(min(tmp.p.saveAtIters+1,length(tmp.dev)));
+          cc = tmp.cc(min(tmp.p.saveAtIters+1,length(tmp.dev)));
 
           results.learnedSC{i} = learnedSC;
           results.numSaved(i) = numSaved;
           results.itersSaved{i} = itersSaved;
           results.dev{i} = dev;
+          results.cc{i} = cc;
 
         end
         
@@ -211,9 +214,94 @@ classdef OptimizeSARSC < Gridjob
     end
     
     %% plotting results
-    function plot(this)
+    function plot(this,dimsSelect,distMetId,doCreateVideo,doPlotSCs,appendAnim)
+      
+      if nargin<2
+        dimsSelect = [];
+      end
+      if nargin<3
+        distMetId = [];
+      end
+      if nargin<4
+        doCreateVideo = [];
+      end
+      if nargin<5
+        doPlotSCs = true;
+      end
+      if nargin<6
+        appendAnim = false;
+      end
       
       results = this.collectResults();
+      
+      %% select dimensions:
+      for k=1:length(this.variableParams)
+          varParams{k} = this.variableParams{k}{2};
+      end
+      
+      if ~isempty(dimsSelect)
+        dim1 = dimsSelect(1);
+        dim2 = dimsSelect(2);
+      else
+        [dim1,v] = listdlg('PromptString','Select first dimension:','SelectionMode','single','ListString',varParams);
+
+        dimsRem = setdiff(1:length(varParams),dim1);
+        varParamsRem = varParams(dimsRem);
+        [dimSel,v] = listdlg('PromptString','Select second dimension:','SelectionMode','single','ListString',varParamsRem);
+        dim2 = dimsRem(dimSel);
+      end
+      
+      disp(['selected dimensions: ' num2str(dim1) ' , ' num2str(dim2)])
+      
+      dim1values = this.params.(this.variableParams{dim1}{1}).(this.variableParams{dim1}{2});
+      dim2values = this.params.(this.variableParams{dim2}{1}).(this.variableParams{dim2}{2});
+      
+      dim1valuesPerJob = cell2mat(this.paramComb(dim1,:));
+      dim2valuesPerJob = cell2mat(this.paramComb(dim2,:));
+      
+      %% 
+      if doPlotSCs
+        dim1and2Values = [dim1values{1} dim2values{1}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_init_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        dim1and2Values = [dim1values{1} dim2values{end}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_init_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        dim1and2Values = [dim1values{end} dim2values{1}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_init_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        dim1and2Values = [dim1values{end} dim2values{end}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_init_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        %
+        dim1and2Values = [dim1values{1} dim2values{1}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        dim1and2Values = [dim1values{1} dim2values{end}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        dim1and2Values = [dim1values{end} dim2values{1}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+
+        dim1and2Values = [dim1values{end} dim2values{end}];
+        jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
+        fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
+        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+      end
       
       %% convert to diag form
       offDiagIds = find(~eye(66,66));
@@ -224,56 +312,109 @@ classdef OptimizeSARSC < Gridjob
       
       %% calc similarity matrix:
       distMet = {'correlation', 'euclidean', 'cosine', 'cityblock'};
-      [s,v] = listdlg('PromptString','Select distance metric:','SelectionMode','single','ListString',distMet);
-      
-      %% distances only between all final learned SC
-      figure(1)
-      distFinal = squareform(pdist(vecSC_final',distMet{s}));
-      imagesc(distFinal)
-      title([distMet{s} ' dist between learned SC'])
-      
-      %% distances only between all init and final learned SC
-      figure(5)
-      distInitFinal = squareform(pdist([vecSC_init, vecSC_final]',distMet{s}));
-      imagesc(distInitFinal)
-      title([distMet{s} ' dist between init and final learned SC'])
-      
-      %% calc distances between all sims and saved iterations
-      allVecSCs = cell2mat(vecSC);
-      allIters = cell2mat(cellfun(@(x) 1:size(x,2), vecSC, 'UniformOutput', false));
-      allDev = cell2mat(results.dev')';
-      allJobIds = cell2mat(cellfun(@(x) x(2)*ones(1,x(1)), num2cell([results.numSaved; 1:length(results.numSaved)],1), 'UniformOutput', false));
-      distances = pdist(allVecSCs',distMet{s});
+      if isempty(distMetId)
+        [distMetId,v] = listdlg('PromptString','Select distance metric:','SelectionMode','multiple','ListString',distMet);
+      end
       
       %%
-      disp('calc mds...')
-      Y3 = mdscale(distances,3,'Criterion','sstress');
-      
-      figure(2)
-      plot3(Y3(:,1),Y3(:,2),Y3(:,3),'.')
-      title([distMet{s} ' 3D MDS'])
-      
-      %% plot 3d mds with color as loss:
-      for k=1:length(this.variableParams)
-        varParams{k} = this.variableParams{k}{2};
+      for d=1:length(distMetId)
+        
+        currentDistMet = distMet{distMetId(d)};
+        
+        %% calc distances between all sims and saved iterations
+        allVecSCs = cell2mat(vecSC);
+        allIters = cell2mat(cellfun(@(x) 1:size(x,2), vecSC, 'UniformOutput', false));
+        allDev = cell2mat(results.dev')';
+        allCorr = cellfun(@(x) x.corr, cat(1,results.cc{:}))';
+        allJobIds = cell2mat(cellfun(@(x) x(2)*ones(1,x(1)), num2cell([results.numSaved; 1:length(results.numSaved)],1), 'UniformOutput', false));
+        distances = pdist(allVecSCs',currentDistMet);
+
+
+        %%
+        if exist(['mds3d_' currentDistMet '.mat'],'file')
+          disp('reload mds3d...')
+          Y3 = load(['mds3d_' currentDistMet '.mat']);
+          Y3 = Y3.Y3;
+        else
+          disp('calc mds3d...')
+          Y3 = mdscale(distances,3,'Criterion','sstress');
+          save(['mds3d_' currentDistMet '.mat'],'Y3');
+        end
+
+        %% plot 3d mds with color as loss:
+        figh = figure(3);
+        clf;
+        this.plot_mds(Y3, allJobIds, allCorr, allIters, dim1valuesPerJob, dim2valuesPerJob, dim1values,dim2values, Inf)
+
+        %%
+        if isempty(doCreateVideo)
+          doCreateVideo = questdlg('Create Video?','Video', 'Yes','No','No');
+        end
+
+        switch doCreateVideo
+          case {'No',false}
+            
+          case {'Yes',true}
+            if ispc
+              daObj=VideoWriter(['mds3d_' currentDistMet '.mp4'],'MPEG-4');
+            else
+              daObj=VideoWriter(['mds3d_' currentDistMet '.avi']);
+            end
+            daObj.FrameRate=12;
+            open(daObj);
+
+            az_init = 45;
+            el_init = 30;
+            az = az_init;
+            el = el_init;
+            view(az,el);
+            axis vis3d
+            for t=1:180
+              az=az+2;
+              view(az,el);
+              pause(0.05);
+              drawnow;
+              writeVideo(daObj,getframe(figh));
+            end
+            
+            if appendAnim
+              xlims = get(gca,'xlim');
+              ylims = get(gca,'ylim');
+              zlims = get(gca,'zlim');
+              clims = get(gca,'clim');
+              for t=1:180
+                maxSaveId = 2+ceil(t/8);
+                clf;
+                this.plot_mds(Y3, allJobIds, allCorr, allIters, dim1valuesPerJob, dim2valuesPerJob, dim1values, dim2values, maxSaveId)
+                set(gca,'xlim',xlims);
+                set(gca,'ylim',ylims);
+                set(gca,'zlim',zlims);
+                set(gca,'clim',clims);
+                
+                uicontrol(gcf,'style','text','units','normalized','pos',[0.3 0.95 0.4 0.05],'string',['iteration' num2str(this.params.OptimizeSARSC.saveAtIters(maxSaveId))],'FontSize',16)
+
+                view(az_init,el_init);
+                axis vis3d
+
+                az=az+2;
+                view(az,el);
+                pause(0.05);
+                drawnow;
+                writeVideo(daObj,getframe(figh));
+              end
+            end
+            
+
+            close(daObj);
+
+        end
       end
-      [dim1,v] = listdlg('PromptString','Select first dimension:','SelectionMode','single','ListString',varParams);
       
-      dimsRem = setdiff(1:length(varParams),dim1);
-      varParamsRem = varParams(dimsRem);
-      [dimSel,v] = listdlg('PromptString','Select second dimension:','SelectionMode','single','ListString',varParamsRem);
-      dim2 = dimsRem(dimSel);
+    end
+    
+    
+    function plot_mds(this, Y3, allJobIds, allDev, allIters, dim1valuesPerJob, dim2valuesPerJob, dim1values,dim2values,maxSaveId)
       
-      disp(['selected dimensions: ' num2str(dim1) ' , ' num2str(dim2)])
-      
-      dim1values = this.params.(this.variableParams{dim1}{1}).(this.variableParams{dim1}{2});
-      dim2values = this.params.(this.variableParams{dim2}{1}).(this.variableParams{dim2}{2});
-      
-      dim1valuesPerJob = cell2mat(this.paramComb(dim1,:));
-      dim2valuesPerJob = cell2mat(this.paramComb(dim2,:));
-      
-      figh = figure(3);
-      clf;
       colormap(jet)
       hold on;
       for i1=1:length(dim1values)
@@ -281,6 +422,7 @@ classdef OptimizeSARSC < Gridjob
           
           jobId = find(dim1valuesPerJob==dim1values{i1} & dim2valuesPerJob==dim2values{i2});
           SCids = find(allJobIds==jobId);
+          SCids = SCids(1:min(maxSaveId,length(SCids)));
           
           %% search color:
           my_dev = allDev(SCids);
@@ -288,7 +430,7 @@ classdef OptimizeSARSC < Gridjob
             'facecol','no',...
             'edgecol','interp',...
             'linew',2);
-        
+          
           %plot last iters
           plot3(Y3(SCids(end),1),Y3(SCids(end),2),Y3(SCids(end),3),'ro','LineWidth',3)
         end
@@ -297,99 +439,36 @@ classdef OptimizeSARSC < Gridjob
         jobIds = find(dim1valuesPerJob==dim1values{i1});
         SCids = find( ismember(allJobIds, jobIds) & allIters==1);
         plot3(Y3(SCids,1),Y3(SCids,2),Y3(SCids,3),'linew',2,'Color','k')
+        plot3(Y3(SCids,1),Y3(SCids,2),Y3(SCids,3),'ko','LineWidth',3)
         
       end
       
-      plot3(Y3(1,1),Y3(1,2),Y3(1,3),'ko','LineWidth',3)
+      plot3(Y3(1,1),Y3(1,2),Y3(1,3),'go','LineWidth',3)
       %title('3D MDS')
-      uicontrol(gcf,'style','text','units','normalized','pos',[0.3 0.95 0.4 0.05],'string','MDS 3D','FontSize',16)
       colorbar
 %       set(gca,'clim',[0 1])
       axis equal;
+      box on
+      grid on
+          
+      az = 45;
+      el = 30;
+      view(az,el);
+      
       set(gca,'FontSize',16')
       set(gca,'xticklabel',[])
       set(gca,'yticklabel',[])
       set(gca,'zticklabel',[])
       
+      xticks = get(gca,'xtick');
+      yticks = get(gca,'ytick');
+      zticks = get(gca,'ztick');
       
-      %%
-      choice = questdlg('Create Video?','Video', 'Yes','No','No');
-      switch choice
-        case 'Yes'
-          if ispc
-            daObj=VideoWriter(['mds3d_' distMet{s} '.mp4'],'MPEG-4');
-          else
-            daObj=VideoWriter(['mds3d_' distMet{s} '.avi']);
-          end
-          daObj.FrameRate=12;
-          open(daObj);
-          
-          box on
-          grid on
-          az = 45;
-          el = 30;
-          view(az,el);
-          axis vis3d
-          for t=1:90
-            az=az+4;
-            view(az,el);
-            pause(0.05);
-            drawnow;
-            writeVideo(daObj,getframe(figh));
-          end
-          
-          close(daObj);
-    
-      end
+      diff_ticks = min(min( xticks(2)-xticks(1), yticks(2)-yticks(1)), zticks(2)-zticks(1));
       
-      
-      %% all initial SC
-      figure(7)
-      
-      subplot(2,2,1)
-      jobId = find(dim1valuesPerJob==dim1values{1} & dim2valuesPerJob==dim2values{1});
-      imagesc(results.learnedSC{jobId}(:,:,1))
-      title([varParams{dim1} '=' num2str(dim1values{1}) ' and ' varParams{dim2} '=' num2str(dim2values{1})])
-      
-      subplot(2,2,2)
-      jobId = find(dim1valuesPerJob==dim1values{1} & dim2valuesPerJob==dim2values{end});
-      imagesc(results.learnedSC{jobId}(:,:,1))
-      title([varParams{dim1} '=' num2str(dim1values{1}) ' and ' varParams{dim2} '=' num2str(dim2values{end})])
-
-      subplot(2,2,3)
-      jobId = find(dim1valuesPerJob==dim1values{end} & dim2valuesPerJob==dim2values{1});
-      imagesc(results.learnedSC{jobId}(:,:,1))
-      title([varParams{dim1} '=' num2str(dim1values{end}) ' and ' varParams{dim2} '=' num2str(dim2values{1})])
-      
-      subplot(2,2,4)
-      jobId = find(dim1valuesPerJob==dim1values{end} & dim2valuesPerJob==dim2values{end});
-      imagesc(results.learnedSC{jobId}(:,:,1))
-      title([varParams{dim1} '=' num2str(dim1values{end}) ' and ' varParams{dim2} '=' num2str(dim2values{end})])
-      
-      %% all final SC
-      figure(8)
-      
-      subplot(2,2,1)
-      jobId = find(dim1valuesPerJob==dim1values{1} & dim2valuesPerJob==dim2values{1});
-      imagesc(results.learnedSC{jobId}(:,:,end))
-      title([varParams{dim1} '=' num2str(dim1values{1}) ' and ' varParams{dim2} '=' num2str(dim2values{1})])
-      
-      subplot(2,2,2)
-      jobId = find(dim1valuesPerJob==dim1values{1} & dim2valuesPerJob==dim2values{end});
-      imagesc(results.learnedSC{jobId}(:,:,end))
-      title([varParams{dim1} '=' num2str(dim1values{1}) ' and ' varParams{dim2} '=' num2str(dim2values{end})])
-
-      subplot(2,2,3)
-      jobId = find(dim1valuesPerJob==dim1values{end} & dim2valuesPerJob==dim2values{1});
-      imagesc(results.learnedSC{jobId}(:,:,end))
-      title([varParams{dim1} '=' num2str(dim1values{end}) ' and ' varParams{dim2} '=' num2str(dim2values{1})])
-      
-      subplot(2,2,4)
-      jobId = find(dim1valuesPerJob==dim1values{end} & dim2valuesPerJob==dim2values{end});
-      imagesc(results.learnedSC{jobId}(:,:,end))
-      title([varParams{dim1} '=' num2str(dim1values{end}) ' and ' varParams{dim2} '=' num2str(dim2values{end})])
-      
-      
+      set(gca,'xtick', -diff_ticks*10:diff_ticks:10*diff_ticks);
+      set(gca,'ytick', -diff_ticks*10:diff_ticks:10*diff_ticks);
+      set(gca,'ztick', -diff_ticks*10:diff_ticks:10*diff_ticks);
     end
     
   end
