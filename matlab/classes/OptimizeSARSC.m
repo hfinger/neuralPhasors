@@ -285,22 +285,22 @@ classdef OptimizeSARSC < Gridjob
         dim1and2Values = [dim1values{1} dim2values{1}];
         jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
         fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
-        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+        plotConnMat( results.learnedSC{jobId}(:,:,end), pwd, fname, [], true, true, true, true )
 
         dim1and2Values = [dim1values{1} dim2values{end}];
         jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
         fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
-        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+        plotConnMat( results.learnedSC{jobId}(:,:,end), pwd, fname, [], true, true, true, true )
 
         dim1and2Values = [dim1values{end} dim2values{1}];
         jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
         fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
-        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+        plotConnMat( results.learnedSC{jobId}(:,:,end), pwd, fname, [], true, true, true, true )
 
         dim1and2Values = [dim1values{end} dim2values{end}];
         jobId = find(dim1valuesPerJob==dim1and2Values(1) & dim2valuesPerJob==dim1and2Values(2));
         fname = ['SC_finish_' varParams{dim1} '=' num2str(dim1and2Values(1)) ' and ' varParams{dim2} '=' num2str(dim1and2Values(2))];
-        plotConnMat( results.learnedSC{jobId}(:,:,1), pwd, fname, [], true, true, true, true )
+        plotConnMat( results.learnedSC{jobId}(:,:,end), pwd, fname, [], true, true, true, true )
       end
       
       %% convert to diag form
@@ -382,6 +382,10 @@ classdef OptimizeSARSC < Gridjob
               ylims = get(gca,'ylim');
               zlims = get(gca,'zlim');
               clims = get(gca,'clim');
+              xticks = get(gca,'xtick');
+              yticks = get(gca,'ytick');
+              zticks = get(gca,'ztick');
+              
               for t=1:180
                 maxSaveId = 2+ceil(t/8);
                 clf;
@@ -390,8 +394,12 @@ classdef OptimizeSARSC < Gridjob
                 set(gca,'ylim',ylims);
                 set(gca,'zlim',zlims);
                 set(gca,'clim',clims);
+                set(gca,'xtick', xticks);
+                set(gca,'ytick', yticks);
+                set(gca,'ztick', zticks);
                 
-                uicontrol(gcf,'style','text','units','normalized','pos',[0.3 0.95 0.4 0.05],'string',['iteration' num2str(this.params.OptimizeSARSC.saveAtIters(maxSaveId))],'FontSize',16)
+                iter = sprintf('% 6.0f', this.params.OptimizeSARSC.saveAtIters(min(maxSaveId,length(this.params.OptimizeSARSC.saveAtIters))));
+                uicontrol(gcf,'style','text','units','normalized','pos',[0.3 0.95 0.4 0.05],'string',['iteration ' iter],'FontSize',16)
 
                 view(az_init,el_init);
                 axis vis3d
@@ -445,8 +453,15 @@ classdef OptimizeSARSC < Gridjob
       
       plot3(Y3(1,1),Y3(1,2),Y3(1,3),'go','LineWidth',3)
       %title('3D MDS')
-      colorbar
-%       set(gca,'clim',[0 1])
+      c = colorbar;
+      ylabel(c,'Corr(empFC,simFC)');
+      x=get(c,'Position');
+      x(2)=0.3;
+      x(3)=0.02;
+      x(4)=0.4;
+      set(c,'Position',x)
+      
+      set(gca,'clim',[0 1])
       axis equal;
       box on
       grid on
