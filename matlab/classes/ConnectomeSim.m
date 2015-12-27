@@ -104,7 +104,7 @@ classdef ConnectomeSim < Gridjob
       param = this.params.ConnectomeSim;
       
       paths = dataPaths( );
-      
+            
       savepath = fullfile(this.workpath,this.params.ConnectomeSim.outFilenames);
       if param.forceOverwrite || ~exist(fullfile(savepath,[num2str(this.currJobid) 'FC.mat']),'file')
         
@@ -227,12 +227,14 @@ classdef ConnectomeSim < Gridjob
           % xy.paramComb % column-wise representation of jobIDs 
           % xy.variableParams{variable,1}{1,2};
           
-          getId = find(sum(ismember(cell2mat(jb.paramComb),[param.loadSp; param.loadHeur; param.loadHscale]),1) == length(jb.variableParams),1);    
-
+          getId = find(sum(cell2mat(jb.paramComb) == repmat([param.loadSp; param.loadHeur; param.loadHscale], 1,length(jb.paramComb))) == length(jb.variableParams),1);
+          
           ci = load(fullfile(paths.workdir,'pebel','20150414_SAR_Metrics','ConnectomeMetrics',strcat(num2str(getId),'SC.mat')));        
           SC = ci.hSC;
           D  = ci.hMetr.perConn.euclDist; % distance matrix for distance correction, see param ConnectomeSim.dtiDistanceCorrection
+        
         elseif param.dataset==6
+          
           SC = load(fullfile(paths.databases,'SC_Bastian','dti_20150410_highResConnmat.mat'));
           SC = double(SC.connmat);
         end

@@ -144,7 +144,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
     function run(this)
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      %%%% START EDIT HERE: implement the algori
+      %%%% START EDIT HERE: implement the algorithm
       
       p = this.params.ConnectomeEnvelopeReduce;
       %% for backwards compatibility:
@@ -1010,6 +1010,10 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           [compareSimExp.overFreq.(metrics{m}).rho, compareSimExp.overFreq.(metrics{m}).pval] = corr(tmpEEG,tmpSIM);
           compareSimExp.overFreq.(metrics{m}).rho = reshape(compareSimExp.overFreq.(metrics{m}).rho,eegSimDimSize);
           compareSimExp.overFreq.(metrics{m}).pval = reshape(compareSimExp.overFreq.(metrics{m}).pval,eegSimDimSize);
+          
+          % correlation for inter- and intrahemispherical connections
+          [compareSimExp.overFreq.(metrics{m}).rhoInter, ~] = corr(tmpEEG,tmpSIM);
+          compareSimExp.overFreq.(metrics{m}).rhoInter = reshape(compareSimExp.overFreq.(metrics{m}).rhoInter,eegSimDimSize);
           
           %% Jaccard similarity coefficient (only for positive real valued metrics):
           if ~strcmp(metrics{m},'icoh')

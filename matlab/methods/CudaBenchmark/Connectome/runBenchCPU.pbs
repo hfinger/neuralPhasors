@@ -1,7 +1,6 @@
-#PBS -l ncpus=1
-#PBS -l walltime=600
+#PBS -l ncpus=8
+#PBS -l walltime=3600
 #PBS -q workq
-cd $PBS_O_WORKDIR
-/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "startBenchmark1(false)" -c ~/ikw_license.dat
+/sw/sdev/matlab/R2013b/bin/matlab -nodisplay -r "cd /home/staff/h/hofinger/code/src/matlab/methods/CudaBenchmark/Connectome; startBenchmark1(false)" -c ~/ikw_license.dat
 exit 0
 

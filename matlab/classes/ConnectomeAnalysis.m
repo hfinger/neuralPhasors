@@ -79,7 +79,7 @@ classdef ConnectomeAnalysis < Gridjob
 %         [A,B] = sort(dimParam);
 %         
 %         dimParam(B(A>0),:)
-%         overFreq.spec.dimName
+%         overFreq.spec.dimSize
 %        
 %         thisPar = [uint8(param.loadSp*10+1), param.loadHeur];
         
@@ -88,7 +88,12 @@ classdef ConnectomeAnalysis < Gridjob
         end
         
         if(length(overFreq.spec.dimName) == 3)                              % Sparse x hScale x kScale, only 1 Heur
-          abc=squeeze(overFreq.coh.rho(uint8(param.loadSp*10+1),:,:));      
+          abc=squeeze(overFreq.coh.rho(uint8(param.loadSp*10+1),:,:));      %%%% HAS TO BE FIXED
+                                                                            %%%% DOES NOT WORK WHEN NOT STARTING FROM sp=0
+                                                                            %%%% e.g. cannot index 7
+          % strcmp(overFreq.spec.dimName(1), 'loadSp')
+          % strcmp(overFreq.spec.dimName(2), 'loadHscale')
+          % strcmp(overFreq.spec.dimName(3), 'k')
         end
                                                                            
         [maxcorr,idx] = max(abc(:));  

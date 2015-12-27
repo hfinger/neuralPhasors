@@ -15,6 +15,8 @@ perGlob.clCoeff = mean(clustering_coef_wu(SC));
 
 perGlob.sparse = sum(sum(SC == 0)) / numel(SC);                             % determine level of sparseness, [0, 1]
 
+perGlob.spectr = max(abs(eig(SC)));                                         % get spectral radius, measure of connectedness
+
 %% get normalized measurements
 
 perm = zeros(nSamples, 2);
@@ -72,5 +74,3 @@ for j = 1:sum(perGlob.Rsignif)
 end
 
 % check if RC membership is symmetric to allow for straightforward homotopic connections
-
-dbpoint = 42;

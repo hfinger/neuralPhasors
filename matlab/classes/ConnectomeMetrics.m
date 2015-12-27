@@ -88,7 +88,7 @@ classdef ConnectomeMetrics < Gridjob
       end
       
       hSC = homotopHeur(SCNorm, SCMetr, param.heuristics, param.hScale, param.graphH0);
-      hSC = normGraph(hSC, avg_roi_size, 'ROIprd', false, false);           % normalize ROIprd / ROIsum
+      % hSC = normGraph(hSC, avg_roi_size, 'ROIprd', false, false);         % normalize ROIprd / ROIsum -- dont do this again
       hMetr = graphMetrics(hSC, param.graphH0, path);                       % calc metrics (undir.graph) before row normalization
       hSC = normGraph(hSC, avg_roi_size, 'none', true, false);              % normalize rows, i.e. input, to sum(CIJ) == 1
       

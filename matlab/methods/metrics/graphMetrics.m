@@ -12,7 +12,7 @@ end
 
 %% metrics per ROI: 66 x 1
 
-metr.perROI = metricsROI_wu(SC);
+[metr.perROI, metr.lables.perROI] = metricsROI_wu(SC);
 
 %% metrics per connection (ROI1, ROI2): 66 x 66
 

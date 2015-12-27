@@ -1,0 +1,8 @@
+Change Log
+
+Date		Name of Program			Kind of update			Comments
+		
+20150812	MainAnalysisFile.m		Created				Main script to collect all the steps of the analysis
+========================================================================================================================================================
+20150812	GetFullConnmat.m		Created				Function to combine data from probablistic tracking of all subjects to get connmat and waytotal
+========================================================================================================================================================
