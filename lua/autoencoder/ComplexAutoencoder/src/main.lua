@@ -23,6 +23,8 @@ opt = lapp[[
    -k,--kernel        (default 7)           kernelsize
    -p,--phase         (default false)       training with/without phase
    -n,--noise         (default 0.1)         noise level for denoising         
+   -c, --criterion    (default MSE)         Loss Function: MSE | BCE | Complex
+   -w
    --coefL1           (default 0)           L1 penalty on the weights
    --coefL2           (default 0)           L2 penalty on the weights
 ]]
@@ -46,9 +48,16 @@ autoencoder:add(dec)
 --set Criterion 
 criterion = nn.ParallelCriterion()
 
-xcrit = nn.MSECriterion() --compare x_in and x_out
-ycrit = nn.MSECriterion() --compare y_in and y_out
-
+if opt.criterion == 'MSE' then
+    xcrit = nn.MSECriterion() --compare x_in and x_out
+    ycrit = nn.MSECriterion() --compare y_in and y_out
+elseif opt.criterion == 'BCE' then
+    xcrit = nn.BCECriterion() --compare x_in and x_out
+    ycrit = nn.BCECriterion() --compare y_in and y_out
+else
+    xcrit = nn.ComplexCrit() --compare x_in and x_out
+    ycrit = nn.ComplexCrit() --compare y_in and y_out
+end
 criterion:add(xcrit,0.5)
 criterion:add(ycrit,0.5)
 
@@ -59,8 +68,8 @@ print("start training")
 steps = opt.full
 batchSize = opt.batchSize
 trainModel(steps, batchSize, traindata, autoencoder, criterion, parameters, gradParameters, config, opt.phase, opt.noise)
-print('finished training after ' .. timer:time().real .. ' - save model')
 name = 'model' .. opt.full .. '.net'
+print('finished training after ' .. timer:time().real .. ' - save model ' .. name)
 torch.save(name,autoencoder)
 
 

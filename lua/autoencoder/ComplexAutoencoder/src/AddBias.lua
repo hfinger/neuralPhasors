@@ -24,6 +24,9 @@ function AddBias:updateGradInput(input, gradOutput)
     return self.gradInput
 end
 
+function updateParameters(learninRate)
+    self.bias:add(learningRate, self.gradBias)
+end    
 --@input Tensor with input of Backward-call of previous module
 --@gradOutput Gradient output of previous module 
 --@scale Factor for parameter accumulation
@@ -32,3 +35,7 @@ function AddBias:accGradParameters(input, gradOutput, scale)
    local gradOutput = gradOutput:view((#self.bias)[1], -1) --take gradient output with dimensions like bias
    self.gradBias:add(scale,gradOutput:sum(2)) --accumulate gradient output into gradient-bias
 end
+
+function AddBias:parameters()
+    return {self.bias}, {self.gradBias}
+end    

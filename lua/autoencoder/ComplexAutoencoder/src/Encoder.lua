@@ -34,6 +34,16 @@ function Encoder:updateGradInput(inp, gradOutput)
     return self.gradInput
 end
 
+function Encoder:updateParameters(learningRate)
+    self.encoder:updateParameters(learningRate)
+    convolution1.bias:zero()
+    convolution1.gradBias:zero()
+end    
+
+function Encoder:parameters()
+    return self.encoder:parameters()
+end 
+
 --Function to build encoder Network
 function Encoder:build_enc()
     
@@ -45,25 +55,20 @@ function Encoder:build_enc()
 
     local par1 = nn.ParallelTable()
 
-    linear1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
-    linear2 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    convolution2 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
     --set bias terms to zero
-    linear2:share(linear1,'weight')
-    linear2:share(linear1,'bias')
-    linear2:share(linear1,'gradWeight')
-    linear2:share(linear1,'gradBias')
-    linear1.bias = torch.Tensor(self.hidden):zero() 
-    self.convBias = linear1.bias
-    self.convGradBias = linear1.gradBias
-    
+    convolution2:share(convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
+    convolution1.bias:zero() 
+    convolution1.gradBias:zero() 
     --Add zeros at edges of input in order to have square kernel
     local zeroPad = (self.kernel_size-1)/2
     local conv1 = nn.Sequential()
     conv1:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
-    conv1:add(linear1)
+    conv1:add(convolution1)
     local conv2 = nn.Sequential()
     conv2:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
-    conv2:add(linear2)
+    conv2:add(convolution2)
 
     par1:add(conv1) -- w*x
     par1:add(conv2) -- w*y
@@ -108,15 +113,12 @@ function Encoder:build_enc()
     real:add(nn.CAddTable())  -- x^2 + y^2
     real:add(nn.Sqrt())
 
-    local linear3 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
-    linear3:share(linear1,'weight')
-    linear3:share(linear1,'bias')
-    linear3:share(linear1,'gradWeight')
-    linear3:share(linear1,'gradBias')
+    local convolution3 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    convolution3:share(convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
 
     local conv3 = nn.Sequential()
     conv3:add(nn.SpatialZeroPadding((self.kernel_size-1)/2,(self.kernel_size-1)/2,(self.kernel_size-1)/2,(self.kernel_size-1)/2))
-    conv3:add(linear3)
+    conv3:add(convolution3)
 
     real:add(conv3)
     real:add(nn.MulConstant(0.5,true))
@@ -154,6 +156,7 @@ function Encoder:build_enc()
     local bias = nn.Sequential()
     bias:add(nn.AddBias(self.hidden))
     bias:add(nn.ReLU())
+    --bias:add(nn.Sigmoid())
     
     relu:add(bias) -- use rectified Linear activation
 

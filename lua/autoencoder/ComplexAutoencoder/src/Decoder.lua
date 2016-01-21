@@ -23,31 +23,37 @@ function Decoder:updateGradInput(inp, gradOutput)
     return self.gradInput
 end
 
+function Decoder:updateParameters(learningRate)
+    self.decoder:updateParameters(learningRate)
+    convolution1.bias:zero()
+    convolution1.gradBias:zero() 
+end  
+
+function Decoder:parameters()
+    return self.decoder:parameters()
+end 
+
 --Function to build decoder Network
 function Decoder:build_dec()
 
     --initialize Decoder
     local dec = nn.ParallelTable()
-    local declin1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
-    local declin2 = nn.SpatialConvolution(self.input,self.hidden, self.kernel_size, self.kernel_size)
+    convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    convolution2 = nn.SpatialConvolution(self.input,self.hidden, self.kernel_size, self.kernel_size)
     
     local zeroPad = (self.kernel_size-1)/2
     local decConv1 = nn.Sequential()
     decConv1:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
-    decConv1:add(declin1)
+    decConv1:add(convolution1)
     
     local decConv2 = nn.Sequential()
     decConv2:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
-    decConv2:add(declin2)
+    decConv2:add(convolution2)
     
-    declin1:share(declin2,'weight')
-    declin1:share(declin2,'gradWeight')
-    declin1.bias = torch.Tensor(1):zero()
-    declin1.gradBias = torch.Tensor(1):zero() 
-    declin2.bias = torch.Tensor(1):zero()
-    declin2.gradBias = torch.Tensor(1):zero() 
-    self.convBias = declin1.bias
-    self.convGradBias = declin1.gradBias
+    convolution2:share(convolution1,'weight', 'gradWeight', 'bias', 'gradBias')
+    convolution1.bias:zero()
+    convolution1.gradBias:zero() 
+
     
     dec:add(decConv1)
     dec:add(decConv2)

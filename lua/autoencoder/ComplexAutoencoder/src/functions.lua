@@ -1,8 +1,8 @@
 
 function loadData(normalizeMean)
   
-  train = torch.load('mnist.t7/train_32x32.t7', 'ascii')
-  test = torch.load('mnist.t7/test_32x32.t7', 'ascii')
+  train = torch.load('/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/mnist.t7/train_32x32.t7', 'ascii')
+  test = torch.load('/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/mnist.t7/test_32x32.t7', 'ascii')
   
   train = train.data
   test = test.data
@@ -11,13 +11,13 @@ function loadData(normalizeMean)
   for i = 1,train:size()[1] do   
     traindata[i] = train[i]
   end
-  traindata:div(traindata:std())
+  traindata:div(255)
   
   testdata = torch.Tensor(test:size()[1],1,32,32)
   for i = 1,test:size()[1] do   
     testdata[i] = test[i]
   end
-  testdata:div(testdata:std())
+  testdata:div(255)
   
   if normalizeMean then
     traindata:add(-traindata:mean())
@@ -40,14 +40,14 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
             -- reset gradients
             gradParameters:zero()
             local f = 0 
-            for j = 0,batchsize-1 do            
+            for j = 0,batchsize-1 do        
                 local activity = data[i+j]
                 local phase = torch.Tensor(1,32,32):zero()
                 if usePhase then
                     phase = (torch.rand(1,32,32)*2*math.pi)-math.pi
                 end
-                local input
-                local target
+                local input = {}
+                local target = {}
                 if noiseLevel then
                     corrupted = torch.cmul(activity,randomkit.binomial(torch.Tensor(#activity),1,1-noiseLevel))
                     input = {torch.cmul(corrupted,torch.cos(phase)),torch.cmul(corrupted,torch.sin(phase))}
@@ -62,17 +62,13 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
                 f = f+err
                 model:backward(input,df_dw)
             end
+            
             gradParameters:div(batchsize)
             f = f/batchsize
             return f, gradParameters
         end 
-    
         optim.sgd(feval, parameters, config)
-    
-        model:get(1).convBias = torch.Tensor(50):zero()
-        model:get(1).convGradBias = torch.Tensor(50):zero()
-        model:get(2).convBias = torch.Tensor(50):zero()
-        model:get(2).convGradBias = torch.Tensor(50):zero()
-
+        
     end 
+    
 end

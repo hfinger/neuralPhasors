@@ -1,17 +1,34 @@
-require 'nn'
+require 'unsup';
+require 'nn';
+require 'gnuplot';
+require 'Encoder';
+require 'Decoder';
+require 'image';
+require 'optim';
+require 'functions'
+require 'randomkit'
 require 'pl'
-opt = lapp[[
-   -f,--full          (default 5000)        use the full dataset or only n samples
-   -o,--optimization  (default "SGD")       optimization: SGD | LBFGS 
-   -r,--learningRate  (default 0.05)        learning rate, for SGD only
-   -b,--batchSize     (default 10)          batch size
-   -m,--momentum      (default 0)           momentum, for SGD only
-   -d,--weightDecay   (default 5e-5)        weight decay for SGD
-   -h,--hidden        (default 50)          number of hidden units
-   -k,--kernel        (default 7)           kernelsize
-   -p,--phase         (default false)       training with/without phase
-   -n,--noise         (default 0.1)         noise level for denoising         
-   --coefL1           (default 0)           L1 penalty on the weights
-   --coefL2           (default 0)           L2 penalty on the weights
-]]
-print(opt)
+
+
+train = torch.load('/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/mnist.t7/train_32x32.t7', 'ascii')
+  
+  train = train.data
+
+
+  traindata = torch.Tensor(train:size()[1],1,32,32)
+  for i = 1,train:size()[1] do   
+    traindata[i] = train[i]
+  end
+  traindata:div(255)
+  print(traindata[1])
+--print(torch.sqrt( torch.pow(autoencoder.output[1],2) + torch.pow(autoencoder.output[2],2)))
+
+
+
+
+
+
+
+
+
+

@@ -12,9 +12,9 @@ function ComplexCrit:updateOutput(input,target)
     phase_in = torch.acos(torch.div(input[1],a_in))
     phase_tar = torch.acos(torch.div(target[1],a_tar))
     
-    a_err = torch.pow(torch.add(a_in,-a_tar),2) 
+    a_err = torch.pow((a_tar - a_in),2) 
     a_err = xerr:sum()
-    phase_err = (-torch.cos(phase_in-phase_tar)+1)*a_in*a_tar
+    phase_err = (-torch.cos(phase_tar-phase_in)+1)*a_in*a_tar
     phase_err = phase_err:sum()
     
     self.output = (1/(#input[1])) * (a_rr+phase_err)
