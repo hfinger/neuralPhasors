@@ -8,19 +8,22 @@ require 'optim';
 require 'functions'
 require 'randomkit'
 require 'pl'
+require 'mattorch'
+require 'mattorch'
+local lfs = require"lfs";
+function catch()
+    require 'cunn';
+    require 'cutorch';
+end
+if pcall(catch) then print('a') else print('b') end
+--require 'cutorch'
+--require 'ComplexCrit';
 
+test1 = whiteStripes(5)
+test2 = whiteStripes(5)
+test3 = whiteStripes(5)
 
-train = torch.load('/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/mnist.t7/train_32x32.t7', 'ascii')
-  
-  train = train.data
-
-
-  traindata = torch.Tensor(train:size()[1],1,32,32)
-  for i = 1,train:size()[1] do   
-    traindata[i] = train[i]
-  end
-  traindata:div(255)
-  print(traindata[1])
+mattorch.save('output.mat', {w1 = test1, w2 = test2, w3 = test3})
 --print(torch.sqrt( torch.pow(autoencoder.output[1],2) + torch.pow(autoencoder.output[2],2)))
 
 

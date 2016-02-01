@@ -1,3 +1,0 @@
-require 'LoadData'
-
-test = loadData(false)

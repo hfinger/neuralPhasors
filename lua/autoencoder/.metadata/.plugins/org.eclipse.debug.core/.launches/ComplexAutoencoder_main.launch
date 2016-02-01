@@ -11,4 +11,5 @@
 <stringAttribute key="org.eclipse.dltk.launching.INTERPRETER_CONTAINER" value="org.eclipse.dltk.launching.INTERPRETER_CONTAINER/org.eclipse.ldt.support.lua51.Lua51InterpreterInstallType/Lua 5.1"/>
 <stringAttribute key="process_factory_id" value="org.eclipse.dltk.launching.scriptProcessFactory"/>
 <stringAttribute key="project" value="ComplexAutoencoder"/>
+<stringAttribute key="scriptArguments" value="-f 10 -m 0.1"/>
 </launchConfiguration>

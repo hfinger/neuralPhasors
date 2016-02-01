@@ -11,12 +11,16 @@ Torch Neural Network Module for creating the encoding part of an Autoencoder
 @n_hidden number of hidden units / dimension of convolution 
 @kernel_size dimension of kernel for spatial convolution
 ]]--
-function Encoder:__init(n_input, n_hidden, kernel_size)
+function Encoder:__init(n_input, n_hidden, kernel_size, useLinear)
    Parent.__init(self)
    self.input = n_input 
    self.hidden = n_hidden
    self.kernel_size = kernel_size
+   if useLinear then
+    self.useLinear = useLinear
+   end
    self.encoder = self:build_enc()
+   self.train = true
 end
 
 --@inp Tensor of size n_input with input to be encoded
@@ -34,16 +38,31 @@ function Encoder:updateGradInput(inp, gradOutput)
     return self.gradInput
 end
 
+function Encoder:cuda()
+    self.encoder:cuda()
+    atan:cuda()
+end    
+
 function Encoder:updateParameters(learningRate)
-    self.encoder:updateParameters(learningRate)
-    convolution1.bias:zero()
-    convolution1.gradBias:zero()
+    if self.train then       
+        self.encoder:updateParameters(learningRate)
+        self.convolution1.bias:zero()
+        self.convolution1.gradBias:zero()
+    end    
 end    
 
 function Encoder:parameters()
     return self.encoder:parameters()
 end 
 
+function Encoder:evaluate()
+    self.train = false
+end
+
+function Encoder:training()
+    self.train = true
+end    
+    
 --Function to build encoder Network
 function Encoder:build_enc()
     
@@ -54,22 +73,35 @@ function Encoder:build_enc()
     local img = nn.Sequential()
 
     local par1 = nn.ParallelTable()
-
-    convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
-    convolution2 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    
+    if self.useLinear then
+        self.convolution1 = nn.Linear(self.input, self.hidden)
+        self.convolution2 = nn.Linear(self.input, self.hidden)
+    else
+        self.convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+        self.convolution2 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    end        
     --set bias terms to zero
-    convolution2:share(convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
-    convolution1.bias:zero() 
-    convolution1.gradBias:zero() 
+    self.convolution2:share(self.convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
+    self.convolution1.bias:zero() 
+    self.convolution1.gradBias:zero() 
     --Add zeros at edges of input in order to have square kernel
     local zeroPad = (self.kernel_size-1)/2
     local conv1 = nn.Sequential()
-    conv1:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
-    conv1:add(convolution1)
+    if not self.useLinear then
+        conv1:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
+    else
+        --conv1:add(nn.Reshape())
+    end    
+    conv1:add(self.convolution1)
+--    conv1:add(nn.SpatialDropout(0.1))   
     local conv2 = nn.Sequential()
-    conv2:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
-    conv2:add(convolution2)
-
+    if not self.useLinear then
+        conv2:add(nn.SpatialZeroPadding(zeroPad,zeroPad,zeroPad,zeroPad))
+    end    
+    conv2:add(self.convolution2)
+--   conv2:add(nn.SpatialDropout(0.1))   
+    
     par1:add(conv1) -- w*x
     par1:add(conv2) -- w*y
 
@@ -91,7 +123,8 @@ function Encoder:build_enc()
 
 
     local phase = nn.Sequential()
-    phase:add(nn.Atan2())
+    atan = nn.Atan2()
+    phase:add(atan)
 
 
     partable:add(phase) -- atan(wy,wx)
@@ -112,14 +145,20 @@ function Encoder:build_enc()
     real:add(par2)
     real:add(nn.CAddTable())  -- x^2 + y^2
     real:add(nn.Sqrt())
-
-    local convolution3 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
-    convolution3:share(convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
+    if self.useLinear then
+        self.convolution3 = nn.Linear(self.input, self.hidden)
+    else
+        self.convolution3 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
+    end    
+    self.convolution3:share(self.convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
 
     local conv3 = nn.Sequential()
-    conv3:add(nn.SpatialZeroPadding((self.kernel_size-1)/2,(self.kernel_size-1)/2,(self.kernel_size-1)/2,(self.kernel_size-1)/2))
-    conv3:add(convolution3)
-
+    if not self.useLinear then
+        conv3:add(nn.SpatialZeroPadding((self.kernel_size-1)/2,(self.kernel_size-1)/2,(self.kernel_size-1)/2,(self.kernel_size-1)/2))
+    end
+    conv3:add(self.convolution3)
+ --   conv3:add(nn.SpatialDropout(0.1))    
+    
     real:add(conv3)
     real:add(nn.MulConstant(0.5,true))
 
@@ -154,14 +193,13 @@ function Encoder:build_enc()
     relu:add(nn.Identity())
     
     local bias = nn.Sequential()
-    bias:add(nn.AddBias(self.hidden))
+  --  bias:add(nn.AddBias(self.hidden))
     bias:add(nn.ReLU())
     --bias:add(nn.Sigmoid())
     
     relu:add(bias) -- use rectified Linear activation
 
     enc:add(relu)
-
     --  Transform back to coordinate form
     local transform = nn.ConcatTable()
     x = nn.Sequential()

@@ -1,3 +1,0 @@
-require 'image'
-require 'gnuplot'
-gnuplot.plot(image.lena())

@@ -5,29 +5,48 @@ Torch Neural Network Module to apply atan2 on input Tensor
 ]]--
 function Atan2:__init()
    Parent.__init(self)
+   self.useCuda = false
 end
 
 --Apply Atan2
 --@input with second dimension = 2 for x and y
 function Atan2:updateOutput(input)
+
     self.output = torch.atan2(input[2],input[1]) 
+    if self.output:ne(self.output):sum() > 1 then
+        self.output = (torch.rand(#self.output)*2*math.pi)-math.pi
+    end
+    if self.useCuda then
+        self.output = self.output:cuda()
+    end    
     return self.output
 end
- 
+
+function Atan2:cuda()
+    self.useCuda = true
+end 
 --Gradient
 --@input Tensor with input of previous module
 --@gradOutput Tensor with gradient of previous module
 function Atan2:updateGradInput(input, gradOutput)
-    
-    -- xgrad(Atan2) = -y/(x^2+y^2)
-    addx = torch.add(torch.pow(input[1],2),torch.pow(input[2],2)) 
-    divx = -torch.cdiv(input[2],addx)  
-    x = torch.cmul(gradOutput,divx)
-    
-    -- ygrad(Atan2) = x/(x^2+y^2)
-    addy = torch.add(torch.pow(input[1],2),torch.pow(input[2],2))
-    divy = torch.cdiv(input[1],addy)
-    y = torch.cmul(gradOutput,divy)
+    if input[1] == 0 and input[2] == 0 then
+        -- xgrad(Atan2) = -y/(x^2+y^2)
+        addx = torch.add(torch.pow(input[1],2),torch.pow(input[2],2)) 
+        divx = -torch.cdiv(input[2],addx)  
+        x = torch.cmul(gradOutput,divx)
+        
+        -- ygrad(Atan2) = x/(x^2+y^2)
+        addy = torch.add(torch.pow(input[1],2),torch.pow(input[2],2))
+        divy = torch.cdiv(input[1],addy)
+        y = torch.cmul(gradOutput,divy)
+    else
+        x = torch.Tensor(#input[1]):zero()
+        y = torch.Tensor(#input[1]):zero()
+        if self.useCuda then
+            x = x:cuda()
+            y = y:cuda()
+        end       
+    end
     self.gradInput = {x,y}
     return self.gradInput
 end

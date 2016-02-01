@@ -33,6 +33,10 @@ function Decoder:parameters()
     return self.decoder:parameters()
 end 
 
+function Decoder:cuda()
+    self.decoder:cuda()
+end  
+
 --Function to build decoder Network
 function Decoder:build_dec()
 
