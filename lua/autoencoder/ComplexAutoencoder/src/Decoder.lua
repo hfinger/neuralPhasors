@@ -25,8 +25,6 @@ end
 
 function Decoder:updateParameters(learningRate)
     self.decoder:updateParameters(learningRate)
-    convolution1.bias:zero()
-    convolution1.gradBias:zero() 
 end  
 
 function Decoder:parameters()
@@ -37,10 +35,16 @@ function Decoder:cuda()
     self.decoder:cuda()
 end  
 
+function Decoder:float()
+    self.decoder:float()
+end  
+
 --Function to build decoder Network
 function Decoder:build_dec()
 
-    --initialize Decoder
+    --initialize Decoder\
+    local container = nn.Sequential()
+    
     local dec = nn.ParallelTable()
     convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size)
     convolution2 = nn.SpatialConvolution(self.input,self.hidden, self.kernel_size, self.kernel_size)
@@ -55,12 +59,13 @@ function Decoder:build_dec()
     decConv2:add(convolution2)
     
     convolution2:share(convolution1,'weight', 'gradWeight', 'bias', 'gradBias')
-    convolution1.bias:zero()
-    convolution1.gradBias:zero() 
 
     
     dec:add(decConv1)
     dec:add(decConv2)
     
-    return dec
+    container:add(dec)
+    --container:add(nn.ParallelTable():add(nn.Sigmoid()):add(nn.Sigmoid()))
+    
+    return container
 end
