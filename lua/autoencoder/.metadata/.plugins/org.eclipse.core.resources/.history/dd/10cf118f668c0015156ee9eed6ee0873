@@ -1,0 +1,90 @@
+require 'unsup';
+require 'nn';
+require 'gnuplot';
+require 'Encoder';
+require 'Decoder';
+require 'nngraph';
+require 'image';
+require 'optim';
+require 'functions'
+require 'image'
+
+traindata, testdata = loadData{normalizeMean = false} 
+autoencoder = torch.load('model.net')
+
+
+
+
+activity = testdata[101]
+activities = torch.Tensor(10,32,32)
+reconstructionErrors = torch.Tensor(10)
+for i = 0,1 do
+    
+    local phase = (torch.rand(1,32,32)*2*math.pi)---math.pi
+    local inp = {torch.cmul(activity,torch.cos(phase)),torch.cmul(activity,torch.sin(phase))}
+
+    local out = autoencoder:forward(inp)
+    local phase_out = torch.atan2(out[2],out[1])
+    
+    for j = 1,(10*i) do
+        out = autoencoder:forward({torch.cmul(activity,torch.cos(phase_out)),torch.cmul(activity,torch.sin(phase_out))})
+        phase_out = torch.atan2(out[2],out[1])
+    end
+    
+    a_out = torch.sqrt( torch.pow(out[1],2) + torch.pow(out[2],2 ))
+    activities[i+1] = a_out
+    reconstructionErrors[i+1] = torch.norm(activity-a_out)^2
+end
+print('Create Plot')
+gnuplot.pdffigure('PhaseIterations.pdf')
+gnuplot.xlabel('Phase iterations * 10e^1')
+gnuplot.ylabel('L2 Norm')
+x = torch.linspace(0,9)
+print(#x)
+print(#torch.Tensor(reconstructionErrors))
+gnuplot.plot(x,torch.Tensor(reconstructionErrors))
+gnuplot.plotflush()
+image.save('Reconstructions.png', image.toDisplayTensor(activities))
+--[[
+phases = torch.Tensor(10,32,32)
+images = torch.Tensor(10,3,32,32)
+
+for i = 1,10 do
+        
+    local phase = (torch.rand(1,32,32)*2*math.pi)---math.pi
+    local inp = {torch.cmul(activity,torch.cos(phase)),torch.cmul(activity,torch.sin(phase))}
+
+    local out = autoencoder:forward(inp)
+    local phase_out = torch.atan2(out[2],out[1])
+    
+    for j = 1,100 do
+        out = autoencoder:forward({torch.cmul(activity,torch.cos(phase_out)),torch.cmul(activity,torch.sin(phase_out))})
+        phase_out = torch.atan2(out[2],out[1])
+    end
+    
+    a_out = torch.sqrt( torch.pow(out[1],2) + torch.pow(out[2],2 ))
+
+
+    hsv = torch.Tensor(3,32,32)
+    hsv[1]:copy((phase_out+math.pi)/(2*math.pi))
+    hsv[2] = torch.Tensor(32,32):fill(0.5)
+    hsv[3] = torch.Tensor(32,32):fill(0.5)
+    rgb = image.hsv2rgb(hsv)
+
+    phases[i] = phase_out[1]
+    images[i] = rgb
+  
+end
+print('plotting')
+image.save('resultPhase.png', image.toDisplayTensor(images))
+image.save('resultActivity.png', a_out)
+local phase_diff  = torch.Tensor(5,32,32)
+local j = 1
+for i = 1,9,2 do
+    phase_diff[j] = phases[i]-phases[i+1]
+    phase_diff[j] = phase_diff[j] - (torch.floor(phase_diff[j]/(2*math.pi))*(2*math.pi))
+    j = j+1
+
+end
+
+gnuplot.hist(phase_diff,100)--]]

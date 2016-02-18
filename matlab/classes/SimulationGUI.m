@@ -92,7 +92,7 @@ set(handles.table1,'data',[fields, values']);
 guidata(hObject, handles);
 % UIWAIT makes SimulationGUI wait for user response (see UIRESUME)
 %uiwait(handles.figure1);
-
+drawnow;pause(0.05);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -109,6 +109,7 @@ set(handles.load,'tooltipString','Load job from Disc.mat');
 set(handles.status,'tooltipString','Leftclick on Error/Log file to open');
 
 varargout{1} = handles.output;
+drawnow;pause(0.05);
 
 % --- Executes on selection change in popupmenu1 to select other job.
 function popupmenu1_Callback(hObject, eventdata, handles)
@@ -127,6 +128,7 @@ obj = make();
 [fields values] = build_table(hObject,handles,obj,val);
 set(handles.table1,'data',[fields, values']);
 set(handles.table1,'ColumnEditable',[false false false]);
+drawnow;pause(0.05);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -140,6 +142,7 @@ function popupmenu1_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+drawnow;pause(0.05);
 
 
 
@@ -157,7 +160,7 @@ for k=1:size(allJobs,2)
     allParams{k} = allJobs{k}.params;
 end
 
-if size(allJobs,2) > 0;
+if size(allJobs,2) > 0
     clc;
     gridjob = Gridjob(allParams);
     start(gridjob); %use start-function of Gridjobclass to begin execution
@@ -165,6 +168,7 @@ if size(allJobs,2) > 0;
         show_status(hObject,handles,allJobs); %show status of execution
     end
 end
+drawnow;pause(0.05);
 
 % --- Updates Status table every 5 seconds to show job status
 function show_status(hObject,handles,jobs)
@@ -265,6 +269,7 @@ while running
     set(handles.status,'data',[myids',mynames',mystates',tasks',queues',errorfiles',logfiles']);
     oldsize = newsize;
     pause(5);
+    drawnow;pause(0.05);
 end
 
 
@@ -401,6 +406,7 @@ else
     end
     allJobs{selected}.params.(val).(fields{eventdata.Indices(1)}) = elem;
 end
+drawnow;pause(0.05);
 
 
 % --- Executes on button press in 'add job' button.
@@ -438,6 +444,7 @@ if ~ismember(current,obj.params.Gridjob.jobname) %don't add job with same name (
     set(handles.table1,'data',[fields, values']);
     set(handles.table1,'ColumnEditable',[false true false]);
 end
+drawnow;pause(0.05);
 
 
 
@@ -470,6 +477,7 @@ if strcmp(get(handles.figure1,'SelectionType'),'open') %find double click
     set(handles.popupmenu1,'Value',find(ismember(str,strcat(name,'.m'))));
     set(handles.table1,'ColumnEditable',[false true false]);
 end
+drawnow;pause(0.05);
 
 % --- Executes during object creation, after setting all properties.
 % --- Listbox of added jobs
@@ -483,7 +491,7 @@ function listbox3_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+drawnow;pause(0.05);
 
 % --- Executes on button press in the 'remove' button
 % --- Allows to remove job from listbox
@@ -508,6 +516,7 @@ if sel ~= 1
         popupmenu1_Callback(hObject, eventdata, handles);
     end
 end
+drawnow;pause(0.05);
 
 % --- Executes on button press in Add_param.
 % --- Adds Parameter to object
@@ -542,7 +551,7 @@ if editable(2)
         set(handles.table1,'data',[fields, values']);
     end
 end
-
+drawnow;pause(0.05);
 
 function edit1_Callback(hObject, eventdata, handles)
 % hObject    handle to edit1 (see GCBO)
@@ -564,7 +573,7 @@ function edit1_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+drawnow;pause(0.05);
 
 
 function edit2_Callback(hObject, eventdata, handles)
@@ -633,8 +642,8 @@ matching = false;
 while ~matching
     selected_dir = uigetdir(paths.workdir);
     if selected_dir == 0
-        response = warndlg('Path has to be working directory!');
-        uiwait(response);
+        %response = warndlg('Path has to be working directory!');
+        %uiwait(response); nicht vergessen!
         continue;
     end
     % save folder from which the object is constructed
@@ -659,11 +668,11 @@ while ~matching
         constructedFromFolder = fullfile(constructedFromFolder{:});
     else
         constructedFromFolder = selected_dir;
-        response = modaldlg('Path has to be working directory!');
+        response = modaldlg('Path has to be working directory!','OK');
         uiwait(response);
     end
 end
-
+drawnow;pause(0.05);
 
 % --- Executes on button press in load.
 % --- Allows to load job from file
@@ -705,7 +714,7 @@ running = ~running;
 if running
     show_status(hObject,handles,allJobs);
 end
-
+drawnow;pause(0.05);
 
 % --- Executes when selected cell(s) is changed in status.
 % --- Opens error- and logfiles on mouse click
@@ -733,7 +742,7 @@ if eventdata.Indices
         stopSelec = eventdata.Indices(1);
     end
 end
-
+drawnow;pause(0.05);
 
 % --- Executes on button press in plot.
 function plot_Callback(hObject, eventdata, handles)
@@ -761,7 +770,7 @@ if ~ismember(allNames,'isfinished')
 else
     finish = false;
 end
-
+drawnow;pause(0.05);
 
 % --- Executes on button press in stop_proc.
 % --- Deletes job selected in status-table

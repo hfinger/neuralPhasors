@@ -1,0 +1,32 @@
+require 'Cos'
+require 'Sin'
+require 'Atan2'
+require 'simpel'
+
+--n_hidden = 50
+--n_input = 32*32
+  
+--local function main()
+
+  
+  train = torch.load('../mnist.t7/train_32x32.t7', 'ascii')
+  test = torch.load('../mnist.t7/test_32x32.t7', 'ascii')
+  train = train.data
+
+  traindata = torch.Tensor(train:size()[1],1024)
+  for i = 1,train:size()[1] do   
+      traindata[i] = train[i]:resize(1024,1)
+  end
+  traindata:add(-traindata:mean())
+  traindata:div(traindata:std())
+
+  local enc = build_enc()
+  local autoencoder = nn.Sequential()
+  autoencoder:add(enc)
+  
+  input = torch.cat(traindata[1],torch.Tensor(traindata[1]:size()):zero(),2)
+  res = autoencoder:forward(input)
+  print(res)
+--end
+--main()
+

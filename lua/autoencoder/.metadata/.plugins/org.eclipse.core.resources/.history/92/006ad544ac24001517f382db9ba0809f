@@ -1,0 +1,19 @@
+local Cos, Parent = torch.class('nn.Cos', 'nn.Module')
+ 
+function Cos:__init()
+   Parent.__init(self)
+end
+
+function Cos:updateOutput(input)
+    self.output = torch.cos(input) 
+    return self.output
+end
+ 
+function Cos:updateGradInput(input, gradOutput)
+    self.gradInput = torch.cmul(gradOutput,-torch.sin(input)) 
+    return self.gradInput
+end
+ 
+ 
+function Cos:reset()
+end

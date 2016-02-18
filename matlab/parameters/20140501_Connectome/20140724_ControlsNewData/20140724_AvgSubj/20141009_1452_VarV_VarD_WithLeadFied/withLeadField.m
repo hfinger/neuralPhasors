@@ -8,6 +8,7 @@ params.Gridjob.jobname = 'ConnectomeSim';
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '1';
+params.Gridjob.runOnHPC = true;
 
 params.ConnectomeSim.dataset = 2; % 0=datasimu from Arnaud, 1=Bastian, 2=BastianNew
 params.ConnectomeSim.subjId = -1;

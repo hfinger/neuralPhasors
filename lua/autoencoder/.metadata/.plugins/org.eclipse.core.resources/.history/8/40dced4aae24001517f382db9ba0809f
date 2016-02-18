@@ -1,0 +1,185 @@
+require 'Cos'
+require 'Sin'
+require 'Atan2'
+
+function build_enc()
+  local enc = nn.Sequential()
+  local encpar = nn.Concat(2)
+
+--imaginary activation part
+  local img = nn.Sequential()
+
+  local par1 = nn.Parallel(2,2)
+
+  local linear1 = nn.Linear(n_input,n_hidden)
+  local linear2 = nn.Linear(n_input,n_hidden)
+  linear1:share(linear2,'weight')
+
+  local cont1 = nn.Sequential()
+  cont1:add(linear1) -- w*x
+  cont1:add(nn.Reshape(n_hidden,1)) --reshape for concat
+  local cont2 = nn.Sequential()
+  cont2:add(linear2) -- w*y
+  cont2:add(nn.Reshape(n_hidden,1)) --reshape for concat
+  par1:add(cont1)
+  par1:add(cont2)
+
+  img:add(par1)
+
+  local partable = nn.Concat(2)
+
+  local seq1 = nn.Sequential()
+  local par2 = nn.Parallel(2,2)
+
+  local square1 = nn.Sequential()
+  square1:add(nn.Square()) -- (wx)^2
+  square1:add(nn.Reshape(n_hidden,1)) 
+  local square2 = nn.Sequential() 
+  square2:add(nn.Square()) -- (wy)^2
+  square2:add(nn.Reshape(n_hidden,1))
+
+  par2:add(square1)
+  par2:add(square2)
+
+  seq1:add(par2)
+  seq1:add(nn.Sum(2)) -- (wx)^2 + (wy)^2
+  seq1:add(nn.Sqrt()) 
+  seq1:add(nn.MulConstant(0.5,true))
+  seq1:add(nn.Reshape(n_hidden,1))
+
+
+
+  local phase = nn.Sequential()
+  phase:add(nn.Atan2())
+  phase:add(nn.Reshape(n_hidden,1))
+
+
+  partable:add(phase) -- atan(wy,wx)
+  partable:add(seq1)
+
+  img:add(partable)
+
+
+--real activation part
+  local real = nn.Sequential()
+
+  par2 = nn.Parallel(2,2)
+
+  local seq2 = nn.Sequential()
+  seq2:add(nn.Square())
+  seq2:add(nn.Reshape(n_input,1))
+  par2:add(seq2)
+  local seq3 = nn.Sequential()
+  seq3:add(nn.Square())
+  seq3:add(nn.Reshape(n_input,1))
+  par2:add(seq3)
+
+  real:add(par2)
+  real:add(nn.Sum(2))  -- x^2 + y^2
+  real:add(nn.Sqrt())
+  local linear3 = nn.Linear(n_input,n_hidden)
+  linear3:share(linear1,'weight')
+  real:add(linear3)
+  real:add(nn.MulConstant(0.5,true))
+  real:add(nn.Reshape(n_hidden,1))
+
+--
+  encpar:add(img)
+  encpar:add(real)
+
+  enc:add(encpar)
+
+-------------------------------------------------
+  local seperate = nn.Concat(2)
+
+--select first column, i.e. phase
+  local reshape1 = nn.Sequential()
+  reshape1:add(nn.Select(2,1))
+  reshape1:add(nn.Reshape(n_hidden,1))
+  seperate:add(reshape1)
+
+--select second and third column and add them up
+  local activation = nn.Sequential()
+  local concat = nn.Concat(2)
+  local reshape2 = nn.Sequential()
+  reshape2:add(nn.Select(2,2))                       --Magic in order to seperate and rejoin table
+  reshape2:add(nn.Reshape(n_hidden,1))                     --don't try to understand :D
+  concat:add(reshape2)
+
+  local reshape3 = nn.Sequential()
+  reshape3:add(nn.Select(2,3))
+  reshape3:add(nn.Reshape(n_hidden,1))
+  concat:add(reshape3)
+
+  activation:add(concat)
+  activation:add(nn.Sum(2)) -- add imaginary and real part
+  activation:add(nn.Reshape(n_hidden,1))
+
+  seperate:add(activation)
+
+  enc:add(seperate)
+  enc:add(nn.SplitTable(2))
+-------------------------------------------------
+
+  local sigmoid = nn.ParallelTable()
+  sigmoid:add(nn.Identity())
+  sigmoid:add(nn.Sigmoid()) -- use sigmoid activation function
+
+--enc:add(sigmoid)
+
+--  Transform back to coordinate form
+  local transform = nn.ConcatTable()
+  local x = nn.Sequential()
+  local y = nn.Sequential()
+
+  local xpar = nn.ParallelTable()
+  local ypar = nn.ParallelTable()
+
+  xpar:add(nn.Cos())
+  xpar:add(nn.Identity())
+
+  ypar:add(nn.Sin())
+  ypar:add(nn.Identity())
+
+  x:add(xpar)
+  x:add(nn.CMulTable())
+  x:add(nn.Reshape(n_hidden,1))
+
+  y:add(ypar)
+  y:add(nn.CMulTable())
+  y:add(nn.Reshape(n_hidden,1))
+
+  transform:add(x)
+  transform:add(y)
+  enc:add(transform)
+  enc:add(nn.JoinTable(2))
+--outputs a two double-tensor
+--first dimension = x
+--second = y
+
+  return enc
+end 
+build_enc()
+
+local function main()
+
+  local n_hidden = 50
+  local n_input = 32*32
+
+local train = torch.load('../mnist.t7/train_32x32.t7', 'ascii')
+local test = torch.load('../mnist.t7/test_32x32.t7', 'ascii')
+train = train.data
+
+local traindata = torch.Tensor(train:size()[1],1024)
+for i = 1,train:size()[1] do   
+    traindata[i] = train[i]:resize(1024,1)
+end
+traindata:add(-traindata:mean())
+traindata:div(traindata:std())
+
+local enc = build_enc()
+print(enc)
+
+end
+main()
+

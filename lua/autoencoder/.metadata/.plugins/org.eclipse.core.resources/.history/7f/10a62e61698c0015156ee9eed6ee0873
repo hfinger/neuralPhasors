@@ -1,0 +1,2 @@
+
+print(torch.rand(10):nonzero())

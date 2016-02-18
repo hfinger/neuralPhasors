@@ -11,7 +11,7 @@ p = mfilename('fullpath');
 if exist('strsplit')
   p = strsplit(p,filesep);
 else
-  p = strread(p,'%s','delimiter',['\' filesep]);
+  p = strread(p,'%s','delimiter',[filesep]);
 end
 
 srcFolder = p{end-3};
