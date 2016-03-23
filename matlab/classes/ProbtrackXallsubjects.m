@@ -17,7 +17,7 @@ classdef ProbtrackXallsubjects < Gridjob
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%% START EDIT HERE: define standard parameters for the job %%%%
             %change 20150727
-            this.params.ProbtrackXallsubjects.split = num2cell(151:1100); %change
+            this.params.ProbtrackXallsubjects.split = num2cell(116); %change
             this.params.ProbtrackXallsubjects.numSubjects = 22;
             this.params.ProbtrackXallsubjects.splitPerSubject = 50;
             %       this.params.ProbtrackX.numberPerSplit = 1000;  %change
@@ -123,7 +123,7 @@ classdef ProbtrackXallsubjects < Gridjob
                 caNum = num2str(subjectNum);
             end
             
-            
+            if ~(subjectNum == 5 | subjectNum == 14 | subjectNum == 16)
             %%%
             %       compl_fs_mask = load_untouch_nii([datapaths.workdir
             %       '/Arushi/20150423gridjob/compl_fs_mask.nii']);
@@ -237,7 +237,7 @@ classdef ProbtrackXallsubjects < Gridjob
             
             %%%% END EDIT HERE:                                %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
+        end
         end
         
         %% finishJobs: is executed once (after all individual parameter jobs are finished)

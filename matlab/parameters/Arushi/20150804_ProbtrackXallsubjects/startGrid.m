@@ -9,8 +9,8 @@ params.Gridjob.continue = false;
 params.Gridjob.requiredThreads = '3';
 params.Gridjob.queue = 'nbp.q';
 
-params.ProbtrackXallsubjects.split = num2cell(151:1100);
-params.ProbtrackXallsubjects.numSubjects = 22;
+params.ProbtrackXallsubjects.split = num2cell(116);
+params.ProbtrackXallsubjects.numSubjects = 23;
 params.ProbtrackXallsubjects.splitPerSubject = 50;
 
 
