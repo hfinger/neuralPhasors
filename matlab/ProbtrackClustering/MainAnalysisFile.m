@@ -1,5 +1,5 @@
 %% Generate connectivity matrices from tracking data for all subjects, cluster them and analyse them
-run = 5;
+run = 10;
 %% Get Full Connectivity and Waytotal matrices from grid job results of ProbtrackX
 if run == 1
 %Parameters
@@ -80,4 +80,47 @@ if run==6
     
     %CallFunction
     statsAndMetrics(subjTotal, clusterTotal, clusterType, clusterPath, statAndMetricPath);
+end
+%** Note - It was ultimately run in grid job. Find program in
+%matlab/classes/ProbClustmetrics for other metrics
+%For betweenness centrality - matlab/classes/ProbClustbetcent
+%% Cluster Stats
+
+if run == 7
+    
+    %CallFunction
+    clusterStats();
+end
+
+%% Collect subject stats and metrics to one file
+
+if run == 8
+    filepath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20150920StatsAndMetrics/';
+    subjRange = 1:11;
+    
+    collectstatsandmetrics(filepath, subjRange);
+end
+
+%% Plot subjects stats and metrics
+
+if run == 9
+    
+    filepath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20150920StatsAndMetrics/';
+    subjRange = 1:11;
+    
+    plotstatsandmetrics(filepath, subjRange);
+end
+
+%% Make clusternii
+
+if run == 10
+    
+    clusterfilepath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20150824Allsubjectrecursivencut/';
+    maskfilepath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20150727Allsubjecttracking/';
+    savepath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20151005clustermask/';
+    subjRange = 1;
+    modeRange = 3;
+    clustRange = 2:5;
+    
+    makeclusternii(clusterfilepath, maskfilepath, savepath, modeRange, subjRange, clustRange);
 end
