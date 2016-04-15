@@ -1,0 +1,12 @@
+eclipse.preferences.version=1
+formatter.indentation.indentTables=true
+formatter.indentation.size=4
+formatter.profiles=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?>\n<profiles>\n<profile formatter\="org.eclipse.ldt.editor.LuaFormatterFactory" name\="Default Profile personalized" version\="1">\n<setting id\="formatter.indentation.size" value\="4"/>\n<setting id\="formatter.tabulation.char" value\="space"/>\n<setting id\="formatter.tabulation.size" value\="4"/>\n<setting id\="formatter.indentation.indentTables" value\="true"/>\n</profile>\n</profiles>\n
+formatter.profiles.active=Default Profile personalized
+formatter.tabulation.char=space
+formatter.tabulation.size=4
+formatterId=org.eclipse.ldt.editor.LuaFormatterFactory
+sourceHoverBackgroundColor=16,16,16
+sourceHoverBackgroundColor.SystemDefault=true
+useAnnotationsPrefPage=true
+useQuickDiffPrefPage=true

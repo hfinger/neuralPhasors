@@ -1,0 +1,6 @@
+require 'Cos'
+local function main()
+
+
+end
+main()

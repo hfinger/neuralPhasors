@@ -1,6 +1,6 @@
 classdef Autoencoder < Gridjob
-  %GRIDJOBEXAMPLE Summary of this class goes here
-  %   Detailed explanation goes here
+  %AUTOENCODER This class implements a tiled convolutional denoising AE
+  %   It inherits from Gridjob which lets it run on the sge cluster...
   
   properties
     
@@ -42,7 +42,7 @@ classdef Autoencoder < Gridjob
       this = this@Gridjob(varargin{:});
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      %%%% START EDIT HERE: define standard parameters for the job %%%%
+      %%%% standard parameters for the job %%%%
       
       this.params.Autoencoder.inActFolder = 'whitenedData'; %relative to the workpath
       this.params.Autoencoder.inActFilenames = 'act.*.mat';
@@ -182,8 +182,6 @@ classdef Autoencoder < Gridjob
       this.params.minFunc.Damped = 0; %maybe set this to 1 for minibatch
       this.params.minFunc.Corr = 100; %maybe reduce this for minibatch ?
       
-      %%%% END EDIT HERE:                                          %%%%
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
       this = this.init(varargin{:});
       
@@ -269,11 +267,9 @@ classdef Autoencoder < Gridjob
             inWpath = fullfile(inWpath,num2str(this.currJobid));
           end
           tmp = load(fullfile(inWpath,this.params.Autoencoder.continueBatchInForwConnFilenames));
-          % !!!!!!! not working correctly! TODO: reorder dimensions of W!
           W1 = reshape(tmp.W,this.dimW1);
           b1 = tmp.b;
           tmp = load(fullfile(inWpath,this.params.Autoencoder.continueBatchInBackConnFilenames));
-          % !!!!!!! not working correctly! TODO: reorder dimensions of W!
           W2 = reshape(tmp.W,this.dimW2);
           b2 = tmp.b;
           clear tmp;
@@ -393,12 +389,10 @@ classdef Autoencoder < Gridjob
         if this.params.Autoencoder.useMinFuncGrad
           options = this.params.minFuncGrad;
           options.outputFcn = @(optTheta,iterationType,i,funEvals,f,t,gtd,g,d,optCond) this.iterFcnSave( optTheta,iterationType,i+reloadId*options.maxIter,funEvals,f,t,gtd,g,d,optCond, validPatches);
-          %         save(fullfile(this.tempsavepath,'initialParams.mat'),'-v7.3','theta','this','patches','options');%
           [tempTheta, ~,~,~,this.gradStates] = minFuncGrad( @(p) autoencoderCost(this, p, patches, false, true, false), tempTheta, options, this.gradStates);
         else
           options = this.params.minFunc;
           options.outputFcn = @(optTheta,iterationType,i,funEvals,f,t,gtd,g,d,optCond) this.iterFcnSave( optTheta,iterationType,i+reloadId*options.maxIter,funEvals,f,t,gtd,g,d,optCond, validPatches);
-          %         save(fullfile(this.tempsavepath,'initialParams.mat'),'-v7.3','theta','this','patches','options');
           tempTheta = minFunc( @(p) autoencoderCost(this, p, patches, false, true, false), tempTheta, options);
         end
         
@@ -791,8 +785,6 @@ classdef Autoencoder < Gridjob
       
       dimW1(6) = currentNumberOfUnits;
       
-%       dimW1 = [this.forwardRfSize(1), this.forwardRfSize(2), this.forwardRfSize(3), 1, 1, currentNumberOfUnits];
-%       dimW2 = [this.backwardRfSize(1), this.backwardRfSize(2), currentNumberOfUnits, 1, 1, this.forwardRfSize(3)];
       dimb1 = dimW1(4:6);%[1, 1, currentNumberOfUnits];
       dimb2 = [1 1 dimW2(6)];%[1, 1, this.forwardRfSize(3)];
       
@@ -862,12 +854,6 @@ classdef Autoencoder < Gridjob
         globStream.State = this.randstreamStateBeforeEval;
       end
       
-%       if this.params.Autoencoder.debugOutput
-%         tmpglobStream = Autoencoder.getGlobRng();
-%         tmpglobStreamInitState = tmpglobStream.State;
-%         disp(['globstream state: ' num2str(tmpglobStreamInitState(1:4)')])
-%       end
-      
       if ~isempty(this.params.Autoencoder.batchsize)
         data=data(:,:,:,minibatchIds);
       end
@@ -885,11 +871,6 @@ classdef Autoencoder < Gridjob
       W2 = reshape(W2,[size(W2,1) size(W2,2) size(W2,3) size(W2,4)*size(W2,5)*size(W2,6)]);
       b1 = reshape(b1,[size(b1,1)*size(b1,2)*size(b1,3) 1]);
       b2 = reshape(b2,[size(b2,1)*size(b2,2)*size(b2,3) 1]);
-      
-%       W1 = permute(W1,[1 2 3 6 4 5]);
-%       W2 = permute(W2,[1 2 3 6 4 5]);
-%       b1 = permute(b1,[3 1 2]);
-%       b2 = permute(b2,[3 1 2]);
       
       % Now: W has dims [dxin dyin fin fout 1 1]
       % Now: b has dims [fout 1 1]
@@ -952,22 +933,13 @@ classdef Autoencoder < Gridjob
           W2L1 = abs(W2);
         end
         
-%           if params.scaleLambdaL1WithDistExponent
-%             costRegularizeL1 = 0;
-%             costRegularizeL1 = costRegularizeL1 + params.lambdaL1 * sum(sqrt(params.smoothLambdaL1WithEpsilon + (distMatW1(:) .* sum(reshape(abs(W1),[size(W1,1)*size(W1,2) size(W1,3)*size(W1,4)*size(W1,5)*size(W1,5)]),2)).^2));
-%             costRegularizeL1 = costRegularizeL1 + params.lambdaL1 * sum(sqrt(params.smoothLambdaL1WithEpsilon + (distMatW2(:) .* sum(reshape(abs(W2),[size(W2,1)*size(W2,2) size(W2,3)*size(W2,4)*size(W2,5)*size(W2,6)]),2)).^2));
-%           else
-%             costRegularizeL1 = params.lambdaL1 * (sum(sqrt(params.smoothLambdaL1WithEpsilon + W1(:).^2)) + sum(sqrt(params.smoothLambdaL1WithEpsilon + W2(:).^2)));
-%           end
-%         else
-          if params.scaleLambdaL1WithDistExponent
-            costRegularizeL1 = 0;
-            costRegularizeL1 = costRegularizeL1 + params.lambdaL1 * sum(distMatW1(:) .* sum(reshape(W1L1,[size(W1,1)*size(W1,2) size(W1,3)*size(W1,4)*size(W1,5)*size(W1,6)]),2));
-            costRegularizeL1 = costRegularizeL1 + (params.lambdaL1 * params.lambdaL1BackScale) * sum(distMatW2(:) .* sum(reshape(W2L1,[size(W2,1)*size(W2,2) size(W2,3)*size(W2,4)*size(W2,5)*size(W2,6)]),2));
-          else
-            costRegularizeL1 = params.lambdaL1 * (sum(W1L1(:)) + params.lambdaL1BackScale * sum(W2L1(:)));
-          end
-%         end
+        if params.scaleLambdaL1WithDistExponent
+          costRegularizeL1 = 0;
+          costRegularizeL1 = costRegularizeL1 + params.lambdaL1 * sum(distMatW1(:) .* sum(reshape(W1L1,[size(W1,1)*size(W1,2) size(W1,3)*size(W1,4)*size(W1,5)*size(W1,6)]),2));
+          costRegularizeL1 = costRegularizeL1 + (params.lambdaL1 * params.lambdaL1BackScale) * sum(distMatW2(:) .* sum(reshape(W2L1,[size(W2,1)*size(W2,2) size(W2,3)*size(W2,4)*size(W2,5)*size(W2,6)]),2));
+        else
+          costRegularizeL1 = params.lambdaL1 * (sum(W1L1(:)) + params.lambdaL1BackScale * sum(W2L1(:)));
+        end
       else
         costRegularizeL1 = 0;
       end
@@ -1340,7 +1312,6 @@ classdef Autoencoder < Gridjob
           
           if params.useTiledConv
             delta3reshaped = permute(reshape(delta3,[size(delta3,1)/z3NumTilesX z3NumTilesX size(delta3,2)/z3NumTilesY z3NumTilesY size(delta3,3)]),[2 4 1 3 5]);
-%             reshape(y2,[size(y2,1) size(y2,2) y2NumTilesX y2NumTilesY this.tiledConvF.fOut])
             deltaW2 = this.tiledConvB.backpropErrorW(y2Tiled,delta3reshaped);
             deltaW2 = reshape(deltaW2,[size(deltaW2,1) size(deltaW2,2) size(deltaW2,3) size(deltaW2,4)*size(deltaW2,5)*size(deltaW2,6)]);
           else
@@ -1621,7 +1592,6 @@ classdef Autoencoder < Gridjob
   methods
     function plotLastIters( this )
       
-      %       if this.numJobs > 1
       for i=1:this.numJobs
         tmp = dir(fullfile(num2str(i),'forwConnIter*.mat'));
         tmp = sort(cellfun(@(x) str2double(x(13:end-4)),{tmp.name}));
@@ -1634,14 +1604,6 @@ classdef Autoencoder < Gridjob
         forwConn.W = cat(4,forwConn.W,zeros([sizeW(1:3) plotdim.^2-sizeW(4)]));
         plotColorFeatures(  reshape(forwConn.W,[sizeW(1:3) plotdim plotdim]), true, fullfile(this.temppath,['jobid' num2str(i) 'forwConnIter' num2str(lastIter) '.png']), true );
       end
-      %       else
-      %         weights=load(fullfile(this.temppath,'currIter.mat'),'W1');
-      %         if exist('whitening','var')
-      %           weights.W1 = addWhiteningWeights(weights.W1, whitening.W);
-      %         end
-      %         savepath = fullfile(this.resultpath, 'weights.png');
-      %         plotColorFeatures(  reshape(weights.W1,[12 12 3 10 size(weights.W1,4)/10]), true, savepath, true );
-      %       end
       
     end
     
@@ -1824,8 +1786,6 @@ classdef Autoencoder < Gridjob
     end
     
     function weights = addWhiteningWeights(weights, whiteningWeights)
-      %TODO
-      %origSize = size(weights);
       weights = reshape(weights,[]);
       weights = whiteningWeights * weights;
     end
@@ -1833,15 +1793,8 @@ classdef Autoencoder < Gridjob
     
     function [diff,numGrad,grad,diffs] = checkGradient(this, patches)
       
-      %this.forwardRfSize = [this.params.Autoencoder.patchDimForward this.params.Autoencoder.patchDimForward size(patches,3)];
-      %this.backwardRfSize = [this.params.Autoencoder.patchDimBackward this.params.Autoencoder.patchDimBackward this.params.Autoencoder.hiddenSize];
-      
       this = this.setPatchsizes();
       
-%       W1 = randn([this.forwardRfSize this.backwardRfSize(3)]);
-%       W2 = randn([this.backwardRfSize this.forwardRfSize(3)]);
-%       b1 = randn(this.backwardRfSize(3),1);
-%       b2 = randn(this.forwardRfSize(3),1);
       W1 = randn(this.dimW1);
       W2 = randn(this.dimW2);
       b1 = randn(this.dimW1(4:6));
@@ -2206,7 +2159,7 @@ classdef Autoencoder < Gridjob
         if sum(strcmp('getGlobalStream',methods('RandStream')))
           rng_stream = RandStream.getGlobalStream();
         else
-          rng_stream = RandStream.getDefaultStream();
+          rng_stream = RandStream.getDefaultStream(); %#ok<GETRS>
         end
     end
     

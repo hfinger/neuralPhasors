@@ -1,0 +1,4 @@
+require 'nn'
+require 'image'
+traindata, testdata = loadData{normalizeMean = false} 
+print(torch.rand(10):nonzero())

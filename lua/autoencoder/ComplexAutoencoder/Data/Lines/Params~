@@ -1,0 +1,5 @@
+th main.lua -f 10000 -d 1e-2 -h 10 -l 1e-5 -u -n 1 -m 0.8 -b 10 -r 0.1
+
+th main.lua -f 5000 -d 1e-2 -h 10 -l 8e-4 -u -n 1 -m 0.9 -b 32 -r 0.1 
+
+
