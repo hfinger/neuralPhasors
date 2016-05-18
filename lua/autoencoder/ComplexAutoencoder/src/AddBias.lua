@@ -27,6 +27,10 @@ end
 function updateParameters(learninRate)
     self.bias:add(learningRate, self.gradBias)
 end    
+
+function zeroGradParameters()
+    self.gradBias = self.gradBias:zero()
+end
 --@input Tensor with input of Backward-call of previous module
 --@gradOutput Gradient output of previous module 
 --@scale Factor for parameter accumulation
@@ -38,4 +42,9 @@ end
 
 function AddBias:parameters()
     return {self.bias}, {self.gradBias}
+end    
+
+function AddBias:float()
+    self.bias = self.bias:float()
+    self.gradBias = self.gradBias:float()
 end    

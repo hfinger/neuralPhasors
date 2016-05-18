@@ -1,37 +1,7 @@
-require 'unsup';
-require 'nn';
-require 'gnuplot';
-require 'Encoder';
-require 'Decoder';
-require 'image';
-require 'optim';
-require 'functions'
-require 'randomkit'
-require 'pl'
-require 'mattorch'
-require 'mattorch'
-local lfs = require"lfs";
-function catch()
-    require 'cunn';
-    require 'cutorch';
-end
-if pcall(catch) then print('a') else print('b') end
---require 'cutorch'
---require 'ComplexCrit';
+require 'torch'
+require 'eval'
 
-test1 = whiteStripes(5)
-test2 = whiteStripes(5)
-test3 = whiteStripes(5)
-
-mattorch.save('output.mat', {w1 = test1, w2 = test2, w3 = test3})
---print(torch.sqrt( torch.pow(autoencoder.output[1],2) + torch.pow(autoencoder.output[2],2)))
-
-
-
-
-
-
-
-
-
+local traindata, testdata = loadData(true)
+testdata = createData(100, testdata, 5)
+evaluate(false, true, false, false , false, false, testdata)
 

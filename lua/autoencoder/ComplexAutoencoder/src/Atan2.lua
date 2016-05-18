@@ -25,27 +25,38 @@ end
 function Atan2:cuda()
     self.useCuda = true
 end 
+
+function Atan2:float()
+    self.useCuda = false
+    self.output = self.output:float()
+end 
+
 --Gradient
 --@input Tensor with input of previous module
 --@gradOutput Tensor with gradient of previous module
 function Atan2:updateGradInput(input, gradOutput)
-    if input[1] == 0 and input[2] == 0 then
+    if torch.all(input[1]:eq(0)) and torch.all(input[2]:eq(0)) then
+        x = torch.Tensor(#input[1]):zero()
+        y = torch.Tensor(#input[2]):zero()
+        if self.useCuda then
+            x = x:cuda()
+            y = y:cuda()
+        end
+    else
         -- xgrad(Atan2) = -y/(x^2+y^2)
         addx = torch.add(torch.pow(input[1],2),torch.pow(input[2],2)) 
         divx = -torch.cdiv(input[2],addx)  
         x = torch.cmul(gradOutput,divx)
-        
+        if x:ne(x):sum() > 1 then
+            x = x:zero()
+        end
         -- ygrad(Atan2) = x/(x^2+y^2)
         addy = torch.add(torch.pow(input[1],2),torch.pow(input[2],2))
         divy = torch.cdiv(input[1],addy)
-        y = torch.cmul(gradOutput,divy)
-    else
-        x = torch.Tensor(#input[1]):zero()
-        y = torch.Tensor(#input[1]):zero()
-        if self.useCuda then
-            x = x:cuda()
-            y = y:cuda()
-        end       
+        y = torch.cmul(gradOutput,divy) 
+        if y:ne(y):sum() > 1 then
+            y =y:zero()
+        end      
     end
     self.gradInput = {x,y}
     return self.gradInput
