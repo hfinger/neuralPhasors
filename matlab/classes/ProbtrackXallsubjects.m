@@ -56,30 +56,24 @@ classdef ProbtrackXallsubjects < Gridjob
             disp(this.resultpath);
             disp(this.currJobid);
             
-            [~, username] = system('whoami');
-            userfolder = fullfile('/work', username(1:end-1));
-            jobdirectory = fullfile(userfolder, 'tempProbtrackXallsubjects');
-            temppath = fullfile(jobdirectory, num2str(this.currJobid));
-            mkdir(temppath);
-            
             datapaths = dataPaths();
             datapaths.workdir
-            
-            
-            
             
             %call program to wait
             waitForServer();
             
             %system call & calculations for retrieving memory of work directory
-            [status, result] = system('df -h | grep /work');
+            [status, result] = system('df -h 2>/dev/null | grep /work');
             disp(result);
+            
+            if status
+                error(['df -h | grep /work;' 'result' result]);
+            end
             
             resultwospace = strread(result, '%s');
             disp(resultwospace);
-            freememory = resultwospace(4);
+            freememory = resultwospace(end-2);
             freememory = cell2mat(freememory);
-            
             
             %       resultwospace = textscan(result, '%s');
             %       disp(resultwospace);
@@ -96,14 +90,16 @@ classdef ProbtrackXallsubjects < Gridjob
             voxelcount = load('/net/store/nbp/projects/phasesim/workdir/Arushi/20160210Allsubjecttracking/voxelcount_FA_thr_012.mat');
             
             %set flag to move to local if memory is more than 500 MB
-            if powerfreememory == 'M'
+            if strfind(powerfreememory, 'M')
                 %check if it is more than 500MB
                 if numfreememory > 500
                     storelocalflag = 1;  %set flag to move to local
+                else
+                    storelocalflag = 0;
                 end
-            elseif powerfreememory == 'G'
+            elseif strfind(powerfreememory, 'G')
                 storelocalflag = 1; %set flag to move to local
-            elseif powerfreememory == 'T'
+            elseif strfind(powerfreememory, 'T')
                 storelocalflag = 1;
             else
                 storelocalflag = 0;
@@ -112,8 +108,8 @@ classdef ProbtrackXallsubjects < Gridjob
             % change for all subject tracking 20150727
             subjectNum =  this.params.ProbtrackXallsubjects.split/this.params.ProbtrackXallsubjects.splitPerSubject;
             
-                subjectNum = ceil(subjectNum);
-                      
+            subjectNum = ceil(subjectNum);
+            
             if subjectNum < 10;
                 caNum = ['0' num2str(subjectNum)];
             else
@@ -127,51 +123,45 @@ classdef ProbtrackXallsubjects < Gridjob
                 compl_fs_mask = load_untouch_nii([datapaths.workdir '/Arushi/20160210Allsubjecttracking/ca' caNum 'FA_masks_FA_thr_012compl_fs_mask.nii']);
                 voxelIndex = find(compl_fs_mask.img);
                 %change end for all subject tracking 20150727
+                                
+                voxelCount = voxelcount.voxelcount_FA_thr_012(subjectNum);
+                numberPerSplit = ceil(voxelCount/50);
+                connmat = zeros(numberPerSplit,voxelCount);
+                waytotal = zeros(numberPerSplit,1);
+                               
                 
+                %       load([datapaths.workdir '/Arushi/20150423gridjob/new_tract_space.mat']);
+                %       connmat = zeros(this.params.ProbtrackX.numberPerSplit,size(new_tract_space,1));
+                %       waytotal = zeros(this.params.ProbtrackX.numberPerSplit,1);
                 %change start for all subject tracking 20150728
                 FAmask = load_untouch_nii([datapaths.databases '/Bastian_DTI/dti_data/ca' caNum '_1/ca' caNum '_1_FA.nii.gz']);
                 FAmask.img(FAmask.img <= 0.1)=0;
                 FAmask.img(FAmask.img~=0)=1;
                 FAmask.img = ~FAmask.img;
-                save_untouch_nii(FAmask, [temppath '/ca' caNum 'FA_thr_0.1.nii']);
-                
-                voxelCount = voxelcount.voxelcount_FA_thr_012(subjectNum);
-                numberPerSplit = ceil(voxelCount/50);
-                connmat = zeros(numberPerSplit,voxelCount);
-                waytotal = zeros(numberPerSplit,1);
-                
-                
-                
-                %       load([datapaths.workdir '/Arushi/20150423gridjob/new_tract_space.mat']);
-                %       connmat = zeros(this.params.ProbtrackX.numberPerSplit,size(new_tract_space,1));
-                %       waytotal = zeros(this.params.ProbtrackX.numberPerSplit,1);
                 
                 if storelocalflag
+                    [~, username] = system('whoami');
+                    userfolder = fullfile('/work', username(1:end-1));
+                    temppath = [userfolder '/' this.params.Gridjob.jobname num2str(this.currJobid)];
+                    mkdir(temppath);
                     %             copyfile([datapaths.databases '/SC_Bastian/mosaic_2015_02_18/ca01_1_dti/ca01_1_FA_thr0.12.nii.gz']...
-                    
+                    save_untouch_nii(FAmask, [temppath '/ca' caNum 'FA_thr_0.1.nii']);
                     copyfile([datapaths.databases '/Bastian_DTI/dti_data/ca' caNum '_1/bedpost.bedpostX']...
                         ,[temppath '/bedpost.bedpostX']);
                     capath = [temppath '/ca' caNum 'FA_thr_0.1.nii'];
                     
                     bedpostpath = [temppath '/bedpost.bedpostX'];
                 else
-                    capath = [datapaths.databases '/Bastian_DTI/dti_data/ca' caNum '_1/ca' caNum '_1_FA.nii.gz'];
+                    temppath = [this.workpath '/' num2str(this.params.ProbtrackXallsubjects.split) ];
+                    if ~exist(temppath);
+                        mkdir(temppath);
+                    end
+                    save_untouch_nii(FAmask, [temppath '/ca' caNum 'FA_thr_0.1.nii']);
+                    capath = [temppath '/ca' caNum 'FA_thr_0.1.nii'];
                     bedpostpath = [datapaths.databases '/Bastian_DTI/dti_data/ca' caNum '_1/bedpost.bedpostX'];
                 end
                 
-                probtrackx2Call = ['. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2'...
-                    ' -x ' temppath '/seedmask.nii'...
-                    ' -V 1'...
-                    ' -l --onewaycondition --omatrix2'...
-                    ' --target2=' temppath '/termmask.nii'...
-                    ' -c 0.2 -S 2000 --steplength=0.5'...
-                    ' -P 5000'...
-                    ' --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 '...
-                    ' --avoid=' capath...
-                    ' --stop=' temppath '/termmask.nii --forcedir --opd'...
-                    ' -s ' bedpostpath '/merged'...
-                    ' -m ' bedpostpath '/nodif_brain_mask'...
-                    ' --dir=' temppath '/data'];
+                
                 subjPartition = this.params.ProbtrackXallsubjects.split - ((subjectNum-1)*this.params.ProbtrackXallsubjects.splitPerSubject);
                 first_voxel = ((subjPartition - 1)*numberPerSplit) +1;
                 for k=1:numberPerSplit
@@ -203,21 +193,40 @@ classdef ProbtrackXallsubjects < Gridjob
                         delete([temppath '/seedmask.nii'])
                         save_untouch_nii(seed_voxel, [temppath '/seedmask']);
                         
+                        probtrackx2Call = ['. /usr/share/fsl/5.0/etc/fslconf/fsl.sh; /usr/share/fsl/5.0/bin/probtrackx2'...
+                            ' -x ' temppath '/seedmask.nii'...
+                            ' -V 1'...
+                            ' -l --onewaycondition --omatrix2'...
+                            ' --target2=' temppath '/termmask.nii'...
+                            ' -c 0.2 -S 2000 --steplength=0.5'...
+                            ' -P 5000'...
+                            ' --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 '...
+                            ' --avoid=' capath...
+                            ' --stop=' temppath '/termmask.nii --forcedir --opd'...
+                            ' -s ' bedpostpath '/merged'...
+                            ' -m ' bedpostpath '/nodif_brain_mask'...
+                            ' --dir=' temppath '/data' num2str(k) ];
                         % call for probtrackx2
+                        system('free');
+                        disp(datetime);
                         status = system(probtrackx2Call);
                         disp(['status:' num2str(status)]);
+                        system('free');
+                        disp(datetime);
                         
                         if status
-                            %save error to file including mentioning the voxel
-                            %number
+                            disp(['error in subjnum' num2str(subjectNum) 'voxel:' num2str(i)]);
+                            ME = MException('MyComponent:ProbtrackXrun', ...
+                                'Error in subjnum %s voxel %s run %s',num2str(subjectNum), num2str(i), num2str(k));
+                            throw(ME)
                         else
-                            fdt_matrix = load([temppath '/data/fdt_matrix2.dot']);
-                            waytotal(k) = load([temppath '/data/waytotal']);
+                            fdt_matrix = load([temppath '/data' num2str(k) '/fdt_matrix2.dot']);
+                            waytotal(k) = load([temppath '/data' num2str(k) '/waytotal']);
                             
                             for j = 1 : size(fdt_matrix,1)
                                 connmat(k,fdt_matrix(j,2)) = connmat(k,fdt_matrix(j,2)) + fdt_matrix(j,3);
                             end
-                            rmdir([temppath '/data'],'s');
+                            rmdir([temppath '/data' num2str(k)],'s');
                         end
                         
                     else
@@ -229,9 +238,6 @@ classdef ProbtrackXallsubjects < Gridjob
                 save([this.workpath '/connmat' num2str(this.params.ProbtrackXallsubjects.split)], 'connmat', '-v7.3');
                 save([this.workpath '/waytotal' num2str(this.params.ProbtrackXallsubjects.split)], 'waytotal');
                 rmdir(temppath,'s');
-                rmdir(jobdirectory);
-                status = rmdir(userfolder);
-                
                 %%%% END EDIT HERE:                                %%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             end
