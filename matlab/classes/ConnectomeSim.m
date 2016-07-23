@@ -26,8 +26,10 @@ classdef ConnectomeSim < Gridjob
       this.params.ConnectomeSim.shuffleD = false;
       this.params.ConnectomeSim.shufflePermutations = [];
       
+      this.params.ConnectomeSim.normByDirectionInSimulation = 0; % 0=no normalization, 1=norm by target area size, 2=norm by source area size,
       this.params.ConnectomeSim.normRowBeforeHomotopic = 0; % 0=no normalization, 1=norm each row, 2=norm the complete matrix,
-      this.params.ConnectomeSim.homotopic = 0; %how much of additional homotpic connections we add to the SC (0=no, 1=50%)
+      this.params.ConnectomeSim.homotopic = 0; %how much of additional homotpic connections we add to the SC
+      this.params.ConnectomeSim.homotopicFraction = 0; %how much of additional homotpic connections we add to the SC (0=no, 1=50%)
       this.params.ConnectomeSim.roiOutScales = []; % vector of scaling factors for each roi
       this.params.ConnectomeSim.roiOutIds = []; % vector indicating the roiIds to scale
       this.params.ConnectomeSim.connScales = []; % vector of scaling factors for each connection
@@ -177,6 +179,27 @@ classdef ConnectomeSim < Gridjob
               SC = samples ./ (param.normRoisizeInterp * roisizeMul + (1-param.normRoisizeInterp) * roisizeAdd);
               D = ci.dist{param.subjId};
             end
+          elseif param.normByDirectionInSimulation
+            ciNormTarg = cell(1,length(ci.samples));
+            for subjId = 1:length(ci.samples)
+              if ~isempty(ci.samples{subjId})
+                samples = ci.samples{subjId};
+                samples = triu(samples,1)+triu(samples,1)';
+                roisize = ci.roisize{subjId};
+                if param.normByDirectionInSimulation==1
+                  ciNormTarg{subjId} = bsxfun(@rdivide, samples, roisize);
+                elseif param.normByDirectionInSimulation==2
+                  ciNormTarg{subjId} = bsxfun(@rdivide, samples, roisize');
+                end
+              end
+            end
+            if length(param.subjId)>1
+              SC = nanmean(cell2mat(permute(ciNormTarg(param.subjId),[1 3 2])),3);
+              D = nanmean(cell2mat(permute(ci.dist(param.subjId),[1 3 2])),3);
+            else
+              SC = ciNormTarg{param.subjId};
+              D = ci.dist{param.subjId};
+            end
           else
             if param.subjId==-1
               SC = ci.avg_ci;
@@ -192,9 +215,11 @@ classdef ConnectomeSim < Gridjob
             end
           end
           
-          SC(logical(tril(ones(size(SC))))) = 0;
-          SC(isnan(SC)) = 0;
-          SC = SC + SC';
+          if ~param.normByDirectionInSimulation
+            SC(logical(tril(ones(size(SC))))) = 0;
+            SC(isnan(SC)) = 0;
+            SC = SC + SC';
+          end
           
           D(logical(tril(ones(size(D))))) = 0;
           D(isnan(D)) = 0;
@@ -277,6 +302,11 @@ classdef ConnectomeSim < Gridjob
         
         if param.homotopic
           SC = SC + param.homotopic * diag(ones(size(SC,1)/2,1),size(SC,1)/2) + param.homotopic * diag(ones(size(SC,1)/2,1),-size(SC,1)/2);
+        end
+        
+        if param.homotopicFraction
+          amountPerNode = sum(SC,2);
+          SC = SC + param.homotopicFraction * diag(amountPerNode(1:size(SC,1)/2),size(SC,1)/2) + param.homotopicFraction * diag(amountPerNode(((size(SC,1)/2)+1):end),-size(SC,1)/2);
         end
         
         numRois = size(SC,1);

@@ -21,6 +21,8 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       this.params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeJobName = 'ConnectomeEnvelope';
       this.params.ConnectomeEnvelopeReduce.ConnectomeEnvelopeOut = 'connEnv';
       this.params.ConnectomeEnvelopeReduce.onlyFCsim = false; % do not use envelopes but the directly simulated FC
+      this.params.ConnectomeEnvelopeReduce.FCsimApplyLf = []; % you can specify a lead-field projection matrix
+      
       this.params.ConnectomeEnvelopeReduce.compareSC = false;
       this.params.ConnectomeEnvelopeReduce.compareSC_shuffle = false;
       this.params.ConnectomeEnvelopeReduce.compareSC_shufflePermutations = [];
@@ -428,6 +430,26 @@ classdef ConnectomeEnvelopeReduce < Gridjob
       lpc = reshape(lpc,[numRois numRois numFreq dims]);
       pli = reshape(pli,[numRois numRois numFreq dims]);
       wpli = reshape(wpli,[numRois numRois numFreq dims]);
+      
+      if ~isempty(p.FCsimApplyLf)
+        
+        elecFC = num2cell(plv,[1 2]);
+        elecFC = cellfun(@(x) p.FCsimApplyLf * x * p.FCsimApplyLf', elecFC, 'UniformOutput', false);
+        % go from cov to cor:
+        elecFC = cellfun(@(x) x./(sqrt(diag(x))*sqrt(diag(x))'), elecFC, 'UniformOutput', false);
+        elecFC = cell2mat(elecFC);
+        elecFC = abs(elecFC);
+        
+        plv = elecFC;
+        icoh = elecFC;
+        coh = elecFC;
+        cohy = elecFC;
+        FCsim = elecFC;
+        lpc = elecFC;
+        pli = elecFC;
+        wpli = elecFC;
+      
+      end
       
       if length(dims)==1
         dims=[dims 1];
@@ -848,6 +870,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
             if p.calcFisher==3
               [compareSimExp.perFreq.(metrics{m}).rho(freq,:,:), compareSimExp.perFreq.(metrics{m}).pval(freq,:,:)] = corr(tmpEEG,tmpSIM,'type','Spearman');
             else
+              if ~isreal(tmpSIM)
+                tmpSIM = real(tmpSIM);
+              end
               [compareSimExp.perFreq.(metrics{m}).rho(freq,:,:), compareSimExp.perFreq.(metrics{m}).pval(freq,:,:)] = corr(tmpEEG,tmpSIM);
             end
             
@@ -1007,6 +1032,9 @@ classdef ConnectomeEnvelopeReduce < Gridjob
           compareSimExp.overFreq.(metrics{m}).coh = reshape(compareSimExp.overFreq.(metrics{m}).coh,eegSimDimSize);
         else
           %% Corr:
+          if ~isreal(tmpSIM)
+            tmpSIM = real(tmpSIM);
+          end
           [compareSimExp.overFreq.(metrics{m}).rho, compareSimExp.overFreq.(metrics{m}).pval] = corr(tmpEEG,tmpSIM);
           compareSimExp.overFreq.(metrics{m}).rho = reshape(compareSimExp.overFreq.(metrics{m}).rho,eegSimDimSize);
           compareSimExp.overFreq.(metrics{m}).pval = reshape(compareSimExp.overFreq.(metrics{m}).pval,eegSimDimSize);
@@ -2079,7 +2107,7 @@ classdef ConnectomeEnvelopeReduce < Gridjob
                     groupMatch = eye(numSubj,numSubj);
                     groupSubjDTI = repmat(1:numSubj,[numSubj 1]);
                     groupSubjEEG = repmat(1:numSubj,[numSubj 1])';
-                    pval = anovan(metricVal(:), {groupMatch(:) groupSubjDTI(:) groupSubjEEG(:)} , 'random', [2 3], 'varnames', {'matching', 'subjDTI', 'subjEEG'}, 'display','off');
+                    pval = anovan(metricVal(:), {groupMatch(:) groupSubjDTI(:) groupSubjEEG(:)} , 'random', [2 3], 'varnames', {'matching', 'subjDTI', 'subjEEG'}, 'display','off');                    
                     tensorPermTest.(transpString{transp}).(normString{normBefore}).anovan_pval_matching(iterDim1,iterDim2,iterDim3) = pval(1);
                     tensorPermTest.(transpString{transp}).(normString{normBefore}).anovan_pval_subjDTI(iterDim1,iterDim2,iterDim3) = pval(2);
                     tensorPermTest.(transpString{transp}).(normString{normBefore}).anovan_pval_subjEEG(iterDim1,iterDim2,iterDim3) = pval(3);
