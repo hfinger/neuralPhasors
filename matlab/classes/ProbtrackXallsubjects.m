@@ -126,7 +126,11 @@ classdef ProbtrackXallsubjects < Gridjob
                                 
                 voxelCount = voxelcount.voxelcount_FA_thr_012(subjectNum);
                 numberPerSplit = ceil(voxelCount/50);
-                connmat = zeros(numberPerSplit,voxelCount);
+%                 connmat = zeros(numberPerSplit,voxelCount);
+
+                fdt_matrix = cell(numberPerSplit,1);
+                fdt_matrix_lengths = cell(numberPerSplit,1);
+
                 waytotal = zeros(numberPerSplit,1);
                                
                 
@@ -200,11 +204,12 @@ classdef ProbtrackXallsubjects < Gridjob
                             ' --target2=' temppath '/termmask.nii'...
                             ' -c 0.2 -S 2000 --steplength=0.5'...
                             ' -P 5000'...
-                            ' --rseed=123'...
+                            ' --rseed=12345'...
                             ' --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 '...
                             ' --avoid=' capath...
                             ' --stop=' temppath '/termmask.nii --forcedir --opd'...
                             ' -s ' bedpostpath '/merged'...
+                            ' --ompl'...
                             ' -m ' bedpostpath '/nodif_brain_mask'...
                             ' --dir=' temppath '/data' num2str(k) ];
                         % call for probtrackx2
@@ -221,12 +226,22 @@ classdef ProbtrackXallsubjects < Gridjob
                                 'Error in subjnum %s voxel %s run %s',num2str(subjectNum), num2str(i), num2str(k));
                             throw(ME)
                         else
-                            fdt_matrix = load([temppath '/data' num2str(k) '/fdt_matrix2.dot']);
+                            fdt_matrix{k} = load([temppath '/data' num2str(k) '/fdt_matrix2.dot']);
+                            fdt_matrix_lengths{k} = load([temppath '/data' num2str(k) '/fdt_matrix2_lengths.dot']);
+                            
+                            % correct the target indices due to removing the seed voxel from the target mask:
+                            indicesToIncrease = find(fdt_matrix{k}(:,2) >= k);
+                            fdt_matrix{k}(indicesToIncrease,2) = fdt_matrix{k}(indicesToIncrease,2) + 1;
+                            fdt_matrix_lengths{k}(indicesToIncrease,2) = fdt_matrix_lengths{k}(indicesToIncrease,2) + 1;
+                            
+                            fdt_matrix{k}(:,1) = k;
+                            fdt_matrix_lengths{k}(:,1) = k;
+                            
                             waytotal(k) = load([temppath '/data' num2str(k) '/waytotal']);
                             
-                            for j = 1 : size(fdt_matrix,1)
-                                connmat(k,fdt_matrix(j,2)) = connmat(k,fdt_matrix(j,2)) + fdt_matrix(j,3);
-                            end
+%                             for j = 1 : size(fdt_matrix,1)
+%                                 connmat(k,fdt_matrix(j,2)) = connmat(k,fdt_matrix(j,2)) + fdt_matrix(j,3);
+%                             end
                             rmdir([temppath '/data' num2str(k)],'s');
                         end
                         
@@ -234,9 +249,15 @@ classdef ProbtrackXallsubjects < Gridjob
                         disp('voxel', i, 'is not populated in the fs mask');
                     end
                 end
-                connmat = sparse(connmat);
+                
+                fdt_matrix = cat(1,fdt_matrix{:});
+                connmat = spconvert(fdt_matrix);
+                
+                fdt_matrix_lengths = cat(1,fdt_matrix_lengths{:});
+                distmat = spconvert(fdt_matrix_lengths);
                 
                 save([this.workpath '/connmat' num2str(this.params.ProbtrackXallsubjects.split)], 'connmat', '-v7.3');
+                save([this.workpath '/distmat' num2str(this.params.ProbtrackXallsubjects.split)], 'distmat', '-v7.3');
                 save([this.workpath '/waytotal' num2str(this.params.ProbtrackXallsubjects.split)], 'waytotal');
                 rmdir(temppath,'s');
                 %%%% END EDIT HERE:                                %%%%
