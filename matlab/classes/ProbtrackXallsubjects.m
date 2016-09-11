@@ -17,9 +17,9 @@ classdef ProbtrackXallsubjects < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ProbtrackXallsubjects.subjectId = num2cell([1:4 6:13 15 17:22]);
       this.params.ProbtrackXallsubjects.split = num2cell(1:100);
       this.params.ProbtrackXallsubjects.splitPerSubject = 100;
+      this.params.ProbtrackXallsubjects.subjectId = num2cell([1:4 6:13 15 17:22]);
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
