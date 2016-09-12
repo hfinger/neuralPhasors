@@ -223,8 +223,8 @@ classdef ProbtrackXallsubjects < Gridjob
           fdt_matrix{k}(indicesToIncrease,2) = fdt_matrix{k}(indicesToIncrease,2) + 1;
           fdt_matrix_lengths{k}(indicesToIncrease,2) = fdt_matrix_lengths{k}(indicesToIncrease,2) + 1;
           
-          fdt_matrix{k}(:,1) = voxId;
-          fdt_matrix_lengths{k}(:,1) = voxId;
+          fdt_matrix{k}(:,1) = k;
+          fdt_matrix_lengths{k}(:,1) = k;
           
           waytotal(k) = load([temppath '/data' num2str(k) '/waytotal']);
           
