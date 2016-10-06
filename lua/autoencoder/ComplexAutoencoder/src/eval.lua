@@ -8,7 +8,7 @@ require 'image';
 require 'optim';
 require 'functions'
 require 'image'
-require 'mattorch';
+--require 'mattorch';
 loaded = false
 function cuda()
     require 'cutorch';

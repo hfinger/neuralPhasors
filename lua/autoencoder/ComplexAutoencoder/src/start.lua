@@ -10,7 +10,7 @@ require 'functions';
 require 'eval';
 require 'randomkit';
 require 'pl';
-require 'mattorch';
+--require 'mattorch';
 
 local lfs = require"lfs";
 loaded = false
@@ -61,7 +61,6 @@ local function run(traindata, testdata, opt, stacked, conf, epochs)
     autoencoder:add(enc)
     autoencoder:add(dec)
     autoencoder:training()
-    
     --set Criterion 
     local criterion = nn.ParallelCriterion()
     
@@ -135,7 +134,7 @@ local function run(traindata, testdata, opt, stacked, conf, epochs)
         stackedEncPar = nn.ParallelTable()
         stackedEncSeq = nn.Sequential()
         stackedEncSeq:add(nn.Reshape(opt.hidden, 150, 2, 200, 2))
-        stackedEncSeq:add(nn.Transpose({2,3},{3,5},{4,5}))
+        stackedEncSeq:add(nn.View(opt.hidden,2,2,150,200))
         stackedEncSeq:add(nn.Reshape(opt.hidden*4,150,200))
         stackedEncPar:add(stackedEncSeq)
         stackedEncPar:add(stackedEncSeq)
@@ -147,7 +146,7 @@ local function run(traindata, testdata, opt, stacked, conf, epochs)
         stackedDecPar = nn.ParallelTable()
         stackedDecSeq = nn.Sequential()
         stackedDecSeq:add(nn.Reshape(opt.hidden,2,2,150,200))
-        stackedDecSeq:add(nn.Transpose({4,5},{3,5},{2,3}))
+        stackedDecSeq:add(nn.View(opt.hidden,150,2,200,2))
         stackedDecSeq:add(nn.Reshape(opt.hidden, 300, 400))
         stackedDecPar:add(stackedDecSeq)
         stackedDecPar:add(stackedDecSeq)
@@ -199,7 +198,7 @@ local function run(traindata, testdata, opt, stacked, conf, epochs)
         return net, errors
     end    
 end
-
+--]]
 R.run = run
 
 return R

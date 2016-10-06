@@ -10,7 +10,7 @@ require 'functions';
 require 'eval';
 require 'randomkit';
 require 'pl';
-require 'mattorch';
+--require 'mattorch';
 local start = require 'start'
 
 local lfs = require"lfs";
@@ -92,6 +92,7 @@ elseif opt.dataSet == 'white' then
   w = 32
   h = 32  
 end
+
 
 conf = {inputDim = inpD, width=w, height=h}
 autoencoder, error = start.run(traindata, testdata, opt, opt.stacked , conf, epochs)
