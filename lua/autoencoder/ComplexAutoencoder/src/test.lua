@@ -14,8 +14,10 @@ require 'mattorch';
 
 
 --local traindata, testdata = loadData(true, 'cifar')
---model = torch.load('/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model180.net')
+model = torch.load('/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model.net')
 
+
+--[[
 local errors = torch.Tensor(10,54)
 for i = 1,10 do
   errors[i] = torch.load('../Data/Error' .. i .. '.dat')
@@ -36,7 +38,7 @@ gnuplot.ylabel('Error')
 gnuplot.plot({test, 'filledcurves'}, {x, ymax[1],'~'}, {x, ymin[1],'~'}, {x, ymean[1],'~'})
 gnuplot.plotflush()
 
---[[
+
 autoencoder = nn.Atan2()
 criterion = nn.MSECriterion()
 

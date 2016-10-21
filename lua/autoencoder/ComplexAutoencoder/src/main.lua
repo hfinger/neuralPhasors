@@ -10,7 +10,7 @@ require 'functions';
 require 'eval';
 require 'randomkit';
 require 'pl';
---require 'mattorch';
+require 'mattorch';
 local start = require 'start'
 
 local lfs = require"lfs";
@@ -45,7 +45,7 @@ opt = lapp[[
 steps = opt.full
 workdir = opt.workdir
 fileid = opt.fileId
-epochs = opt.epochs
+epochs = opt.epochs or 1
 --load Data
 print('Load Data')
 
@@ -74,10 +74,10 @@ if opt.dataSet == 'LabelMe' then
   end   
 
   traindata = splitdata
-  testdata = traindata
+  testdata = traindata:clone()
   inpD = 6
-  w = 300
-  h = 400
+  w = 400
+  h = 300
 elseif opt.dataSet == 'MNIST' then
   traindata, testdata = loadData(false, 'mnist')
   traindata = createData(steps+100, traindata, 2)
@@ -93,27 +93,28 @@ elseif opt.dataSet == 'white' then
   h = 32  
 end
 
-
 conf = {inputDim = inpD, width=w, height=h}
-autoencoder, error = start.run(traindata, testdata, opt, opt.stacked , conf, epochs)
-autoencoder:evaluate()
-if opt.stacked then epochs = epochs * 2 end
-evaluate(autoencoder, opt.cuda, error, steps, workdir, fileid, testdata, params, epochs, opt.batchSize, opt.dataSet)
-
---[[
-coefL1 = {0.1, 0.3, 0.5, 0.7, 0.9}
-coefL2 = {10, 20, 25}
-rates = {5, 7, 9}
+--autoencoder, error = start.run(traindata, testdata, opt, opt.stacked , conf, epochs)
+--autoencoder:evaluate()
+--if opt.stacked then epochs = epochs * 2 end
+--evaluate(autoencoder, opt.cuda, error, steps, workdir, fileid, testdata, params, epochs, opt.batchSize, opt.dataSet)
+--torch.save('model.net',autoencoder)
+set = opt.dataSet
+coefL1 = {1e-2, 1e-3, 1e-4, 1e-5}
+coefL2 = {1e-2, 1e-3, 1e-4, 1e-5}
+noise = {0.1, 0.3, 0.5}
 i = 1
 for k1, l1 in pairs(coefL1) do
   for k2, l2 in pairs(coefL2) do
-    for k3, lr in pairs(rates) do     
-      opt = {full = steps, coefL2 = 1e-6, coefL1 = 1e-3, hidden = 30, cuda = true, noise = l1, batchSize = l2, learningRate = 0.1, kernel = lr, criterion = 'MSE', workdir = i}
-      start.run(traindata, testdata, opt)
+    for k3, lr in pairs(noise) do       
+      opt = {full = steps, coefL2 = l2, coefL1 = l1, hidden = 5, cuda = true, noise = lr, batchSize = opt.batchSize, learningRate = 0.01, kernel = 5, criterion = 'MSE', workdir = i}
+      autoencoder, error = start.run(traindata, testdata, opt, opt.stacked, conf, epochs)
+      autoencoder:evaluate()
+      evaluate(autoencoder, opt.cuda, error, steps, i, 1, testdata, params, epochs, opt.batchSize, set)
       i = i + 1
     end
   end
 end
-]]--
+
 
 

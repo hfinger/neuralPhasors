@@ -2,6 +2,7 @@ require 'Cos'
 require 'Atan2'
 require 'Sin'
 require 'AddBias'
+require 'Transform'
 
 local Encoder, Parent = torch.class('nn.Encoder', 'nn.Module')
 
@@ -11,13 +12,14 @@ Torch Neural Network Module for creating the encoding part of an Autoencoder
 @n_hidden number of hidden units / dimension of convolution 
 @kernel_size dimension of kernel for spatial convolution
 ]]--
-function Encoder:__init(n_input, n_hidden, kernel_size, useLinear, input_height, input_width)
+function Encoder:__init(n_input, n_hidden, kernel_size, useLinear, input_width , input_height)
    Parent.__init(self)
    self.input = n_input 
    self.hidden = n_hidden
    self.kernel_size = kernel_size
    self.input_height = input_height
    self.input_width = input_width
+   self.mode = mode
    if useLinear then
     self.useLinear = useLinear
    end
@@ -29,7 +31,6 @@ end
 function Encoder:updateOutput(inp)
     self.encoder:forward(inp)
     self.output = self.encoder.output 
-    phase = self.atan.output
     return self.output
 end
 
@@ -76,16 +77,35 @@ function Encoder:evaluate()
     self.train = false
     self.encoder:evaluate()
     self.Bias:evaluate()
-    self.mul1 = nn.MulConstant(0.5,true)
-    self.mul2 = nn.MulConstant(0.5,true)
+    muls, container = self.encoder:findModules('nn.MulConstant')
+    for i = 1,#muls do
+      -- Search the container for the current threshold node
+      for j = 1,#(container[i].modules) do
+        if container[i].modules[j] == muls[i] then
+          -- Replace with a new instance
+          container[i].modules[j] = nn.MulConstant(0.5,true):cuda()
+        end
+      end
+    end
 end
 
 function Encoder:training()
     self.train = true
---    self.encoder:training()
---    self.Bias:training()
-    self.mul1 = nn.MulConstant(0,true)
-    self.mul2 = nn.MulConstant(1,true)
+    muls, container = self.encoder:findModules('nn.MulConstant')
+      -- Search the container for the current Identity node
+    for j = 1, #(container[1].modules) do
+        if container[1].modules[j] == muls[1] then
+          -- Replace with a new instance
+            container[1].modules[j] = nn.MulConstant(1e-15,true):cuda()
+        end
+    end
+
+    for j = 1, #(container[2].modules) do
+        if container[2].modules[j] == muls[2] then
+          -- Replace with a new instance
+            container[2].modules[j] = nn.MulConstant(1,true):cuda()
+        end
+    end
 end    
 
 function Encoder:zeroGradParameters()
@@ -106,15 +126,15 @@ function Encoder:build_enc()
     local zeroPad = (self.kernel_size-1)/2
     
 
-    self.convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size,1,1, zeroPad, zeroPad)
+    self.convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size,1,1, 0, 0)
     self.convolution1.bias:zero() 
     self.convolution1.gradBias:zero() 
     
     self.convolution2 = self.convolution1:clone('weight', 'bias', 'gradWeight', 'gradBias')
 
 
-    par1:add(self.convolution1) -- w*x
-    par1:add(self.convolution2) -- w*y
+    par1:add(nn.Sequential():add(nn.SpatialReflectionPadding(zeroPad,zeroPad,zeroPad,zeroPad)):add(self.convolution1)) -- w*x
+    par1:add(nn.Sequential():add(nn.SpatialReflectionPadding(zeroPad,zeroPad,zeroPad,zeroPad)):add(self.convolution2)) -- w*y
  
 
     img:add(par1)
@@ -132,7 +152,7 @@ function Encoder:build_enc()
     seq1:add(nn.CAddTable()) -- (wx)^2 + (wy)^2
     seq1:add(nn.Sqrt()) 
     self.mul1 = nn.MulConstant(0.5,true) 
-    seq1:add(nn.MulConstant(0.5,true))
+    seq1:add(self.mul1)
 
 
     self.atan = nn.Atan2()
@@ -157,7 +177,7 @@ function Encoder:build_enc()
     self.convolution3 = self.convolution1:clone('weight', 'bias', 'gradWeight', 'gradBias')
 
 
-    real:add(self.convolution3)
+    real:add(nn.Sequential():add(nn.SpatialReflectionPadding(zeroPad,zeroPad,zeroPad,zeroPad)):add(self.convolution3))
     self.mul2 = nn.MulConstant(0.5,true) 
     real:add(self.mul2)
 
@@ -222,6 +242,9 @@ function Encoder:build_enc()
 
     transform:add(x)
     transform:add(y)
+    
+    self.trans = nn.Transform(self.mode)
+    --enc:add(self.trans)
     enc:add(transform)
     --outputs a table
     --first dimension = x

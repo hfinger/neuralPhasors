@@ -62,30 +62,31 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
                 end
                 local input = {}
                 local target = {}
-                if stacked then
+                if cuda then
+                    activity = activity:cuda()
+                    phase = phase:cuda()
+                end    
+                if stacked then                  
                     input = {torch.cmul(activity,torch.cos(phase)),torch.cmul(activity,torch.sin(phase))}    
                     if cuda then
-                        activity = activity:cuda()
                         input[1] = input[1]:cuda()
                         input[2] = input[2]:cuda()
                     end   
                     --print(stacked)
-                    stacked:forward(input)
-                    activity = torch.sqrt(torch.pow(stacked.output[1],2) + torch.pow(stacked.output[2],2))
+                    stacked:forward(input)                   
+                    activity = torch.sqrt(torch.pow(stacked.output[1],2) + torch.pow(stacked.output[2],2)):cuda()
                     --phase = torch.atan2(stacked.output[2],stacked.output[1])  
-                    phase = torch.Tensor(#activity):zero()
+                    phase = torch.Tensor(#activity):zero():cuda()
                 end    
                 
-                if noiseLevel then
+                if noiseLevel > 0 then
                     --noise = torch.Tensor(#activity):bernoulli(1-noiseLevel)
                     noise = randomkit.normal(torch.Tensor(#activity),0,noiseLevel)
                     if cuda then
                         noise = noise:cuda()
-                        activity = activity:cuda()
-                        phase = phase:cuda()
                     end   
-                    --corrupted = torch.cmul(activity,noise)
-                    corrupted = activity + noise
+                    corrupted = nn.SpatialDropout(noiseLevel):cuda():forward(activity)
+                    --corrupted = activity + noise
                     input = {torch.cmul(corrupted,torch.cos(phase)),torch.cmul(corrupted,torch.sin(phase))}
                     target = {torch.cmul(activity,torch.cos(phase)),torch.cmul(activity,torch.sin(phase))}
                 else
@@ -117,13 +118,23 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
                   -- locals:
                   local norm,sign= torch.norm,torch.sign
                   -- Loss:
-                  weightsEnc = model:get(1).convolution1.weight
-                  weightsDec = model:get(2).convolution1.weight
+                  
+                  if stacked then
+                    weightsEnc = model:get(1).convolution1.weight
+                    weightsDec = model:get(2).convolution1.weight
+                    
+                    wSize = weightsEnc:view(-1):size(1)
+                    bSize = model:get(2).convolution1.bias:view(-1):size(1)
+                  else
+                    weightsEnc = model:get(1).convolution1.weight
+                    weightsDec = model:get(2).convolution1.weight
+                    
+                    wSize = weightsEnc:view(-1):size(1)
+                    bSize = model:get(1).convolution1.bias:view(-1):size(1)
+                  end
                   f = f + l1 * norm(weightsEnc,1) + l1 * norm(weightsDec,1) 
                   f = f + l2 * norm(weightsEnc,2)^2/2 + l2 * norm(weightsDec,2)^2/2
-                  -- Gradients:
-                  wSize = weightsEnc:view(-1):size(1)
-                  bSize = model:get(1).convolution1.bias:view(-1):size(1)
+                  -- Gradients:  
                   gradParameters:sub(1,wSize):add(sign(weightsEnc:view(-1)):mul(l1) + weightsEnc:view(-1):clone():mul(l2))
                   gradParameters:sub(wSize+bSize+1,2*wSize+bSize):add(sign(weightsDec:view(-1)):mul(l1) + weightsDec:clone():view(-1):mul(l2))    
                 end
@@ -154,7 +165,7 @@ function display(model)
      local conv = model:get(1).convolution1.weight:clone()
      local weights
      if conv:size(2) > 1 then
-      weights = conv:sub(1,10,1,3) - conv:sub(1,10,4,6)
+      weights = conv:sub(1,-1,1,3) - conv:sub(1,-1,4,6)
       else 
         weights = conv
       end  
