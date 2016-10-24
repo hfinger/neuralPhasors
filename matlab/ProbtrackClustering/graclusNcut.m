@@ -3,7 +3,7 @@ if recursiveSplit
     
     for subjNum = subjRange
         
-        if normBy == 'sum'
+        if strcmp(normBy,'sum');
                     compSimMat = load([InputPath '/compSimMat/' 'compSimMatsum' num2str(subjNum)]);
         else
 

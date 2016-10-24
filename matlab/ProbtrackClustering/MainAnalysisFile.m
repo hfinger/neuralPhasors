@@ -2,17 +2,17 @@
 % 20160407 Added CompSimMatCalc
 
 %% Parameters
-run = 11;
+run = 1;
 %% Get Full Connectivity and Waytotal matrices from grid job results of ProbtrackX
 if run == 1
     %Parameters
-    inputPath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20150804_ProbtrackXallsubjects';
-    outputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/' num2str(yyyymmdd(datetime)) '_FullConnmat'];
-    subjTotal = 22;
-    splitPerSubject = 50;
+    inputPath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20160415_Probtrackxallsubjects';
+    outputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160417_Allconnmat'];
+    subjRange = [1, 6];%[1:4, 6:13, 15, 17:22];
+    splitPerSubject = 100;
     
     %Call Function
-    GetFullConnmat(inputPath, outputPath, subjTotal, splitPerSubject);
+    GetFullConnmat(inputPath, outputPath, subjRange, splitPerSubject);
 end
 
 %% Get FS Connectivity and Waytotal Matrices from full connectivity matrix above
@@ -132,12 +132,12 @@ end
 % 20160407
 
 if run == 11
-    subjRange = [1:4, 6:13, 15, 17:22];%1
+    subjRange = [1];%:4, 6:13, 15, 17:22];%1
     decayParam = -0.5; % -0.25, -1
     WeighingFactor = 0.7; % 0.7
-    normBy = 'sum';
+    normBy = 'mean';
     calcDistMat = 1;
-    onlyChangeNorm = 0;
+    onlyChangeNorm = 1;
     InputPath = '/net/store/nbp/projects/phasesim/workdir/Arushi/20160407_CompSimMatCalcNewSub';
     OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160407_CompSimMatCalcNewSub/decay'...
         num2str(decayParam) 'weigh' num2str(WeighingFactor)]  ;
@@ -155,7 +155,7 @@ if run == 12
     subjRange = [1:4, 6:13, 15, 17:22];%, 6:13, 15, 17:22];%1
     decayParam = -0.25; % -0.5, -1
     WeighingFactor = 0.5; % 0.7    if recursiveSplit
-    normBy = 'sum';
+    normBy = '';
     InputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160407_CompSimMatCalcNewSub/decay'...
         num2str(decayParam) 'weigh' num2str(WeighingFactor)]; %'/net/store/nbp/projects/phasesim/workdir/Arushi/20160407_CompSimMatCalcNewSubwithoutnormbymean/decay-0.25weigh0.5'; %
     OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160411_GraclusCut/decay'...
