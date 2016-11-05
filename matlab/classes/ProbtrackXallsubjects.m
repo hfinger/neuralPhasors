@@ -85,7 +85,7 @@ classdef ProbtrackXallsubjects < Gridjob
       powerfreememory = freememory(regexp(freememory,'\D'));
       disp(powerfreememory);
       disp(numfreememory);
-      voxelcount = load('/net/store/nbp/projects/phasesim/workdir/Arushi/20160210Allsubjecttracking/voxelcount_FA_thr_012.mat');
+%       voxelcount = load('/net/store/nbp/projects/phasesim/workdir/Arushi/20160210Allsubjecttracking/voxelcount_FA_thr_012.mat');
       
       %set flag to move to local if memory is more than 500 MB
       if strfind(powerfreememory, 'M')
@@ -118,8 +118,7 @@ classdef ProbtrackXallsubjects < Gridjob
       voxelIndexInImg = find(compl_fs_mask.img);
       %change end for all subject tracking 20150727
       
-      voxelCount = voxelcount.voxelcount_FA_thr_012(subjectId);
-      
+      voxelCount = size(voxelIndexInImg,1);      
       splitPerSubject = this.params.ProbtrackXallsubjects.splitPerSubject;
       
       currentSplit = this.params.ProbtrackXallsubjects.split;
@@ -127,7 +126,8 @@ classdef ProbtrackXallsubjects < Gridjob
       if currentSplit == splitPerSubject
         % if we we are in the last split of this subject, there are less
         % voxels remaining to process:
-        numberVoxThisSplit = voxelCount - numberVoxPerSplit * (1 - splitPerSubject);
+%         numberVoxThisSplit = voxelCount - numberVoxPerSplit * (1 - splitPerSubject);
+        numberVoxThisSplit = voxelCount - ((numberVoxPerSplit-1) * splitPerSubject) ;
       else
         numberVoxThisSplit = numberVoxPerSplit;
       end
@@ -162,7 +162,7 @@ classdef ProbtrackXallsubjects < Gridjob
         bedpostpath = [datapaths.databases '/Bastian_DTI/dti_data/ca' caNum '_1/bedpost.bedpostX'];
       end
       
-      first_voxel = (currentSplit - 1) * numberVoxPerSplit + 1;
+      first_voxel = ((currentSplit - 1) * numberVoxPerSplit) + 1;
       for k=1:numberVoxThisSplit
         
         voxId = k+first_voxel-1;
