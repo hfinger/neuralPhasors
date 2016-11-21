@@ -1,27 +1,22 @@
-function graclusNcut(recursiveSplit, clusterCount, subjRange, InputPath, OutputPath, normBy)
-if recursiveSplit
+function graclusNcut(recursiveSplit, clusterCount, subjRange, InputPath, OutputPath, normBy, threshFactor)
     
     for subjNum = subjRange
         
-        if strcmp(normBy,'sum');
-                    compSimMat = load([InputPath '/compSimMat/' 'compSimMatsum' num2str(subjNum)]);
-        else
-
-        compSimMat = load([InputPath '/compSimMat/' 'compSimMat' num2str(subjNum)]);
-        end
-        compSimMat = compSimMat.expEucMat;
+        compSimMat = load([InputPath '/compSimMatWholeMax/' 'compSimMatWholeMax' normBy num2str(subjNum)]);
+       
+        compSimMat = compSimMat.compSimMat;
         
-        InterimOutputPath = [OutputPath '/graclusIntermedResult/gracIntResultnormBy' normBy num2str(subjNum) ];
-        if ~exist(InterimOutputPath, 'dir')
-            mkdir(InterimOutputPath)
-        end
+        compSimMat = compSimMat*(threshFactor);
         
-        [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue] = applyClustering( compSimMat, clusterCount, InterimOutputPath );
+              
+        [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue]...
+            = applyClustering( compSimMat, clusterCount, recursiveSplit );
         
         stepWiseClusters = clusterIdPerVoxel;
         allClusters = clusterIdPerVoxelCurrent;
         
-        FinalOutputPath = [OutputPath 'normby' normBy];
+       
+        FinalOutputPath = [OutputPath 'normby' normBy 'thresh' num2str(threshFactor) ];
         
         
         if ~exist(FinalOutputPath, 'dir')
@@ -29,12 +24,9 @@ if recursiveSplit
         end
         
         
-        save([FinalOutputPath '/graclusResultnormBy' normBy num2str(subjNum)], 'stepWiseClusters', 'allClusters', 'largestClusterId', 'cutValue');
+        save([FinalOutputPath '/graclusResultnormBy' normBy 'thresh' num2str(threshFactor) 'clust' num2str(clusterCount) ...
+            'subj' num2str(subjNum)], 'stepWiseClusters', 'allClusters', 'largestClusterId', 'cutValue');
         
     end
-else
-    search_steps = 80;
-    [clusterIdPerVoxel, cutValue] = graclus(high_res_tracts, clusterCount, 0, search_steps, 0);
-    largestClusterId = [];
-end
+
 end

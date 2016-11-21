@@ -44,6 +44,7 @@ addpath(fullfile(pathstr, 'methods', 'connectome'));
 addpath(fullfile(pathstr, 'methods', 'connectome_plot'));
 addpath(fullfile(pathstr, 'methods', 'metrics'));
 addpath(fullfile(pathstr, 'methods', 'metrics','reviewed'));
+addpath(fullfile(pathstr, 'ProbtrackClustering'));
 
 end
 

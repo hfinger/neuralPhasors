@@ -58,17 +58,17 @@ for subjectNum = subjRange
         
     end
     if exist('connmat', 'var')
-        column = size(connmat,2);
-        connmat = connmat(1:column,:);
+%         column = size(connmat,2);
+%         connmat = connmat(1:column,:);
         save([outputPath '/connmatSubj' num2str(subjectNum)], 'connmat');
     end
     if exist('waytotal', 'var')
-        waytotal = waytotal(1:column);
+%         waytotal = waytotal(1:column);
         save([outputPath '/waytotalSubj' num2str(subjectNum)], 'waytotal');
     end
     if exist('distmat', 'var')
-        waytotal = distmat(1:column,:);
-        save([outputPath '/waytotalSubj' num2str(subjectNum)], 'waytotal');
+%         waytotal = distmat(1:column,:);
+        save([outputPath '/distmatSubj' num2str(subjectNum)], 'distmat');
     end
     clear connmat;
     clear waytotal;

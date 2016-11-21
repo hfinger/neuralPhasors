@@ -1,4 +1,4 @@
-function [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue] = applyClustering( high_res_tracts, target_cluster_count, OutputPath )
+function [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue] = applyClustering( high_res_tracts, target_cluster_count, recursiveSplit )
 % log
 % 20160410 - agarg - copied from matlab/methods/connectome_clustering
 %                  - edited return arguments to include clusterIdPerVoxelCurrent
@@ -27,6 +27,7 @@ clusterIdPerVoxelCurrent = ones(size(high_res_tracts,1),1,'uint16');
 clusterIdPerVoxel(:,1) = clusterIdPerVoxelCurrent;
 
 %% iterative clustering
+if recursiveSplit
 for i = 2:target_cluster_count
   disp(['number clusters: ' num2str(i)]);
   
@@ -46,8 +47,14 @@ for i = 2:target_cluster_count
   % save into full matrix:
   clusterIdPerVoxel(:,i) = clusterIdPerVoxelCurrent;
  
-  save([OutputPath '/cluster' num2str(i)],...
-  'largestClusterId', 'clusterIdPerVoxelCurrent', 'clusterIdPerVoxel');
+ end
+
+%% Non-recursive splitting
+
+else
+    search_steps = 80;
+    [clusterIdPerVoxel, cutValue] = graclus(high_res_tracts, target_cluster_count, 0, search_steps, 0);
+    largestClusterId = [];
 end
 
 end
