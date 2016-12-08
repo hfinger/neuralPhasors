@@ -1,10 +1,12 @@
-function [number_of_outliers, number_of_connectedComponents] = connectedComp(voxel_coords)
+function [number_of_outliers, number_of_connectedComponents] = connectedComp(voxel_coords, allowed_gap_size)
 % This function calculates the number of connected components and number of
 % outlier voxels
 
 % [numOutliersVoxels, NumObjects] = evaluate(partition, voxel_coords, clusterID)
 
-allowed_gap_size = 3;
+if nargin<2
+  allowed_gap_size = 3;
+end
 
 cluster_voxel_coords = voxel_coords;
 clusterCenter = mean(cluster_voxel_coords,1);
