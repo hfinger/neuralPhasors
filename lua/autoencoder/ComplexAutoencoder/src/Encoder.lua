@@ -11,11 +11,13 @@ Torch Neural Network Module for creating the encoding part of an Autoencoder
 @n_hidden number of hidden units / dimension of convolution 
 @kernel_size dimension of kernel for spatial convolution
 ]]--
-function Encoder:__init(n_input, n_hidden, kernel_size, useLinear)
+function Encoder:__init(n_input, n_hidden, kernel_size, useLinear, input_height, input_width)
    Parent.__init(self)
    self.input = n_input 
    self.hidden = n_hidden
    self.kernel_size = kernel_size
+   self.input_height = input_height
+   self.input_width = input_width
    if useLinear then
     self.useLinear = useLinear
    end
@@ -27,6 +29,7 @@ end
 function Encoder:updateOutput(inp)
     self.encoder:forward(inp)
     self.output = self.encoder.output 
+    phase = self.atan.output
     return self.output
 end
 
@@ -59,9 +62,10 @@ function Encoder:updateParameters(learningRate)
 end    
 
 function Encoder:parameters()
-    encParams, encGradParams = self.encoder:parameters()
+    encParams, encGradParams = self.convolution1.weight, self.convolution1.gradWeight
     biasParams, biasGradParams = self.Bias:parameters()
     return {encParams, biasParams}, {encGradParams, biasGradParams}
+    --return encParams, encGradParams
 end 
 
 function Encoder:getWeights()
@@ -72,13 +76,22 @@ function Encoder:evaluate()
     self.train = false
     self.encoder:evaluate()
     self.Bias:evaluate()
+    self.mul1 = nn.MulConstant(0.5,true)
+    self.mul2 = nn.MulConstant(0.5,true)
 end
 
 function Encoder:training()
     self.train = true
-    self.encoder:training()
-    self.Bias:training()
+--    self.encoder:training()
+--    self.Bias:training()
+    self.mul1 = nn.MulConstant(0,true)
+    self.mul2 = nn.MulConstant(1,true)
 end    
+
+function Encoder:zeroGradParameters()
+    self.encoder:zeroGradParameters()
+end
+
     
 --Function to build encoder Network
 function Encoder:build_enc()
@@ -92,30 +105,17 @@ function Encoder:build_enc()
     local par1 = nn.ParallelTable()
     local zeroPad = (self.kernel_size-1)/2
     
-    if self.useLinear then
-        self.convolution1 = nn.Linear(self.input, self.hidden)
-        self.convolution2 = nn.Linear(self.input, self.hidden)
-    else
-        self.convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size,1,1, zeroPad, zeroPad)
-        self.convolution2 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size,1,1, zeroPad, zeroPad)
-    end        
-    --set bias terms to zero
-    self.convolution2:share(self.convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
+
+    self.convolution1 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size,1,1, zeroPad, zeroPad)
     self.convolution1.bias:zero() 
     self.convolution1.gradBias:zero() 
+    
+    self.convolution2 = self.convolution1:clone('weight', 'bias', 'gradWeight', 'gradBias')
 
-    
-    local conv1 = nn.Sequential()
-   
-    conv1:add(self.convolution1)
---    conv1:add(nn.SpatialDropout(0.1))   
-    local conv2 = nn.Sequential()
-   
-    conv2:add(self.convolution2)
---   conv2:add(nn.SpatialDropout(0.1))   
-    
-    par1:add(conv1) -- w*x
-    par1:add(conv2) -- w*y
+
+    par1:add(self.convolution1) -- w*x
+    par1:add(self.convolution2) -- w*y
+ 
 
     img:add(par1)
 
@@ -131,6 +131,7 @@ function Encoder:build_enc()
     seq1:add(par2)
     seq1:add(nn.CAddTable()) -- (wx)^2 + (wy)^2
     seq1:add(nn.Sqrt()) 
+    self.mul1 = nn.MulConstant(0.5,true) 
     seq1:add(nn.MulConstant(0.5,true))
 
 
@@ -153,19 +154,12 @@ function Encoder:build_enc()
     real:add(par2)
     real:add(nn.CAddTable())  -- x^2 + y^2
     real:add(nn.Sqrt())
-    if self.useLinear then
-        self.convolution3 = nn.Linear(self.input, self.hidden)
-    else
-        self.convolution3 = nn.SpatialConvolution(self.input, self.hidden, self.kernel_size, self.kernel_size,1 ,1, zeroPad, zeroPad)
-    end    
-    self.convolution3:share(self.convolution1,'weight', 'bias', 'gradWeight', 'gradBias')
+    self.convolution3 = self.convolution1:clone('weight', 'bias', 'gradWeight', 'gradBias')
 
-    local conv3 = nn.Sequential()
-    conv3:add(self.convolution3)
---    conv3:add(nn.SpatialDropout(0.1))    
-    
-    real:add(conv3)
-    real:add(nn.MulConstant(0.5,true))
+
+    real:add(self.convolution3)
+    self.mul2 = nn.MulConstant(0.5,true) 
+    real:add(self.mul2)
 
     --
     encpar:add(img)
@@ -181,16 +175,15 @@ function Encoder:build_enc()
     seperate:add(nn.SelectTable(1))
 
     --select second and third column and add them up
-    local activation = nn.Sequential()
+    local addImgReal = nn.Sequential()
     local concat = nn.ConcatTable()
     concat:add(nn.SelectTable(2))                       --Magic in order to seperate and rejoin table 
     concat:add(nn.SelectTable(3))
 
-    activation:add(concat)
-    activation:add(nn.CAddTable()) -- add imaginary and real part
+    addImgReal:add(concat)
+    addImgReal:add(nn.CAddTable()) -- add imaginary and real part
 
-    seperate:add(activation)
-    --seperate:add(nn.SelectTable(2))
+    seperate:add(addImgReal)
    
     enc:add(seperate)
     -------------------------------------------------
@@ -198,16 +191,13 @@ function Encoder:build_enc()
     local relu = nn.ParallelTable()
     relu:add(nn.Identity())
     
-    local bias = nn.Sequential()
-    self.Bias = nn.AddBias(self.hidden)
-    bias:add(self.Bias)
-    bias:add(nn.ReLU())
-    bias:add(nn.Reshape(self.hidden*100*100))
-    bias:add(nn.Normalize(math.huge))
-    bias:add(nn.Reshape(self.hidden,100,100))
-    --bias:add(nn.Sigmoid())
-    --bias:add(nn.SpatialDropout(0.5))
-    relu:add(bias) -- use rectified Linear activation
+    local activation = nn.Sequential()
+    self.Bias = nn.AddBias(self.hidden) --nn.Add(self.hidden, self.input_width,self.input_height) --
+    --activation:add(nn.L1Penalty(0.0001))
+    activation:add(self.Bias)
+    activation:add(nn.ReLU())
+    --activation:add(nn.SpatialDropout(0.1))
+    relu:add(activation) -- use rectified Linear activation
 
     enc:add(relu)
     --  Transform back to coordinate form

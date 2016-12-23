@@ -79,7 +79,8 @@ allFiles = dir(p.class_path);
 allNames = {allFiles(~[allFiles.isdir]).name};
 set(handles.popupmenu1,'String',allNames);
 
-% populate table with respective parameters and values
+% populate table with respective parameters and values of currently
+% selected class
 list = get(handles.popupmenu1,'String');
 val = list{get(handles.popupmenu1,'Value')};
 val = val(1:end-2); %selected Gridjobclass
@@ -268,7 +269,7 @@ while running
     end
     set(handles.status,'data',[myids',mynames',mystates',tasks',queues',errorfiles',logfiles']);
     oldsize = newsize;
-    pause(5);
+    pause(30);
     drawnow;pause(0.05);
 end
 
@@ -293,7 +294,7 @@ function [fields,values] = set_values(fields,str,struct,obj)
 %find values for each field
 k = 1;
 while k <= size(fields,1)
-    string = fields(k); %get fieldname
+    string = fields(k); %get fielname
     %--if superfield was struct get structfield parameters
     if struct
         result = strcat('obj.params.',str,'.',string{1});

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ASCII"?>
-<cache:CacheIndex xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:cache="http://eclipse.org/dltk/cache_model" lastIndex="240" environment="org.eclipse.dltk.core.environment.localEnvironment">
+<cache:CacheIndex xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:cache="http://eclipse.org/dltk/cache_model" lastIndex="459" environment="org.eclipse.dltk.core.environment.localEnvironment">
   <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/Test/src" timestamp="1436278700000" lastAccessTime="1447156931102">
     <attributes name=".dltk.core.archive.cache.lastaccess" location="2838196607/3584580380/21.idx"/>
   </entries>
@@ -12,8 +12,87 @@
   <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/Test/src/Cos.lua" timestamp="1436275862000" lastAccessTime="1447156638303">
     <attributes name="indexed" location="2838196607/2891031591/31.idx"/>
   </entries>
-  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src" timestamp="1453740588000" lastAccessTime="1453740612178">
-    <attributes name=".dltk.core.archive.cache.lastaccess" location="2838196607/1230888424/239.idx"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/ComplexCrit.lua" timestamp="1448022099000" lastAccessTime="1458734093536">
+    <attributes name="indexed" location="2838196607/3500116082/253.idx"/>
   </entries>
-  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/rmsprop.lua" timestamp="1453740592000" lastAccessTime="1453740592699"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/Cos.lua" timestamp="1447157282000" lastAccessTime="1458734093608">
+    <attributes name="indexed" location="2838196607/3500116082/275.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/Sin.lua" timestamp="1447157282000" lastAccessTime="1458734093601">
+    <attributes name="indexed" location="2838196607/3500116082/269.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stacked.lua" timestamp="1452851884000" lastAccessTime="1458734093603">
+    <attributes name="indexed" location="2838196607/3500116082/277.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stackedModel100.net" timestamp="1452864653000" lastAccessTime="1455527756381"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stackedModel50000.net" timestamp="1452869149000" lastAccessTime="1455527756381"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model30000.net" timestamp="1453742202000" lastAccessTime="1458734093539"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model50000.net" timestamp="1454065300000" lastAccessTime="1455527756382"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stackedModel20000.net" timestamp="1454071851000" lastAccessTime="1455527756384"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stackedModel5000.net" timestamp="1454076347000" lastAccessTime="1455527756384"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stackedModel40000.net" timestamp="1454509191000" lastAccessTime="1455527756384"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model45000.net" timestamp="1454950093000" lastAccessTime="1455527756385"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/stackedModel49000.net" timestamp="1455533969000" lastAccessTime="1456478797757"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model20000.net" timestamp="1455917341000" lastAccessTime="1458734093539"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model40000.net" timestamp="1455902496000" lastAccessTime="1456478797756"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/cifar_train.dat" timestamp="1455906883000" lastAccessTime="1458734093541"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/cifar_test.dat" timestamp="1455906893000" lastAccessTime="1458734093541"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model49000.net" timestamp="1455893242000" lastAccessTime="1456478797757"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/cifar_train_params.dat" timestamp="1455906895000" lastAccessTime="1458734093542"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/cifar_test_params.dat" timestamp="1455906896000" lastAccessTime="1458734093542"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/.project" timestamp="1455971460000" lastAccessTime="1458734093542"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/.buildpath" timestamp="1455971460000" lastAccessTime="1458734093542"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/.settings" timestamp="1455971461000" lastAccessTime="1458734093542"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/labelMe.dat" timestamp="1455980464000" lastAccessTime="1456145459329"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model40.net" timestamp="1456419898000" lastAccessTime="1456478797758"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model4.net" timestamp="1456431588000" lastAccessTime="1456478797758"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/labelMe1.dat" timestamp="1456432511000" lastAccessTime="1458734093542"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/labelMe2.dat" timestamp="1456432664000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/labelMe3.dat" timestamp="1456432772000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/labelMe4.dat" timestamp="1456432853000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/modelLabelMe.net" timestamp="1456437188000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/params.dat" timestamp="1457197586000" lastAccessTime="1458734093540"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist0.pdf" timestamp="1457196241000" lastAccessTime="1457949349243"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist1.pdf" timestamp="1457196242000" lastAccessTime="1457949349243"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist2.pdf" timestamp="1457196243000" lastAccessTime="1457949349244"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist3.pdf" timestamp="1457196244000" lastAccessTime="1457949349244"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist4.pdf" timestamp="1457196246000" lastAccessTime="1457949349245"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist5.pdf" timestamp="1457196249000" lastAccessTime="1457949349245"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist6.pdf" timestamp="1457196253000" lastAccessTime="1457949349245"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist7.pdf" timestamp="1457196256000" lastAccessTime="1457949349246"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist8.pdf" timestamp="1457196261000" lastAccessTime="1457949349246"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/hist9.pdf" timestamp="1457196266000" lastAccessTime="1457949349247"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/LabelMe.lua" timestamp="1456999612000" lastAccessTime="1458734093630">
+    <attributes name="indexed" location="2838196607/3500116082/422.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model400.net" timestamp="1456997959000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model200.net" timestamp="1456999005000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model600.net" timestamp="1457011610000" lastAccessTime="1458734093543"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/Decoder.lua" timestamp="1458053249000" lastAccessTime="1458734096299">
+    <attributes name="indexed" location="2838196607/3500116082/436.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model10000.net" timestamp="1458223026000" lastAccessTime="1458734093539"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model50.net" timestamp="1458730700000" lastAccessTime="1458734093539"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model80.net" timestamp="1458730624000" lastAccessTime="1458734093539"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model180.net" timestamp="1458729149000" lastAccessTime="1458734093540"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model350.net" timestamp="1458210668000" lastAccessTime="1458734093540"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model150.net" timestamp="1458211764000" lastAccessTime="1458734093540"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model1000.net" timestamp="1458297680000" lastAccessTime="1458734093540"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/test.sh~" timestamp="1458303000000" lastAccessTime="1458734093540"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/test.sh" timestamp="1458303007000" lastAccessTime="1458734093541"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/whitening.lua" timestamp="1457195331000" lastAccessTime="1458734096370">
+    <attributes name="indexed" location="2838196607/3500116082/440.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model10.net" timestamp="1458730859000" lastAccessTime="1458734093544"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model1.net" timestamp="1457972446000" lastAccessTime="1458734093544"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model1800.net" timestamp="1458222156000" lastAccessTime="1458734093544"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model5000.net" timestamp="1458297469000" lastAccessTime="1458734093544"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model500.net" timestamp="1458297345000" lastAccessTime="1458734093545"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model100.net" timestamp="1458565583000" lastAccessTime="1458734093545"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/model0.net" timestamp="1458730679000" lastAccessTime="1458734093545"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/Atan2.lua" timestamp="1459932543000" lastAccessTime="1459932544413"/>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src" timestamp="1459932903000" lastAccessTime="1459933181726">
+    <attributes name=".dltk.core.archive.cache.lastaccess" location="2838196607/1230888424/458.idx"/>
+  </entries>
+  <entries path="/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/src/eval.lua" timestamp="1459933181000" lastAccessTime="1459933181726"/>
 </cache:CacheIndex>
