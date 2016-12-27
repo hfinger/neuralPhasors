@@ -1,4 +1,4 @@
-function [number_of_outliers, number_of_connectedComponents] = connectedComp(voxel_coords, allowed_gap_size)
+function [number_of_outliers, number_of_connectedComponents,clusterSecondMoment] = connectedComp(voxel_coords, allowed_gap_size)
 % This function calculates the number of connected components and number of
 % outlier voxels
 
@@ -10,7 +10,7 @@ end
 
 cluster_voxel_coords = voxel_coords;
 clusterCenter = mean(cluster_voxel_coords,1);
-%clusterSecondMoment(cluster_ID) = mean(sqrt(sum(bsxfun(@minus,cluster_voxel_coords,clusterCenter).^2,2)).^2);
+clusterSecondMoment = mean(sqrt(sum(bsxfun(@minus,cluster_voxel_coords,clusterCenter).^2,2)).^2);
 
 img3d = zeros(max(voxel_coords,[],1));
 cluster_voxel_indices = sub2ind(size(img3d),cluster_voxel_coords(:,1),cluster_voxel_coords(:,2),cluster_voxel_coords(:,3));
