@@ -10,7 +10,8 @@ require 'functions';
 require 'eval';
 require 'randomkit';
 require 'pl';
-require 'mattorch';
+--require 'mattorch';
+local start = require 'start'
 
 local lfs = require"lfs";
 loaded = false
@@ -20,14 +21,13 @@ function cuda()
 end
 if pcall(cuda) then loaded = true else print('Cuda cannot be required') end
     
-
 opt = lapp[[
    -f,--full          (default 5000)        use the full dataset or only n samples
    -o,--optimization  (default "SGD")       optimization: SGD | ADAGRAD
    -r,--learningRate  (default 0.05)        learning rate, for SGD only
    -b,--batchSize     (default 10)          batch size
    -m,--momentum      (default 0)           momentum, for SGD only
-   -d,--weightDecay   (default 5e-5)        weight decay for SGD
+   -d,--coefL2        (default 0)           L2 penalty on the weights
    -h,--hidden        (default 50)          number of hidden units
    -k,--kernel        (default 7)           kernelsize
    -p,--phase                               training with/without phase 
@@ -37,143 +37,83 @@ opt = lapp[[
    -u,--cuda                                Use Cuda
    -w,--workdir       (default no)          working Directory
    -i,--fileId        (default no)          file identifier
-   --coefL2           (default 0)           L2 penalty on the weights
+   -s,--dataSet       (default LabelMe)     Dataset
+   -e,--epochs        (default 1)           Number of Dataset Iterations
+   -t,--stacked                             use second layer 
 ]]
 
-local steps = opt.full
-local batchSize = opt.batchSize
-local l1 = opt.coefL1
-local noise = opt.noise
-
-
-local fileid
-if opt.fileId == 'no' then
-    fileid = false
-else    
-    fileid = opt.fileId
-end
-local workdir
-if opt.workdir == 'no' then
-    workdir = false
-else    
-    workdir = opt.workdir
-end
---load Data
-local traindata, testdata = loadData(true)
-traindata = createData(steps+100, traindata, 2)
-testdata = createData(steps+100, testdata, 5)
---c10 = torch.load('cifar10-train.t7')
-local n_input = 100*100
-
-local config = {learningRate = opt.learningRate,
-            weightDecay = opt.weightDecay,
-            momentum = opt.momentum,
-            learningRateDecay = 5e-5,
-            nesterov = true,
-            dampening = 0}
-
---local config = {learningRate = 1e-1,}     
---initialize Encode
-local enc = nn.Encoder(1,opt.hidden,opt.kernel)
-local dec = nn.Decoder(opt.hidden,1,opt.kernel)
-
-
-
-local autoencoder = nn.Sequential()
-autoencoder:add(enc)
-autoencoder:add(dec)
-
-
---set Criterion 
-local criterion = nn.ParallelCriterion()
-
-if opt.criterion == 'MSE' then
-    xcrit = nn.MSECriterion() --compare x_in and x_out
-    ycrit = nn.MSECriterion() --compare y_in and y_out
-elseif opt.criterion == 'BCE' then
-    xcrit = nn.BCECriterion() --compare x_in and x_out
-    ycrit = nn.BCECriterion() --compare y_in and y_out
-else
-    xcrit = nn.ComplexCrit() --compare x_in and x_out
-    ycrit = nn.ComplexCrit() --compare y_in and y_out
-end
-criterion:add(xcrit,0.5)
-criterion:add(ycrit,0.5)
-
-
-if loaded and opt.cuda then
-    print('Use cuda')
-    enc:cuda()
-    dec:cuda()
-    autoencoder:cuda()
-    criterion:cuda()
-    traindata:cuda()
-end
-local parameters, gradParameters = autoencoder:getParameters()
-timer = torch.Timer()
-
-            
-print("start training")
-error = trainModel(steps, batchSize, traindata, autoencoder, criterion, parameters, gradParameters, config, opt.phase, noise, opt.cuda, l1)
-name = 'model' .. opt.full .. '.net'
-print('finished training after ' .. timer:time().real)
-torch.save(name, autoencoder)
-evaluate(autoencoder, opt.cuda, error, steps, workdir, fileid, testdata)
-
-
-
---if loaded and opt.cuda then
---    enc = enc:float()
---    dec = dec:float()
---    autoencoder = autoencoder:float()
---    criterion = criterion:float()
-   -- net = cudnnNetToCpu(autoencoder)
---    net = autoencoder:float()
---end
---print(net:listModules())
---[[
-
-
-
--- stacked
-
-enc2 = nn.Encoder(opt.hidden,5,15) --eventuell keine Convultion sondern Linear und eventuell pooling
-dec2 = nn.Decoder(5,opt.hidden,15)
-autoencoder2 = nn.Sequential()
-autoencoder2:add(enc2)
-autoencoder2:add(dec2)
-
-if loaded and opt.cuda then
-    enc:cuda()
-    enc2:cuda()
-    enc2.encoder:cuda()
-    dec2:cuda()
-    dec2.decoder:cuda()
-    autoencoder2:cuda()
-end
-
-config2 = {learningRate = opt.learningRate,
-            weightDecay = opt.weightDecay,
-            momentum = opt.momentum,
-            learningRateDecay = 5e-5,
-            nesterov = true,
-            dampening = 0}
-
-parameters, gradParameters = autoencoder2:getParameters()
-print("start training")
 steps = opt.full
-batchSize = opt.batchSize
-trainModel(steps, batchSize, traindata, autoencoder2, criterion, parameters, gradParameters, config2, opt.phase, 0.5, opt.cuda, l1, enc)
-name = 'stackedModel' .. opt.full .. '.net'
-print('finished training after ' .. timer:time().real)
+workdir = opt.workdir
+fileid = opt.fileId
+epochs = opt.epochs
+--load Data
+print('Load Data')
 
-net = nn:Sequential()
-net:add(enc)
-net:add(enc2)
-net:add(dec2)
-net:add(dec)
+local traindata, testdata
+local inpD
+if opt.dataSet == 'LabelMe' then
+  traindataPos = torch.Tensor(3,300,400)
+  traindataNeg = torch.Tensor(3,300,400)
+  splitdata = torch.Tensor(steps,6,300,400):zero()
+  print('load')
+  --f = 1254
+  f = 1010735
+  for i=1,steps do
+      f = f + 1
+      function get()
+        --test = mattorch.load('/net/store/nbp/projects/phasesim/workdir/kstandvoss/labelMeWhite/'..i..'/static_newyork_city_urban/IMG_'..f..'.jpg/act1.mat')   
+        test = mattorch.load('/net/store/nbp/projects/phasesim/workdir/20130726_Paper/Autoencoder/labelMeWhite/05june05_static_street_boston/p' .. f..'.jpg/act1.mat')
+        traindataPos = test['act']:transpose(2,3)
+        traindataNeg:copy(traindataPos)
+        traindataPos[traindataPos:le(0)] = 0 
+        traindataNeg[traindataNeg:ge(0)] = 0
+        splitdata[i]:sub(1,3):add(100,traindataPos)
+        splitdata[i]:sub(4,6):add(100,traindataNeg)
+      end  
+      if pcall(get) then else f = f + 1; i = i -1; end
+  end   
 
-evaluate(net, opt.cuda, error, steps, workdir, fileid, testdata)
-torch.save(name, net)
---]] 
+  traindata = splitdata
+  testdata = traindata
+  inpD = 6
+  w = 300
+  h = 400
+elseif opt.dataSet == 'MNIST' then
+  traindata, testdata = loadData(false, 'mnist')
+  traindata = createData(steps+100, traindata, 2)
+  testdata = createData(steps+100, testdata, 5)
+  inpD = 1
+  w = 100
+  h = 100
+elseif opt.dataSet == 'white' then
+  traindata = createData(steps+100, 'white', 2)
+  testdata = createData(steps+100, 'white', 4)
+  inpD = 1
+  w = 32
+  h = 32  
+end
+
+
+conf = {inputDim = inpD, width=w, height=h}
+autoencoder, error = start.run(traindata, testdata, opt, opt.stacked , conf, epochs)
+autoencoder:evaluate()
+if opt.stacked then epochs = epochs * 2 end
+evaluate(autoencoder, opt.cuda, error, steps, workdir, fileid, testdata, params, epochs, opt.batchSize, opt.dataSet)
+
+--[[
+coefL1 = {0.1, 0.3, 0.5, 0.7, 0.9}
+coefL2 = {10, 20, 25}
+rates = {5, 7, 9}
+i = 1
+for k1, l1 in pairs(coefL1) do
+  for k2, l2 in pairs(coefL2) do
+    for k3, lr in pairs(rates) do     
+      opt = {full = steps, coefL2 = 1e-6, coefL1 = 1e-3, hidden = 30, cuda = true, noise = l1, batchSize = l2, learningRate = 0.1, kernel = lr, criterion = 'MSE', workdir = i}
+      start.run(traindata, testdata, opt)
+      i = i + 1
+    end
+  end
+end
+]]--
+
 

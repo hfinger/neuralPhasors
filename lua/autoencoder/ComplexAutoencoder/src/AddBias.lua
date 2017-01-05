@@ -20,7 +20,7 @@ end
 --@input Tensor with input of Backward-call of previous module
 --@gradOutput Gradient output of previous module
 function AddBias:updateGradInput(input, gradOutput)
-    self.gradInput = gradOutput:clone() --gradient stays the same
+    self.gradInput:resizeAs(gradOutput):copy(gradOutput) --gradient stays the same
     return self.gradInput
 end
 
