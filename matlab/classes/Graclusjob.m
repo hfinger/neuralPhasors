@@ -17,8 +17,8 @@ classdef Graclusjob < Gridjob
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%% START EDIT HERE: define standard parameters for the job %%%%
             
-            this.params.Graclusjob.WeighFactor = num2cell(0:0.1:0.9);
-            this.params.Graclusjob.clusterCount = num2cell(2:50:200);
+            this.params.Graclusjob.WeighFactor = num2cell(0.5);
+            this.params.Graclusjob.clusterCount = num2cell(602:10:1000);
             
             %%%% END EDIT HERE:                                          %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +59,7 @@ classdef Graclusjob < Gridjob
             %call program to wait
             waitForServer();
             disp('do clustering')
-            for clusterCount = this.params.Graclusjob.clusterCount:this.params.Graclusjob.clusterCount + 19
+            for clusterCount = this.params.Graclusjob.clusterCount:this.params.Graclusjob.clusterCount + 9
                 WeighingFactor = this.params.Graclusjob.WeighFactor;
                 recursiveSplit = false;
                 subjRange = [1];%, 6:13, 15, 17:22];%1

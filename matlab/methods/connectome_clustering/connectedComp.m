@@ -29,7 +29,7 @@ for c=1:length(cc.PixelIdxList)
 end
 
 number_of_connectedComponents = cc.NumObjects;
-disp(['number connected components: ' num2str(number_of_connectedComponents)])
-disp(['number outlier voxels: ' num2str(number_of_outliers)])
+% disp(['number connected components: ' num2str(number_of_connectedComponents)])
+% disp(['number outlier voxels: ' num2str(number_of_outliers)])
 end
 
