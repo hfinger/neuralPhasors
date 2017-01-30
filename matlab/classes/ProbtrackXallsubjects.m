@@ -17,9 +17,9 @@ classdef ProbtrackXallsubjects < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ProbtrackXallsubjects.split = num2cell(1:100);
+      this.params.ProbtrackXallsubjects.split = num2cell(100);
       this.params.ProbtrackXallsubjects.splitPerSubject = 100;
-      this.params.ProbtrackXallsubjects.subjectId = num2cell([1:4 6:13 15 17:22]);
+      this.params.ProbtrackXallsubjects.subjectId = num2cell([1,6]);
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,7 +85,7 @@ classdef ProbtrackXallsubjects < Gridjob
       powerfreememory = freememory(regexp(freememory,'\D'));
       disp(powerfreememory);
       disp(numfreememory);
-      voxelcount = load('/net/store/nbp/projects/phasesim/workdir/Arushi/20160210Allsubjecttracking/voxelcount_FA_thr_012.mat');
+%       voxelcount = load('/net/store/nbp/projects/phasesim/workdir/Arushi/20160210Allsubjecttracking/voxelcount_FA_thr_012.mat');
       
       %set flag to move to local if memory is more than 500 MB
       if strfind(powerfreememory, 'M')
@@ -118,8 +118,7 @@ classdef ProbtrackXallsubjects < Gridjob
       voxelIndexInImg = find(compl_fs_mask.img);
       %change end for all subject tracking 20150727
       
-      voxelCount = voxelcount.voxelcount_FA_thr_012(subjectId);
-      
+      voxelCount = size(voxelIndexInImg,1);      
       splitPerSubject = this.params.ProbtrackXallsubjects.splitPerSubject;
       
       currentSplit = this.params.ProbtrackXallsubjects.split;
@@ -127,7 +126,8 @@ classdef ProbtrackXallsubjects < Gridjob
       if currentSplit == splitPerSubject
         % if we we are in the last split of this subject, there are less
         % voxels remaining to process:
-        numberVoxThisSplit = voxelCount - numberVoxPerSplit * (1 - splitPerSubject);
+%         numberVoxThisSplit = voxelCount - numberVoxPerSplit * (1 - splitPerSubject);
+        numberVoxThisSplit = numberVoxPerSplit - ((numberVoxPerSplit*splitPerSubject) - voxelCount);
       else
         numberVoxThisSplit = numberVoxPerSplit;
       end
@@ -162,27 +162,27 @@ classdef ProbtrackXallsubjects < Gridjob
         bedpostpath = [datapaths.databases '/Bastian_DTI/dti_data/ca' caNum '_1/bedpost.bedpostX'];
       end
       
-      first_voxel = (currentSplit - 1) * numberVoxPerSplit + 1;
+      first_voxel = ((currentSplit - 1) * numberVoxPerSplit) + 1;
       for k=1:numberVoxThisSplit
         
-        voxId = k+first_voxel-1;
+        seedVoxId = k+first_voxel-1;
         
         %Check if the ith voxel is 1
-        if compl_fs_mask.img(voxelIndexInImg(voxId)) ~= 1
-          error(['voxel', num2str(voxId), 'is not populated in the fs mask']);
+        if compl_fs_mask.img(voxelIndexInImg(seedVoxId)) ~= 1
+          error(['voxel', num2str(seedVoxId), 'is not populated in the fs mask']);
         end
         
         % set the voxel to 0 for term mask and save mask for probtrackx2 run
-        compl_fs_mask.img(voxelIndexInImg(voxId)) = 0;
+        compl_fs_mask.img(voxelIndexInImg(seedVoxId)) = 0;
         delete([temppath '/termmask.nii'])
         save_untouch_nii(compl_fs_mask, [temppath '/termmask']);
         
         %set the value in the matrix back to 1 for the next
         %runs
-        compl_fs_mask.img(voxelIndexInImg(voxId)) = 1;
+        compl_fs_mask.img(voxelIndexInImg(seedVoxId)) = 1;
         seed_voxel = compl_fs_mask;
         seed_voxel.img(:) = 0;
-        seed_voxel.img(voxelIndexInImg(voxId)) = 1; %last change 20150728
+        seed_voxel.img(voxelIndexInImg(seedVoxId)) = 1; %last change 20150728
         delete([temppath '/seedmask.nii'])
         save_untouch_nii(seed_voxel, [temppath '/seedmask']);
         
@@ -210,16 +210,16 @@ classdef ProbtrackXallsubjects < Gridjob
         disp(datetime);
         
         if status
-          disp(['error in subjnum' num2str(subjectId) 'voxel:' num2str(voxId)]);
+          disp(['error in subjnum' num2str(subjectId) 'voxel:' num2str(seedVoxId)]);
           ME = MException('MyComponent:ProbtrackXrun', ...
-            'Error in subjnum %s voxel %s run %s',num2str(subjectId), num2str(voxId), num2str(k));
+            'Error in subjnum %s voxel %s run %s',num2str(subjectId), num2str(seedVoxId), num2str(k));
           throw(ME)
         else
           fdt_matrix{k} = load([temppath '/data' num2str(k) '/fdt_matrix2.dot']);
           fdt_matrix_lengths{k} = load([temppath '/data' num2str(k) '/fdt_matrix2_lengths.dot']);
           
           % correct the target indices due to removing the seed voxel from the target mask:
-          indicesToIncrease = find(fdt_matrix{k}(:,2) >= k);
+          indicesToIncrease = find(fdt_matrix{k}(:,2) >= seedVoxId);
           fdt_matrix{k}(indicesToIncrease,2) = fdt_matrix{k}(indicesToIncrease,2) + 1;
           fdt_matrix_lengths{k}(indicesToIncrease,2) = fdt_matrix_lengths{k}(indicesToIncrease,2) + 1;
           
@@ -286,3 +286,4 @@ classdef ProbtrackXallsubjects < Gridjob
   
 end
 
+ 

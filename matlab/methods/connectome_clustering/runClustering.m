@@ -30,7 +30,7 @@ high_res_tracts = bsxfun(@rdivide,high_res_tracts,sum(high_res_tracts,2));
 high_res_tracts = high_res_tracts + high_res_tracts';
 
 %% convert to cosine similarity matrix:
-useCosineSimilarity = true;
+useCosineSimilarity = false;
 if useCosineSimilarity
   disp('convert to cosine similarity matrix')
   tmp = high_res_tracts*high_res_tracts';
@@ -50,12 +50,16 @@ distance_matrix = spfun(@exp, -distance_matrix * decay_constant);
 
 %% normalize the matrices:
 disp('normalize the matrices')
-distance_matrix = bsxfun(@rdivide,distance_matrix,sum(distance_matrix,2));
+% distance_matrix = bsxfun(@rdivide,distance_matrix,sum(distance_matrix,2));
 high_res_tracts = bsxfun(@rdivide, high_res_tracts, sum(high_res_tracts,2));
+
+distance_matrix = distance_matrix/mean(distance_matrix(:));
+high_res_tracts = high_res_tracts/mean(high_res_tracts(:));
+
 
 %% combine DTI data with distance matrix:
 disp('combine DTI data with distance matrix')
-distance_weight = 0;
+distance_weight = 0.5;
 connectivity_weight = 1 - distance_weight;
 high_res_tracts = (distance_weight*distance_matrix) + (connectivity_weight*high_res_tracts);
 
