@@ -17,16 +17,17 @@ end
 if pcall(cuda) then loaded = true else print('Cuda cannot be required') end
 
    
-function evaluate(model, useCuda, trainerror, steps, workdir, fileId, testdata, params, epochs, batchSize, set)    
+function evaluate(model, useCuda, trainerror, steps, workdir, fileId, testdata, epochs, batchSize, set)    
     if not epochs then epochs = 1 else epochs = epochs end
     
     if model then
         autoencoder = model
     end
     
-    if not workdir then
-        workdir = '/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/Data/'
-    end
+    workdir = '/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder/ComplexAutoencoder/Data/'
+    --if not workdir then
+     --   workdir = w
+    --end
     
     if not fileId then
         fileId = ''
@@ -41,6 +42,7 @@ function evaluate(model, useCuda, trainerror, steps, workdir, fileId, testdata, 
     --activity = testdata[23]
     --test = mattorch.load('/net/store/nbp/projects/phasesim/workdir/20130726_Paper/Autoencoder/labelMeWhite/05june05_static_street_boston/p1010736.jpg/act1.mat')
     activity = testdata[1]
+    --local activity = torch.Tensor(1,32,32):fill(1)
     activity = activity:cuda()
     local indim
     if set == 'LabelMe' then
@@ -61,15 +63,18 @@ function evaluate(model, useCuda, trainerror, steps, workdir, fileId, testdata, 
       indim = 1
       act = function(activity) return activity end 
     end     
-    print(indim)
-    activities, phases = iterate(activity, autoencoder, indim, 100, set, useCuda and loaded)
+
+    activities, phases = iterate(activity, autoencoder, indim, 20, set, useCuda and loaded)
     
     print('create Plot')
-
-    torch.save(workdir .. 'Error' ..fileId .. '.dat', trainerror)
+    if trainerror then
+      torch.save(workdir .. 'Error' ..fileId .. '.dat', trainerror)
+    end
+    print(workdir .. 'Reconstructions'..fileId..'.png')
     image.save(workdir .. 'Reconstructions'..fileId..'.png', image.toDisplayTensor{input=activities:double(), scaleeach = true, padding=2})
-    image.save(workdir .. 'Phases'..fileId..'.png', image.toDisplayTensor{input=phases:double(),scaleeach=true, padding=2})
-    
+    image.save(workdir .. 'Phases'..fileId..'.png', image.toDisplayTensor{input=phases:double(),scaleeach=true, padding=2,nrow=5})
+  
+
     if trainerror then
         trainerror = trainerror:double()
         gnuplot.pdffigure(workdir .. 'ErrorTrain'..fileId..'.pdf')
@@ -84,10 +89,9 @@ end
 
 
 function iterate(activity, autoencoder, indim, iterations, set, cuda)
-    
-    local activities = torch.Tensor(iterations/10 + 1, indim, activity:size()[2], activity:size()[3]):cuda()
-    local phases = torch.Tensor(iterations/10, 3, activity:size()[2],activity:size()[3])
-    local result = act(activity, 'plus') 
+    local activities = torch.Tensor(iterations/1 + 1, indim, activity:size()[2], activity:size()[3]):cuda()
+    local phases = torch.Tensor(iterations/1, 3, activity:size()[2],activity:size()[3])
+    local result = act(activity, 'minus') 
     activities[1] = result
     
     local phase = (torch.rand(#activity)*2*math.pi)-math.pi
@@ -100,59 +104,63 @@ function iterate(activity, autoencoder, indim, iterations, set, cuda)
     end    
     
     print('start iterating')
+    
 
+    --[[ gnuplot.pdffigure('../Data/histInit.pdf')
+     gnuplot.hist(phase)
+     gnuplot.plotflush() ]]-- 
     local inp = {torch.cmul(activity,torch.cos(phase)), torch.cmul(activity,torch.sin(phase))}
     local out = autoencoder:forward(inp)
     local a_out = torch.sqrt(torch.pow(out[1],2) + torch.pow(out[2],2))    
-    local phase_out = torch.atan2(out[2],out[1])
+    local phase_out = nn.Atan2():forward(out)--torch.atan2(out[2],out[1])
+
     
     j = 1
-    for i = 1,iterations+1 do
+    for i = 1,iterations do
         -- Phase iterations 
-        
-        if i%10 == 0 then 
+        phase_out:add(torch.Tensor(#phase_out):normal(0,math.pi/8):cuda())
+        out = autoencoder:forward({torch.cmul(activity,torch.cos(phase_out)),torch.cmul(activity,torch.sin(phase_out))})
+        a_out = torch.sqrt(torch.pow(out[1],2) + torch.pow(out[2],2))  
+        phase_out = nn.Atan2():forward(out)
+        if i%1 == 0 then 
           local sin
           local cos
           local circMean
-          if set == 'LabelMe' then
-            sin = torch.cmul(a_out[1],torch.sin(phase_out[1]))
-            cos = torch.cmul(a_out[1],torch.cos(phase_out[1]))
-            for i=1,a_out:size(1) do 
+          sin = 0
+          cos = 0
+          for i=1,a_out:size(1) do 
               sin = sin + torch.cmul(a_out[i],torch.sin(phase_out[i])) 
               cos = cos + torch.cmul(a_out[i],torch.cos(phase_out[i])) 
-            end  
-            circMean = torch.atan2(sin,cos)
-          else
-            circMean = phase_out
-          end    
+          end  
+          circMean = nn.Atan2():forward({sin,cos})  
           local hsv = torch.Tensor(3,activity:size(2),activity:size(3))
           hsv[1]:copy((circMean+math.pi)/(2*math.pi))
           hsv[2] = torch.Tensor(activity:size(2),activity:size(3)):fill(0.5)
           hsv[3] = torch.Tensor(activity:size(2),activity:size(3)):fill(0.5)
-          local rgb = image.hsv2rgb(hsv)
+          rgb = image.hsv2rgb(hsv)
           if set ~= 'LabelMe' then
             rgb = torch.cmul(rgb, a_out:expand(3, a_out:size(2), a_out:size(3)):double())
           end  
           a = act(a_out, 'minus')
-          
 
           phases[j] = rgb 
           activities[j+1] = a
-          
           local phi = phase_out[torch.gt(activity,0)] -- find pixels of stimulus: activity>0  
           local var = 1 - (1/phi:numel())*torch.sqrt((torch.sum(torch.cos(phi))^2 + torch.sum(torch.sin(phi))^2))
           local allvar = 1 - (1/phase_out:numel())* torch.sqrt((torch.sum(torch.cos(phase_out))^2 + torch.sum(torch.sin(phase_out))^2))
           print(var/allvar)
           
           j = j+1
+     
+                 --torch.save('phases.dat',phase_out:double())
+        --gnuplot.pdffigure('../Data/histPhase' .. j .. '.pdf')
+        --gnuplot.hist(circMean)
+        --gnuplot.hist(autoencoder:get(1).output)       
+        --gnuplot.plotflush() 
         end
         
-       out = autoencoder:forward({torch.cmul(activity,torch.cos(phase_out)),torch.cmul(activity,torch.sin(phase_out))})
-       a_out = torch.sqrt(torch.pow(out[1],2) + torch.pow(out[2],2))  
-       phase_out = torch.atan2(out[2],out[1])
-      
     end
-    
+   
     return activities, phases
     
 end

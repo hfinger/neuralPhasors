@@ -306,8 +306,10 @@ classdef SegmentationEval < Gridjob
         else
           features = load(fullfile(this.workpath,params.inActFolder,params.catName, files{simIdx},'act1.mat'));
           features = features.act;
+          size(features)
           phase = load(fullfile(this.workpath,params.inPhaseFolder,params.catName, files{simIdx},['phaseIter' num2str(params.time) '.mat']));
           phase = phase.phase;
+          size(phase)
         end
         
         if params.verboseLevel>2

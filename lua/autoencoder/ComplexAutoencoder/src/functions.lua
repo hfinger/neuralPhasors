@@ -1,50 +1,32 @@
 
+
 require 'rmsprop'
-function loadData(normalizeMean, set)
+function loadData(set, batchsize, num)
   
   workdir = '/net/store/nbp/projects/phasesim/src_kstandvoss/lua/autoencoder'
   if set == 'mnist' then
       train = torch.load(workdir .. '/mnist.t7/train_32x32.t7', 'ascii')
       test = torch.load(workdir .. '/mnist.t7/test_32x32.t7', 'ascii')  
   elseif set == 'LabelMe' then
-      train = image.load('labelMe.dat')
+      traindata = torch.Tensor(batchsize,6,300,400)
+      for i=num,num+batchsize-1 do
+        traindata[i-num+1] = torch.load('../Data/LabelMeData/img'..i..'.dat')
+      end  
   end
-  train = train.data
-  test = test.data
-
-  traindata = torch.Tensor(train:size()[1],1,32,32)
-  for i = 1,train:size()[1] do   
-    traindata[i] = train[i]
-  end
-  traindata:div(255)
-
-  
-  testdata = torch.Tensor(test:size()[1],1,32,32)
-  for i = 1,test:size()[1] do   
-    testdata[i] = test[i]
-  end
-  testdata:div(255)
-
-  
-  if normalizeMean then
-    traindata:add(-traindata:mean())
-    testdata:add(-testdata:mean())
-  end
-
-  return traindata, testdata
+  return traindata
 end
 
 
 --TODO store results during training
-function trainModel(steps, batchsize, data, model, criterion, parameters, gradParameters, config, usePhase, noiseLevel, cuda, l1, l2, stacked)
+function trainModel(steps, batchsize, data, model, criterion, parameters, gradParameters, config, usePhase, noiseLevel, cuda, l1, l2, getEnc, getDec, algo, stacked)
     local epoch = epoch or 1
     local l2error = torch.Tensor(steps/batchsize)
     local k = 1
-    local shuffle = torch.randperm((#data)[1]):type('torch.LongTensor')
-    data = data:index(1,shuffle)
     for i = 1,steps,batchsize do
-        --data = createData(batchsize+1, traindata, 2)
         print(i / steps * 100 ..'%')
+        data = loadData(data,batchsize,i)
+        local shuffle = torch.randperm((#data)[1]):type('torch.LongTensor')
+        data = data:index(1,shuffle)
         local feval = function(x)
             if x ~= parameters then
                 parameters:copy(x)
@@ -53,9 +35,9 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
             -- reset gradients
             gradParameters:zero()
             local f = 0 
-            for j = 0,batchsize-1 do       
-               
-                local activity = data[i+j]
+            for j = 1,batchsize do       
+
+                local activity = data[j]
                 local phase = torch.Tensor(#activity):zero()
                 if usePhase then 
                     phase = (torch.rand(#activity)*2*math.pi)-math.pi
@@ -74,19 +56,20 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
                     end   
                     --print(stacked)
                     stacked:forward(input)                   
+                    --print(#stacked.output[1])
                     activity = torch.sqrt(torch.pow(stacked.output[1],2) + torch.pow(stacked.output[2],2)):cuda()
                     --phase = torch.atan2(stacked.output[2],stacked.output[1])  
                     phase = torch.Tensor(#activity):zero():cuda()
                 end    
                 
                 if noiseLevel > 0 then
-                    --noise = torch.Tensor(#activity):bernoulli(1-noiseLevel)
                     noise = randomkit.normal(torch.Tensor(#activity),0,noiseLevel)
                     if cuda then
                         noise = noise:cuda()
                     end   
-                    corrupted = nn.SpatialDropout(noiseLevel):cuda():forward(activity)
-                    --corrupted = activity + noise
+                    corrupted = activity + noise
+                    corrupted[corrupted:lt(0)] = 0
+                    --end
                     input = {torch.cmul(corrupted,torch.cos(phase)),torch.cmul(corrupted,torch.sin(phase))}
                     target = {torch.cmul(activity,torch.cos(phase)),torch.cmul(activity,torch.sin(phase))}
                 else
@@ -117,21 +100,13 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
                 if l1 ~= 0 or l2 ~= 0 then
                   -- locals:
                   local norm,sign= torch.norm,torch.sign
-                  -- Loss:
+                  -- Loss:          
+                  weightsEnc = model:get(getEnc).convolution1.weight
+                  weightsDec = model:get(getDec).convolution1.weight
+                    
+                  wSize = weightsEnc:view(-1):size(1)
+                  bSize = model:get(getEnc).convolution1.bias:view(-1):size(1)
                   
-                  if stacked then
-                    weightsEnc = model:get(1).convolution1.weight
-                    weightsDec = model:get(2).convolution1.weight
-                    
-                    wSize = weightsEnc:view(-1):size(1)
-                    bSize = model:get(2).convolution1.bias:view(-1):size(1)
-                  else
-                    weightsEnc = model:get(1).convolution1.weight
-                    weightsDec = model:get(2).convolution1.weight
-                    
-                    wSize = weightsEnc:view(-1):size(1)
-                    bSize = model:get(1).convolution1.bias:view(-1):size(1)
-                  end
                   f = f + l1 * norm(weightsEnc,1) + l1 * norm(weightsDec,1) 
                   f = f + l2 * norm(weightsEnc,2)^2/2 + l2 * norm(weightsDec,2)^2/2
                   -- Gradients:  
@@ -141,16 +116,21 @@ function trainModel(steps, batchsize, data, model, criterion, parameters, gradPa
                 
             end
             
-            if not stacked and (epoch == 1 or epoch==5) then
-              display(model) 
-            end 
+            --if not stacked and (epoch == 1 or epoch==5) then
+            -- display(model) 
+            --end 
             gradParameters:div(batchsize)
             f = f/batchsize
             l2error[k] = f
             k = k+1
             return f, gradParameters
         end 
-        optim.adadelta(feval, parameters, config)
+
+        if algo=='adam' then 
+           optim.adam(feval, parameters, config)
+        else
+           optim.adadelta(feval, parameters, config)
+        end
 
     end 
     epoch = epoch + 1 
@@ -210,7 +190,7 @@ function whiteStripes(number)
     return white 
 end    
 
-function createData(amount, set, number)
+function createData(amount, set, number, r)
     if set == 'white' then
         data = torch.Tensor(amount,1,32,32)
         for i=1,amount do
@@ -219,15 +199,20 @@ function createData(amount, set, number)
     else
         data = torch.Tensor(amount,1,100,100)
         for i=1,amount do
-            data[i] = mnist(number,set)
+            data[i] = mnist(number,set, r)
         end
     end        
     return data
 end   
 
-function mnist(number,data)
+function mnist(number,data, random)
+    local r = random or true
     big = torch.Tensor(1,100,100):zero()
-    n = torch.random(1,number)
+    if random then
+      n = torch.random(1,number)
+    else 
+      n = number
+    end  
     for i = 1,n do
         exp = torch.random(1,data:size()[1])
         stim = data[exp]

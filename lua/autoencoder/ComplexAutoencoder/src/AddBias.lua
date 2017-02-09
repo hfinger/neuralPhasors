@@ -13,7 +13,7 @@ end
 --@input Tensor with first dimension of size @size 
 function AddBias:updateOutput(input)
     exB = torch.expand(self.bias,(#self.bias)[1],(#input)[2],(#input)[3])
-    self.output = torch.add(exB,input)
+    self.output = exB + input
     return self.output
 end
  
@@ -48,3 +48,5 @@ function AddBias:float()
     self.bias = self.bias:float()
     self.gradBias = self.gradBias:float()
 end    
+
+--]]

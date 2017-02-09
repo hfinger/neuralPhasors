@@ -17,20 +17,17 @@ classdef ComplexAutoencoder < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.ComplexAutoencoder.hiddenN = 50;
+      this.params.ComplexAutoencoder.hiddenN = 10;
       this.params.ComplexAutoencoder.kernelSize = 7;
       this.params.ComplexAutoencoder.trainingSteps = 5000;
       this.params.ComplexAutoencoder.batchsize = 64;
-      this.params.ComplexAutoencoder.learningRate = 0.05;
+      this.params.ComplexAutoencoder.learningRate = 0.01;
       this.params.ComplexAutoencoder.weightDecay = 5E-5;
       this.params.ComplexAutoencoder.learningRateDecay = 5E-7;
       this.params.ComplexAutoencoder.noiseRate = 0.1;
       this.params.ComplexAutoencoder.momentum = 0;
       this.params.ComplexAutoencoder.coefL1 = 1e-5;
       this.params.ComplexAutoencoder.gpu = 0;   
-%      this.comments.GridjobExample.param1 = 'this is some test number parameter';
-%      this.comments.GridjobExample.param2 = 'this is some test boolean parameter';
-%      this.comments.GridjobExample.param3 = 'this is some test string parameter';
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,8 +62,7 @@ classdef ComplexAutoencoder < Gridjob
       options = [' -f ', num2str(this.params.ComplexAutoencoder.trainingSteps), ' -r ', num2str(this.params.ComplexAutoencoder.learningRate) ...
           , ' -b ', num2str(this.params.ComplexAutoencoder.batchsize), ' -d ', num2str(this.params.ComplexAutoencoder.weightDecay) ...
           , ' -h ', num2str(this.params.ComplexAutoencoder.hiddenN), ' -k ', num2str(this.params.ComplexAutoencoder.kernelSize) ...
-          , ' -n ', num2str(this.params.ComplexAutoencoder.noiseRate), ' -l ', num2str(this.params.ComplexAutoencoder.coefL1)...
-          , ' -m ', num2str(this.params.ComplexAutoencoder.momentum)];
+          , ' -n ', num2str(this.params.ComplexAutoencoder.noiseRate), ' -l ', num2str(this.params.ComplexAutoencoder.coefL1)];
       options = [options, ' - w ' , this.params.Gridjob.workpath, ' -i ' this.currJobid]; 
       if this.params.ComplexAutoencoder.gpu 
           options = [options, ' -u ']; 

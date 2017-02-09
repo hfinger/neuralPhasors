@@ -87,6 +87,10 @@ function Encoder:evaluate()
         end
       end
     end
+    conv_nodes = self.encoder:findModules('nn.MulConstant')
+    for i = 1, #conv_nodes do
+      print(conv_nodes[i].constant_scalar)
+    end
 end
 
 function Encoder:training()
@@ -96,7 +100,7 @@ function Encoder:training()
     for j = 1, #(container[1].modules) do
         if container[1].modules[j] == muls[1] then
           -- Replace with a new instance
-            container[1].modules[j] = nn.MulConstant(1e-15,true):cuda()
+            container[1].modules[j] = nn.MulConstant(0,false):cuda()
         end
     end
 
@@ -212,8 +216,8 @@ function Encoder:build_enc()
     relu:add(nn.Identity())
     
     local activation = nn.Sequential()
-    self.Bias = nn.AddBias(self.hidden) --nn.Add(self.hidden, self.input_width,self.input_height) --
-    --activation:add(nn.L1Penalty(0.0001))
+    self.Bias = nn.AddBias(self.hidden)
+    activation:add(nn.L1Penalty(0.000001))
     activation:add(self.Bias)
     activation:add(nn.ReLU())
     --activation:add(nn.SpatialDropout(0.1))
@@ -243,7 +247,7 @@ function Encoder:build_enc()
     transform:add(x)
     transform:add(y)
     
-    self.trans = nn.Transform(self.mode)
+    --self.trans = nn.Transform(self.mode)
     --enc:add(self.trans)
     enc:add(transform)
     --outputs a table
