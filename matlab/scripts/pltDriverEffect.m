@@ -17,9 +17,12 @@ electrodeCoordinatesTable = readtable('/net/store/nbp/projects/phasesim/database
 electrode_coordinates = table2array(electrodeCoordinatesTable(:,2:end));
 ED = pdist2(electrode_coordinates, roi_coordinates);
 
-drivStrength = normpdf(ED(data.simResult.sim.drivPos,:), 0, data.simResult.sim.drivRange);
+drivRange = 30; %data.simResult.sim.drivRange;
+drivScale = 100; %data.simResult.sim.drivScale;
+drivPos = data.simResult.sim.drivPos;
+drivStrength = normpdf(ED(drivPos,:), 0, drivRange);
 drivStrength = drivStrength - min(drivStrength);
-drivConn = (drivStrength/max(drivStrength)) * data.simResult.sim.drivScale;
+drivConn = (drivStrength/max(drivStrength)) * drivScale;
 
 resortRegions = 1;
 plotColoredBrain(drivConn', resortRegions)
