@@ -23,7 +23,8 @@ set(gca,'xtick',[],'ytick',[])
 
 % plot some ROI's:
 hold on;
-h1 = plotVoxelsInBrain(header, voxel_coords(freesurfer_roi_ids==1,:));
-h2 = plotVoxelsInBrain(header, voxel_coords(freesurfer_roi_ids==2,:));
-h3 = plotVoxelsInBrain(header, voxel_coords(freesurfer_roi_ids==3,:));
+id=9;
+h1 = plotVoxelsInBrain(header, voxel_coords);
+% h1 = plotVoxelsInBrain(header, voxel_coords(freesurfer_roi_ids==id,:));
+% h2 = plotVoxelsInBrain(header, voxel_coords(freesurfer_roi_ids==33+id,:));
 hold off
