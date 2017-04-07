@@ -106,7 +106,8 @@ addpath('/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransf
 plotColoredBrain(Coherence_tmp(2:end)',1)
 
 drivPos = SubjData.stimPos(driverID);
-drivStrength = normpdf(ED(drivPos,:), 0, SubjData.stimRange);
+[~, electrodeIdx] = min(ED(:,drivPos));
+drivStrength = normpdf(ED(electrodeIdx,:), 0, SubjData.stimRange);
 drivStrength = drivStrength - min(drivStrength);
 drivConn = (drivStrength/max(drivStrength)) * SubjData.stimScale;
 plotColoredBrain(drivConn', 1)
