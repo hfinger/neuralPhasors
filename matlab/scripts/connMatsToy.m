@@ -1,26 +1,37 @@
 
-resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/conn1Stim';
+resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/JR_2Driver_k';
 resultPath2 = '/net/store/nbp/projects/phasesim/results/rgast/rateNetSim2';
 resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast';
 resultPath4 = '/net/store/nbp/projects/phasesim/results/rgast/rate1StimSim';
 resultPath6 = '/net/store/nbp/projects/phasesim/results/rgast/JR_Driver_LTEffects';
 
-coherence_measure1 = 'SE';
+coherence_measure1 = 'drivPosCohVar';
 coherence_measure2 = 'Coherence';
 coherence_measure3 = 'corr_SimFC';
 
 clusters = 0;
 dist_driver = 66;
 useSP = 1;
-timeWindow = 0;
-includeData = 0;
 
-%dataStruct = getArgsFromFiles(resultPath6, 'JansenRitResults*',coherence_measure2, includeData, timeWindow, 'drivPos','drivStart','drivDur','d','sampling','dt');
-dataStruct = getArgsFromFiles(resultPath3, 'JansenRitResults*',coherence_measure2, includeData, timeWindow, 'drivPos','drivScale');
+%dataStruct = getArgsFromFiles(resultPath6,'JansenRitResults*',coherence_measure2,'drivPos','drivStart','drivDur','d','sampling','dt');
+dataStruct = getArgsFromFiles(resultPath3,'JansenRitResults*',{coherence_measure1, coherence_measure2},'drivScale','drivFreq','k','v');
 
 fnames = fieldnames(dataStruct);
 dataTmp = dataStruct.(fnames{1});
-stimPos = dataTmp.drivPos;
+%stimPos = dataTmp.drivPos;
+
+%% extract parameter set with highest coherence variance between driven regions for 2 drivers with different phase offsets
+
+drivPosCohVars = zeros(length(fnames),1);
+for f=1:length(fnames)
+    data_tmp = dataStruct.(fnames{f});
+    drivPosCohVars(f) = var(cell2mat(data_tmp.drivPosCohVar),1);
+    %drivPosCohVars(f) = data_tmp.drivPosCohVar;
+end
+[maxVar, idx] = max(drivPosCohVars);
+highestVarFname = fnames{idx};
+highestVarData = dataStruct.(fnames{idx});
+highestVar = var(cell2mat(highestVarData.drivPosCohVar),1)
 
 %% plot phase difference between 2 target nodes
 env.t_rm = 1; % time to start bandpassing the signal at [s]
