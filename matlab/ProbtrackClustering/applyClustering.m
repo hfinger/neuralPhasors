@@ -1,4 +1,4 @@
-function [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue] = applyClustering( high_res_tracts, target_cluster_count, recursiveSplit )
+function [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue, threshFactor] = applyClustering( high_res_tracts, target_cluster_count, recursiveSplit, threshFactor )
 % log
 % 20160410 - agarg - copied from matlab/methods/connectome_clustering
 %                  - edited return arguments to include clusterIdPerVoxelCurrent
@@ -28,29 +28,28 @@ clusterIdPerVoxel(:,1) = clusterIdPerVoxelCurrent;
 
 %% iterative clustering
 if recursiveSplit
-for i = 2:target_cluster_count
-  disp(['number clusters: ' num2str(i)]);
-  
-  % find largest cluster:
-  largestClusterId(i) = mode(clusterIdPerVoxelCurrent);
-  voxelIdsInLargestCluster = find(clusterIdPerVoxelCurrent == largestClusterId(i));
-  
-  % select largest cluster:
-  clusterSC = high_res_tracts(voxelIdsInLargestCluster, voxelIdsInLargestCluster);
-  
-  % split the largest cluster into 2 pieces:
-  [partition, cutValue(i)] = graclus(clusterSC, split_count, cut_type, search_steps, spectral);
-  
-  % give one of the two partitions a new cluster id (which is the current iteration):
-  clusterIdPerVoxelCurrent(voxelIdsInLargestCluster(partition==1)) = i;
-  
-  % save into full matrix:
-  clusterIdPerVoxel(:,i) = clusterIdPerVoxelCurrent;
- 
- end
-
-%% Non-recursive splitting
-
+    for i = 2:target_cluster_count
+        disp(['number clusters: ' num2str(i)]);
+        
+        % find largest cluster:
+        largestClusterId(i) = mode(clusterIdPerVoxelCurrent);
+        voxelIdsInLargestCluster = find(clusterIdPerVoxelCurrent == largestClusterId(i));
+         clusterSC = high_res_tracts(voxelIdsInLargestCluster, voxelIdsInLargestCluster);
+        
+       
+                    [partition, cutValue(i)] = graclus(clusterSC, split_count, cut_type, search_steps, spectral);
+               
+                    % give one of the two partitions a new cluster id (which is the current iteration):
+        clusterIdPerVoxelCurrent(voxelIdsInLargestCluster(partition==1)) = i;
+        
+        % save into full matrix:
+        clusterIdPerVoxel(:,i) = clusterIdPerVoxelCurrent;
+             
+        
+    end
+    
+    %% Non-recursive splitting
+    
 else
     search_steps = 80;
     [clusterIdPerVoxel, cutValue] = graclus(high_res_tracts, target_cluster_count, 0, search_steps, 0);

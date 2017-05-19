@@ -12,9 +12,17 @@ params.Gridjob.queue = 'nbp.q';
 params.Gridjob.wc_host = '!(*ramsauer*|*daphne*|*kalyke*)'; %  | !shaggy';%'ananke|calvin|carpo|daphne|elara|erato|fred|hobbes|isonoe|jupiter|klio|kore|leda|mars|melete|mneme|neptune|saturn|shaggy|thebe|urania|velma|venus'; %|sinope
 params.Gridjob.continue = true;
 
-params.Graclusjob.WeighFactor = num2cell(0.5);
-params.Graclusjob.clusterCount = num2cell(602:10:1000);
-
+params.Graclusjob.WeighFactor = num2cell(0:0.1:0.9);
+params.Graclusjob.clusterCount = num2cell(2:30:1000);
+params.Graclusjob.subjRange     = 1;
+params.Graclusjob.decayParam    = -1;
+params.Graclusjob.threshFactor  = 10;
+params.Graclusjob.useCosineSim  = false;
+params.Graclusjob.normBy        = 'sum';
+params.Graclusjob.WholeNormText = 'WholeMax';
+params.Graclusjob.CompSimPath   = '/net/store/nbp/projects/phasesim/workdir/Arushi/20160418_CompSimMatCalcNewSub/';
+params.Graclusjob.GraclusPath   =  '/net/store/nbp/projects/phasesim/workdir/Arushi/20160419_GraclusCut/';
+            
 paramsAll{1} = params;
 
 clear params;

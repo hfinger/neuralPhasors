@@ -1,11 +1,16 @@
-function GlobalCutValCalc( clustRange, compSimMatPath, GraclusPath, clusterIdPath, thresholdFactor  )
+function GlobalCutValCalc( clustRange, compSimMatPath, OutputPath, clusterIdPath, thresholdFactor  )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
  
 compSimMat = load(compSimMatPath);
 compSimMat = compSimMat.compSimMat;
-compSimMat = thresholdFactor * compSimMat;
-compSimMat = round(1000*compSimMat); % According to Graclus internal
+
+% renormalize so that 
+renormFactor = sum(compSimMat(:))/size(compSimMat,1);
+compSimMat = compSimMat / renormFactor;
+
+%compSimMat = thresholdFactor * compSimMat;
+%compSimMat = round(1000*compSimMat); % According to Graclus internal
 ClusterIdsforVoxel = load(clusterIdPath);
 ClusterIdsforVoxel = ClusterIdsforVoxel.stepWiseClusters;
 clustGlobalCutVal = zeros(size(ClusterIdsforVoxel,2));
@@ -35,21 +40,15 @@ for clusterCount = clustRange
     degree = sum(tmp(:));
     clustGlobalCutVal(NewClustNum,clusterCount) = links/degree;
     
+    disp(num2str(clusterCount));
+    
 end
     
 cumulGlobalCutVal = sum(clustGlobalCutVal);
 
-save([GraclusPath '/globalCutVal'], 'clustGlobalCutVal', 'cumulGlobalCutVal');
+if ~exist(OutputPath, 'dir')
+    mkdir(OutputPath);
 end
 
-%   for clustNum = 1:clusterCount
-%         
-%         voxelsInClust = (ClusterIdsforVoxel(:,clusterCount) == clustNum);
-%         tmp = compSimMat(voxelsInClust, ~voxelsInClust);
-%         links = sum(tmp(:));
-%         tmp = compSimMat(voxelsInClust, :);
-%         degree = sum(tmp(:));
-%         
-%         globalCutVal(clusterCount) = globalCutVal(clusterCount) + links/degree;
-%         
-%     end
+save([OutputPath, 'GlobalCutVal'], 'cumulGlobalCutVal');
+end

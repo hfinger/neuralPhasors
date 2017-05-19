@@ -16,7 +16,11 @@ classdef ProbClustmetricsnew < Gridjob
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%% START EDIT HERE: define standard parameters for the job %%%%
-            this.params.ProbClustmetricsnew.split = num2cell(2:1000);
+            this.params.ProbClustmetricsnew.split = num2cell(0.5);
+            this.params.ProbClustmetricsnew.cosText = 'cos'; %cos
+            this.params.ProbClustmetricsnew.splitType = 'Rec'; %'NonRec'
+            this.params.ProbClustmetricsnew.threshRange =  [1];
+            
             %%%% END EDIT HERE:                                          %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
@@ -60,62 +64,47 @@ classdef ProbClustmetricsnew < Gridjob
             
             
             waitForServer();
-                        clusterNum = this.params.ProbClustmetricsnew.split;
-
-            clusterPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj1/NonRec/Clustorg/detailsClust' num2str(clusterNum) '.mat'];
-            OutputPath =  ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj1/NonRec/StatandMet/'];
-            Cluster = load(clusterPath);
-            normClusterConnmat = Cluster.normClustConnmat;
-            clusterCoords = Cluster.voxelCoordByCluster;
-                
-                %    betCentr = nan(clusterNum,1);
-                %
-                clustConnmat = normClusterConnmat;
-                %     includeClusterIds = find(~isnan(sum(clustConnmat,2)));
-                %     clustConnmat = clustConnmat(includeClusterIds,includeClusterIds);
-                %
-                L = 1./(clustConnmat);
-                %
-                %     betCentr(includeClusterIds) = betweenness_wei(L);
-                %     betwCent{clusterNum} = betCentr;
-                %
-                %
-                D = distance_wei(L);
-                meanShortestDist1 = nan(clusterNum,1);
-                meanShortestDist2 = nan(clusterNum,1);
-                clustering_coef = nan(clusterNum,1);
-                
-                %     meanShortestDist1(includeClusterIds) = mean(D,1);
-                meanShortestDist1 = mean(D,1);
-                %     meanShortestDist2(includeClusterIds) = mean(D,2);
-                
-                meanShortestDist2 = mean(D,2);
-                
-                [lambda, efficiency] = charpath(D);
-                
-                %     clustering_coef(includeClusterIds) = clustering_coef_wu(clustConnmat);
-                clustering_coef = clustering_coef_wu(clustConnmat);
-                
-                         
-                clusterSize = cellfun(@(x) length(x), clusterCoords(:), 'UniformOutput', false);
-                clusterSecondMoment = cellfun(@(x) mean(sqrt(sum(bsxfun(@minus,x,mean(x,1)).^2,2))), clusterCoords(:), 'UniformOutput', false);
-                
-                if ~exist(OutputPath, 'dir')
-                    mkdir(OutputPath);
+            subjNum = 1;
+            WeighingFactor = this.params.ProbClustmetricsnew.split;
+            threshRange = this.params.ProbClustmetricsnew.threshRange;
+            cosText = this.params.ProbClustmetricsnew.cosText;
+            splitType = this.params.ProbClustmetricsnew.splitType;
+            PostProcessPath = '/net/store/nbp/projects/phasesim/workdir/Arushi/NewData/20160709_ClusteringPostprocessing/';
+            decayParam = -1;
+            normBy = 'sum';
+            clustRange = 2:1000;
+            
+            
+            for threshFactor = threshRange
+                if exist([PostProcessPath splitType '/decay' num2str(decayParam)...
+                        'weigh' num2str(WeighingFactor) '/normby' normBy 'thresh'...
+                        num2str(threshFactor) '/' cosText  '/' 'Subj'...
+                        num2str(subjNum) '/'], 'dir')
+                    threshFound = 1;
+                    break;
                 end
+            end
+            
+            if ~threshFound
+                error('No cluster matrix found for subj %i for weighingFactor %i',subjNum, WeighingFactor);
+            end
+            clusterPath = [PostProcessPath splitType '/decay' num2str(decayParam)...
+                'weigh' num2str(WeighingFactor) '/normby' normBy 'thresh'...
+                num2str(threshFactor) '/' cosText  '/' 'Subj'...
+                num2str(subjNum) '/'];
+            
+            %      clusterPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj' num2str(subjNum) '/Rec/ClustOrgW0/detailsClust'];
+            %     OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj' num2str(subjNum) '/Rec/ClustOrgW0/StatandMet/'];
+            
+            clusterStatsNew(clustRange, clusterPath, clusterPath);
+            
+            
+            
+            %%%% END EDIT HERE:                                %%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        end
         
-            save ([OutputPath '/clusterstatandmetClust' num2str(clusterNum)], 'D', ...
-                'meanShortestDist1', 'meanShortestDist2', 'clustering_coef',...
-                'lambda', 'efficiency', 'clusterSize', 'clusterSecondMoment');
-            
-            
-            
-       
-                    %%%% END EDIT HERE:                                %%%%
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                end
-            
-            
+        
         
         
         

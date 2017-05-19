@@ -1,5 +1,5 @@
-function clusterStatsNew(clustRange,clusterPath, OutputPath)
-            clustering_coef = nan(clustRange(end));
+function betcentNew(clustRange,clusterPath, OutputPath)
+            betweennesscentrality = nan(clustRange(end));
             clusterSizeAll = cell(clustRange(end));
             clusterSecondMomentAll = cell(clustRange(end));
             
@@ -14,13 +14,14 @@ function clusterStatsNew(clustRange,clusterPath, OutputPath)
             % clusterSize = cellfun(@(x) length(x), clusterCoords, 'UniformOutput', false);
             % clusterSecondMoment = cellfun(@(x) mean(sqrt(sum(bsxfun(@minus,x,mean(x,1)).^2,2))), clusterCoords, 'UniformOutput', false);
            
-                Cluster = load([clusterPath 'detailsClust2to1000.mat']);
+                Cluster = load([clusterPath 'detailsClust.mat']);
                 normClusterConnmat = Cluster.normClusterConnmat;
-                clusterCoords = Cluster.voxelCoordByCluster;
-                clusterSizeAll = cellfun(@(x) length(x), clusterCoords, 'UniformOutput', false);
-                clusterSecondMomentAll = cellfun(@(x) mean(sqrt(sum(bsxfun(@minus,x,mean(x,1)).^2,2))), clusterCoords, 'UniformOutput', false);
-
+               
             for splitNum = clustRange
+                
+                if splitNum > 1000
+                    break;
+                end
                  disp(num2str(splitNum));
                 
                 %    betCentr = nan(clusterNum,1);
@@ -30,11 +31,14 @@ function clusterStatsNew(clustRange,clusterPath, OutputPath)
                 %     clustConnmat = clustConnmat(includeClusterIds,includeClusterIds);
                 %
                 
-                
+                           L = 1./(clustConnmat);
+                           betCentr = nan(size(clustConnmat,1),1);
+                            betCentr = betweenness_wei(L);
+                            betweennesscentrality(1:splitNum, splitNum) = betCentr;
+
                 %     clustering_coef(includeClusterIds) = clustering_coef_wu(clustConnmat);
                 
-                clustering_coef(1:splitNum, splitNum) = clustering_coef_wu(clustConnmat);
-                
+                          
                 
 %                 clusterSize = cellfun(@(x) length(x), clusterCoords(1:split,split), 'UniformOutput', false);
                 
@@ -44,5 +48,7 @@ function clusterStatsNew(clustRange,clusterPath, OutputPath)
             if ~exist(OutputPath, 'dir')
                 mkdir(OutputPath);
             end
-            save ([OutputPath 'clusterstatandmet'],...
-                'clustering_coef', 'clusterSizeAll', 'clusterSecondMomentAll', '-v7.3');
+            save ([OutputPath 'betcentclust' num2str(clustRange(1)) 'to' num2str(clustRange(end))],...
+                'betweennesscentrality', '-v7.3');
+            
+            disp( [OuputPath 'saved']);
