@@ -17,8 +17,16 @@ classdef Graclusjob < Gridjob
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%% START EDIT HERE: define standard parameters for the job %%%%
             
-            this.params.Graclusjob.WeighFactor = num2cell(0.5);
-            this.params.Graclusjob.clusterCount = num2cell(602:10:1000);
+            this.params.Graclusjob.clusterCount = num2cell(2:40:1000);
+            this.params.Graclusjob.WeighFactor = num2cell([0 0.2 0.4 0.5 0.6 0.8 1]);
+            this.params.Graclusjob.subjNum       = 1;
+            this.params.Graclusjob.decayParam    = -1;
+            this.params.Graclusjob.threshFactor  = 1;
+            this.params.Graclusjob.useCosineSim  = false;
+            this.params.Graclusjob.normBy        = 'sum';
+            this.params.Graclusjob.WholeNormText = 'WholeMax';
+            this.params.Graclusjob.CompSimPath   = '/net/store/nbp/projects/phasesim/workdir/Arushi/20160418_CompSimMatCalcNewSub/';
+            this.params.Graclusjob.GraclusPath   =  '/net/store/nbp/projects/phasesim/workdir/Arushi/NewData/20160709_GraclusCut/';
             
             %%%% END EDIT HERE:                                          %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,34 +63,75 @@ classdef Graclusjob < Gridjob
             
             datapaths = dataPaths();
             datapaths.workdir
+
+            disp(this.params.Graclusjob.WeighFactor);
+            disp(this.params.Graclusjob.clusterCount);
             
-            %call program to wait
-            waitForServer();
-            disp('do clustering')
-            for clusterCount = this.params.Graclusjob.clusterCount:this.params.Graclusjob.clusterCount + 9
-                WeighingFactor = this.params.Graclusjob.WeighFactor;
-                recursiveSplit = false;
-                subjRange = [1];%, 6:13, 15, 17:22];%1
-                decayParam = -1; % -0.5, -1
-                normBy = 'sum';
-                if recursiveSplit
-                    splitType = '';
-                else
-                    splitType = 'NonRec';
-                end
-                InputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160418_CompSimMatCalcNewSub/decay'...
-                    num2str(decayParam) 'weigh' num2str(WeighingFactor)]; %'/net/store/nbp/projects/phasesim/workdir/Arushi/20160407_CompSimMatCalcNewSubwithoutnormbymean/decay-0.25weigh0.5'; %
-                OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160419_GraclusCut/decay'...
-                    num2str(decayParam) 'weigh' num2str(WeighingFactor) 'conn' splitType ];
-                thresholdingFactor = 10;
-                disp( ['WEIGHINGFACTOR:' num2str(WeighingFactor)]);
-                graclusNcut(recursiveSplit, clusterCount, subjRange, InputPath, OutputPath, normBy, thresholdingFactor)
+            WeighingFactor = this.params.Graclusjob.WeighFactor;
+            subjNum = this.params.Graclusjob.subjNum;
+            decayParam = this.params.Graclusjob.decayParam ;
+            threshFactor = this.params.Graclusjob.threshFactor;
+            useCosineSim = this.params.Graclusjob.useCosineSim;
+            normBy = this.params.Graclusjob.normBy;
+            WholeNormText =  this.params.Graclusjob.WholeNormText;
+            CompSimPath = this.params.Graclusjob.CompSimPath ;
+            GraclusPath = this.params.Graclusjob.GraclusPath ;
+            recursiveSplit = false; % only keeping this for non-recursive
+            %because recursive doesn't make sense
+            %on grid job as each cut builds on the
+            %previous one
+            
+            if recursiveSplit
+                clustRange = clustRange(end);
+                splitType = 'Rec';
+            else
+                splitType = 'NonRec';
             end
+            if useCosineSim
+                cosText = 'cos';
+            else
+                cosText = 'conn';
+            end
+           
+            for clusterCount = this.params.Graclusjob.clusterCount:(this.params.Graclusjob.clusterCount+39)
+                
+                InputPath = [CompSimPath  cosText '/decay'...
+                    num2str(decayParam) 'weigh' num2str(WeighingFactor)];
+                OutputPath = [GraclusPath  cosText '/' splitType '/decay'...
+                    num2str(decayParam) 'weigh' num2str(WeighingFactor) '/' ...
+                   num2str(subjNum) '/normby' normBy 'thresh' num2str(threshFactor)];
+                 disp( [cosText 'WEIGHINGFACTOR:' num2str(WeighingFactor) 'Thresh' num2str(threshFactor)]);
+                
+                compSimMat = load([InputPath '/compSimMat' WholeNormText '/' 'compSimMat' WholeNormText  normBy num2str(subjNum)]);
+                
+                compSimMat = compSimMat.compSimMat;
+               
+                            disp(['do clustering subj:' num2str(subjNum) 'clustercount:' num2str(clusterCount) ])
+                            
+                            [clusterIdPerVoxel, clusterIdPerVoxelCurrent, largestClusterId, cutValue]...
+                                = applyClustering( compSimMat, clusterCount, recursiveSplit );
+                           
+                
+                stepWiseClusters = clusterIdPerVoxel;
+                allClusters = clusterIdPerVoxelCurrent;
+                
+                
+                if ~exist(OutputPath, 'dir')
+                    mkdir(OutputPath);
+                end
+                
+                
+                save([OutputPath '/graclusResultClust'  num2str(clusterCount)],...
+                    'stepWiseClusters', 'allClusters', 'largestClusterId', 'cutValue');
+                
+            end
+            
+        
             
             %%%% END EDIT HERE:                                %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
         end
-        
         %% finishJobs: is executed once (after all individual parameter jobs are finished)
         function finishJobs(this)
             

@@ -1,7 +1,7 @@
 clear paramsAll;
 
 clear params;
-params.Gridjob.runLocal = false;
+params.Gridjob.runLocal = true;
 params.Gridjob.requiremf = 2500;
 params.Gridjob.jobname = 'ProbtrackXallsubjects';
 params.Gridjob.initRandStreamWithJobid = false;
@@ -14,7 +14,7 @@ params.Gridjob.continue = true;
 
 params.ProbtrackXallsubjects.split = num2cell(1:100);
 params.ProbtrackXallsubjects.splitPerSubject = 100;
-params.ProbtrackXallsubjects.subjectId = num2cell(2:4);
+params.ProbtrackXallsubjects.subjectId = num2cell(1);
 
 paramsAll{1} = params;
 

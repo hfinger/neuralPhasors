@@ -16,7 +16,10 @@ classdef CalcOutlierComponents < Gridjob
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%% START EDIT HERE: define standard parameters for the job %%%%
-            this.params.CalcOutlierComponents.split = num2cell(2:1000);
+            this.params.CalcOutlierComponents.WeighingFactor = num2cell([0:0.1:0.4 0.6:0.1:1]);
+            this.params.CalcOutlierComponents.recursiveSplit = 'NonRec';
+            this.params.CalcOutlierComponents.cosText        = 'conn';
+            this.params.CalcOutlierComponents.clustRange     = 2:1000;
             %%%% END EDIT HERE:                                          %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
@@ -56,22 +59,90 @@ classdef CalcOutlierComponents < Gridjob
             datapaths = dataPaths();
             datapaths.workdir
             waitForServer();
-            clusterNum = this.params.CalcOutlierComponents.split;
-            for WeighingFactor = 0:0.1:0.9
-                detClust = load(['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj1/Rec/ClustOrgW'...
-                    num2str(WeighingFactor) '/detailsClust' num2str(clusterNum) '.mat']);
-                number_of_outliers = zeros(clusterNum,1);
-                number_of_connectedComponents = zeros(clusterNum,1);
-                for singleCluster = 1:clusterNum
-                    voxel_coords = detClust.voxelCoordByCluster{singleCluster};
-                    [number_of_outliers(singleCluster), number_of_connectedComponents(singleCluster),clusterSecondMoment] = connectedComp(voxel_coords);
+            RecursiveText = this.params.CalcOutlierComponents.recursiveSplit ;
+            cosText = this.params.CalcOutlierComponents.cosText;
+            clustRange =  this.params.CalcOutlierComponents.clustRange;
+            for WeighingFactor = this.params.CalcOutlierComponents.WeighingFactor
+                load('/net/store/nbp/projects/phasesim/workdir/Arushi/20160418_CompSimMatCalcNewSub/FinalCoord/FinalCoord1.mat');
+                clustPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160419_GraclusCut/',...
+                    cosText '/' RecursiveText '/decay-1weigh' num2str(WeighingFactor) '/1/normbysumthresh100/'];
+                switch RecursiveText
+                    case 'Rec'
+                        load([clustPath 'graclusResultClust1000.mat']);
+                        number_of_outliers = zeros(1000,1000);
+                        number_of_connectedComponents = zeros(1000,1000);
+                        number_of_outliers(:,1) = NaN;
+                        number_of_connectedComponents(:,1) = NaN;
+                        for clusterNum = clustRange
+                            a = stepWiseClusters(:,clusterNum);
+                            number_of_outliers(clusterNum+1:end,clusterNum) = NaN;
+                            number_of_connectedComponents(clusterNum+1:end,clusterNum) = NaN;
+                            
+                            
+                            %                 detClust = load(['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj1/Rec/ClustOrgW'...
+                            %                     num2str(WeighingFactor) '/detailsClust' num2str(clusterNum) '.mat']);
+                            
+                            for singleCluster = 1:clusterNum
+                                %                     voxel_coords = voxelCoordByCluster{singleCluster};
+                                voxel_coords = FinalCoord((a==singleCluster), :);
+                                [number_of_outliers(singleCluster, clusterNum), number_of_connectedComponents(singleCluster, clusterNum),clusterSecondMoment] = connectedComp(voxel_coords);
+                            end
+                        end
+                        OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/NewData/20160709_ClusteringPostprocessing/' RecursiveText '/decay-1'...
+                            'weigh' num2str(WeighingFactor) '/normbysumthresh1'...
+                             '/' cosText '/' 'Subj1'...
+                             '/'];
+                        save([OutputPath 'components.mat'], 'number_of_outliers', 'number_of_connectedComponents', '-v7.3');
+                        
+                    case 'NonRec'
+                        number_of_outliers = zeros(1000,1000);
+                        number_of_connectedComponents = zeros(1000,1000);
+                        number_of_outliers(:,1) = NaN;
+                        number_of_connectedComponents(:,1) = NaN;
+                        load([clustPath 'graclusResultClustcollected' '.mat']);
+                        for clusterNum = clustRange
+                            a = stepWiseClusters(:,clusterNum);
+                            number_of_outliers(clusterNum+1:end,clusterNum) = NaN;
+                            number_of_connectedComponents(clusterNum+1:end,clusterNum) = NaN;
+                            
+                            for singleCluster = 1:clusterNum
+                                voxel_coords = FinalCoord((a==singleCluster), :);
+                                [number_of_outliers(singleCluster, clusterNum), number_of_connectedComponents(singleCluster, clusterNum),clusterSecondMoment] = connectedComp(voxel_coords);
+                                
+                            end
+                            
+                            
+                        end
+                         OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/' RecursiveText '/decay-1'...
+                            'weigh' num2str(WeighingFactor) '/normbysumthresh100'...
+                             '/' cosText '/' 'Subj1'...
+                             '/'];
+                         if ~exist(OutputPath, 'dir')
+                             mkdir(OutputPath);
+                         end
+                        save([OutputPath 'components.mat'], 'number_of_outliers', 'number_of_connectedComponents', '-v7.3');
                 end
             end
-                       
+            %             for WeighingFactor = this.params.CalcOutlierComponents.WeighingFactor
+            %             OutputPath = ['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj1/Rec/ClustOrgW' num2str(WeighingFactor) '/Outliers'];
+            %                 detClust = load(['/net/store/nbp/projects/phasesim/workdir/Arushi/20160422_ClusteringPostprocessing/Subj1/Rec/ClustOrgW'...
+            %                     num2str(WeighingFactor) '/detailsClust' num2str(clusterNum) '.mat']);
+            %                 number_of_outliers = zeros(clusterNum,1);
+            %                 number_of_connectedComponents = zeros(clusterNum,1);
+            %                 for singleCluster = 1:clusterNum
+            %                     voxel_coords = detClust.voxelCoordByCluster{singleCluster};
+            %                     [number_of_outliers(singleCluster), number_of_connectedComponents(singleCluster),clusterSecondMoment] = connectedComp(voxel_coords);
+            %                 end
+            %                 if ~exist(OutputPath, 'dir');
+            %                 mkdir(OutputPath);
+            %             end
+            %
+            %             save([OutputPath '/outlier' num2str(clusterNum)], 'number_of_outliers','number_of_connectedComponents');
+            %
+            %             end
             
-            if ~exist(OutputPath, 'dir');
-                mkdir(OutputPath);
-            end
+            
+            
             
             %%%% END EDIT HERE:                                %%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

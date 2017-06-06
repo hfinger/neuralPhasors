@@ -1,4 +1,4 @@
-function calcCommonClusters(voxelIndByCluster1, voxelIndByCluster2, OutputPath, clusterNum)
+function ret = calcCommonClusters(voxelIndByCluster1, voxelIndByCluster2)
 
 IntersectVal = cell(length(find(~cellfun(@isempty, voxelIndByCluster1))), length(find(~cellfun(@isempty, voxelIndByCluster2))));
 IntersectInd1 = cell(size(IntersectVal));
@@ -6,10 +6,10 @@ IntersectInd2 = cell(size(IntersectVal));
 IntersectCount = zeros(size(IntersectVal));
 IntersectRatio1 = zeros(size(IntersectVal));
 IntersectRatio2 = zeros(size(IntersectVal));
-MaxIntRatio1 = zeros(length(find(~cellfun(@isempty, voxelIndByCluster1))),1);
-MaxIntRatio2 = zeros(length(find(~cellfun(@isempty, voxelIndByCluster2))),1);
-IndMaxIntRatio1 = zeros(size(MaxIntRatio1));
-IndMaxIntRatio2 = zeros(size(MaxIntRatio2));
+ret.MaxIntRatio1 = zeros(length(find(~cellfun(@isempty, voxelIndByCluster1))),1);
+ret.MaxIntRatio2 = zeros(length(find(~cellfun(@isempty, voxelIndByCluster2))),1);
+% IndMaxIntRatio1 = cell(size(ret.MaxIntRatio1));
+% IndMaxIntRatio2 = cell(size(ret.MaxIntRatio2));
 
 for clustNum1 = 1:length(find(~cellfun(@isempty, voxelIndByCluster1)))
     for clustNum2 = 1:length(find(~cellfun(@isempty, voxelIndByCluster2)))
@@ -26,23 +26,21 @@ for clustNum1 = 1:length(find(~cellfun(@isempty, voxelIndByCluster1)))
         
     end
 end
+clear IntersectVal;
+clear IntersectCount;
+clear IntersectInd1;
+clear IntersectInd2
 for clustNum1 = 1:length(find(~cellfun(@isempty, voxelIndByCluster1)));
-   MaxIntRatio1(clustNum1) = max(IntersectRatio1(clustNum1,:));
-    IndMaxIntRatio1(clustNum1) = find(IntersectRatio1(clustNum1,:) == MaxIntRatio1(clustNum1));
+   ret.MaxIntRatio1(clustNum1) = max(IntersectRatio1(clustNum1,:));
+   
+%     IndMaxIntRatio1{clustNum1} = find(IntersectRatio1(clustNum1,:) == ret.MaxIntRatio1(clustNum1));
 end
 for clustNum2 =  1:length(find(~cellfun(@isempty, voxelIndByCluster2)))
-        MaxIntRatio2(clustNum2) = max(IntersectRatio2(:,clustNum2));
+        ret.MaxIntRatio2(clustNum2) = max(IntersectRatio2(:,clustNum2));
         
-       
-        IndMaxIntRatio2(clustNum2) = find(IntersectRatio2(:,clustNum2) == MaxIntRatio2(clustNum2));
+%         IndMaxIntRatio2{clustNum2} = find(ret.IntersectRatio2(:,clustNum2) == ret.MaxIntRatio2(clustNum2));
 end
 
-if ~exist(OutputPath, 'dir')
-    mkdir(OutputPath);
-end
-save([OutputPath '/intersectionCluster' num2str(clusterNum)],...
-    'IntersectVal', 'IntersectInd1', 'IntersectInd2', 'IntersectCount', 'IntersectRatio1', 'IntersectRatio2',...
-    'MaxIntRatio1', 'MaxIntRatio2', 'IndMaxIntRatio1', 'IndMaxIntRatio2');
 end
     
 
