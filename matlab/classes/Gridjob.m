@@ -164,7 +164,11 @@ classdef Gridjob
         end
       else
         if iscell(this.constructedFromFolder)
-          relativePath=fullfile(this.constructedFromFolder{:});
+          if isempty(this.constructedFromFolder) > 0
+            relativePath = '';
+          else
+            relativePath = fullfile(this.constructedFromFolder{:});
+          end
           localWorkpath = fullfile(paths.workdir,relativePath,this.params.Gridjob.workpath);
           if this.params.Gridjob.runLocal
             this.workpath = fullfile(paths.workdir,relativePath,this.params.Gridjob.workpath);
