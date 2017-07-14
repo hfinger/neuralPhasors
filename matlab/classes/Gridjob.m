@@ -269,7 +269,7 @@ classdef Gridjob
             disp(systemCmd);
             system(systemCmd);
           else
-            system(['ssh isonoe "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+            system([paths.linSSHArg ' "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
           end
         else
           system(['qsub ' jobscriptpath]);
@@ -364,7 +364,7 @@ classdef Gridjob
               disp(systemCmd);
               system(systemCmd);
             else
-              system(['ssh isonoe "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+              system([paths.linSSHArg ' "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
             end
           else
             system(['qsub ' jobscriptpath]);
@@ -379,7 +379,7 @@ classdef Gridjob
                 disp(systemCmd);
                 system(systemCmd);
               else
-                system(['ssh isonoe "cd ' pwd '; qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"']);
+                system([paths.linSSHArg ' "cd ' pwd '; qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"']);
               end
             else
               system(['qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpath]);
