@@ -23,7 +23,7 @@ function varargout = SimulationGUI(varargin)
 
 % Edit the above text to modify the response to help SimulationGUI
 
-% Last Modified by GUIDE v2.5 18-Jun-2015 18:50:14
+% Last Modified by GUIDE v2.5 26-Oct-2016 20:43:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -81,14 +81,14 @@ set(handles.popupmenu1,'String',allNames);
 
 % populate table with respective parameters and values of currently
 % selected class
-list = get(handles.popupmenu1,'String');
-val = list{get(handles.popupmenu1,'Value')};
-val = val(1:end-2); %selected Gridjobclass
-make = str2func(val);
-obj = make(); %create object
-[fields, values] = build_table(hObject,handles,obj,val);
+% list = get(handles.popupmenu1,'String');
+% val = list{get(handles.popupmenu1,'Value')};
+% val = val(1:end-2); %selected Gridjobclass
+% make = str2func(val);
+% obj = make(); %create object
+% [fields, values] = build_table(hObject,handles,obj,val);
+% set(handles.table1,'data',[fields, values']);
 
-set(handles.table1,'data',[fields, values']);
 % Update handles structure
 guidata(hObject, handles);
 % UIWAIT makes SimulationGUI wait for user response (see UIRESUME)
@@ -121,15 +121,15 @@ function popupmenu1_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu1
 
-list = get(handles.popupmenu1,'String');
-val = list{get(handles.popupmenu1,'Value')};
-val = val(1:end-2); %new selected job
-make = str2func(val);
-obj = make();
-[fields values] = build_table(hObject,handles,obj,val);
-set(handles.table1,'data',[fields, values']);
-set(handles.table1,'ColumnEditable',[false false false]);
-drawnow;pause(0.05);
+% list = get(handles.popupmenu1,'String');
+% val = list{get(handles.popupmenu1,'Value')};
+% val = val(1:end-2); %new selected job
+% make = str2func(val);
+% obj = make();
+% [fields values] = build_table(hObject,handles,obj,val);
+% set(handles.table1,'data',[fields, values']);
+% set(handles.table1,'ColumnEditable',[false false false]);
+% drawnow;pause(0.05);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -314,7 +314,7 @@ while k <= size(fields,1)
         structfields = fieldnames(elem)
         if ~isempty(structfields)
             %-- recursive call for struct values
-            [structfields,structvalues] = set_values(structfields,obj,strcat(str,'.',string{1}),true,obj);
+            [structfields,structvalues] = set_values(structfields,strcat(str,'.',string{1}),true,obj);
             structfields = strcat(str,'.',string{1},'.',structfields); %add struct name to fieldnames
             fields = vertcat(fields{1:k},structfields,fields{k+1:end}); %add structfields to other fieldnames
             fields(k) = strcat(str,'.',fields(k));
@@ -376,11 +376,10 @@ function table1_CellEditCallback(hObject, eventdata, handles)
 global allJobs;
 global selected;
 
-list = get(handles.popupmenu1,'String');
-val = list{get(handles.popupmenu1,'Value')};
-val = val(1:end-2);
+name = fieldnames(allJobs{selected}.params);
+name = name{2};
 gridfields = fieldnames(allJobs{selected}.params.Gridjob); % gridjob-superclass parameters
-subfields = fieldnames(allJobs{selected}.params.(val)); % subclass parameters
+subfields = fieldnames(allJobs{selected}.params.(name)); % subclass parameters
 fields = [subfields;gridfields];
 index =  eventdata.Indices(1);
 
@@ -394,18 +393,16 @@ if index > size(fields,1)-24 % last 24 are Gridjobparameters
     
     allJobs{selected}.params.Gridjob.(fields{eventdata.Indices(1)}) = elem; %change parameter in current job-object
     %-- if jobname is changed, update listbox
-    if index == size(fields,1)-15
-        current = cellstr(get(handles.listbox3,'String'));
-        current{selected+1} = allJobs{selected}.params.Gridjob.jobname;
-        set(handles.listbox3,'String',current);
+    if strcmp(fields{eventdata.Indices(1)}, 'jobname')
+      updateLoadedJobList(hObject, eventdata, handles);
     end
 else
-    if ~ischar(allJobs{selected}.params.(val).(fields{eventdata.Indices(1)}))
+    if ~ischar(allJobs{selected}.params.(name).(fields{eventdata.Indices(1)}))
         elem = eval(eventdata.EditData);
     else
         elem = eventdata.NewData;
     end
-    allJobs{selected}.params.(val).(fields{eventdata.Indices(1)}) = elem;
+    allJobs{selected}.params.(name).(fields{eventdata.Indices(1)}) = elem;
 end
 drawnow;pause(0.05);
 
@@ -417,7 +414,6 @@ function Add_job_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global allJobs;
-global num_jobs;
 global selected;
 global constructedFromFolder;
 
@@ -425,28 +421,47 @@ list = get(handles.popupmenu1,'String'); %classes
 val = list{get(handles.popupmenu1,'Value')};%get chosen class
 make = str2func(val(1:end-2));
 obj = make();
-current = cellstr(get(handles.listbox3,'String'));
-if ~ismember(current,obj.params.Gridjob.jobname) %don't add job with same name (maybe remove, to allow copy of job)
 
-    set(handles.listbox3,'String',[current;{obj.params.Gridjob.jobname}]); %add new job to listbox
-
-    num_jobs = num_jobs + 1; %increase number of jobs
-    selected = num_jobs;
-    allJobs{num_jobs} = obj; %store job-object
-
-    if ~isempty(constructedFromFolder)
-        allJobs{num_jobs}.params.Gridjob.relativeWorkpath = char(constructedFromFolder); %set workpath as selected
-    else
-        workdir_Callback(hObject,eventdata,handles); %if none selected open dialog
-        allJobs{num_jobs}.params.Gridjob.relativeWorkpath = char(constructedFromFolder); %set workpath as selected
-    end
-
-    [fields values] = build_table(hObject,handles,allJobs{num_jobs},val(1:end-2));
-    set(handles.table1,'data',[fields, values']);
-    set(handles.table1,'ColumnEditable',[false true false]);
+obj.params.Gridjob.jobname = ['new_' val(1:end-2)];
+if ~isempty(constructedFromFolder)
+    obj.params.Gridjob.relativeWorkpath = char(constructedFromFolder); %set workpath as selected
+else
+    workdir_Callback(hObject,eventdata,handles); %if none selected open dialog
+    obj.params.Gridjob.relativeWorkpath = char(constructedFromFolder); %set workpath as selected
 end
+
+allJobs{end+1} = obj;
+selected = length(allJobs);
+set(handles.listbox3,'Value',selected);
+
+updateLoadedJobList(hObject, eventdata, handles);
+updateParamTable(hObject, eventdata, handles);
+
 drawnow;pause(0.05);
 
+
+function updateLoadedJobList(hObject, eventdata, handles)
+global allJobs;
+jobnames = cell(length(allJobs),1);
+for k=1:length(allJobs)
+  jobnames{k} = allJobs{k}.params.Gridjob.jobname;
+end
+set(handles.listbox3,'String',jobnames);
+
+
+function updateParamTable(hObject, eventdata, handles)
+global allJobs;
+global selected;
+if selected == 0
+  set(handles.table1,'data',[]);
+  set(handles.table1,'ColumnEditable',[false true false]);
+else
+  name = fieldnames(allJobs{selected}.params);
+  name = name{2};
+  [fields values] = build_table(hObject,handles,allJobs{selected},name);
+  set(handles.table1,'data',[fields, values']);
+  set(handles.table1,'ColumnEditable',[false true false]);
+end
 
 
 % --- Executes on selection change in listbox3.
@@ -458,25 +473,10 @@ function listbox3_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns listbox3 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from listbox3
-global allJobs;
 global selected;
-get(handles.figure1,'SelectionType');
-if strcmp(get(handles.figure1,'SelectionType'),'open') %find double click
-    
-    selected = get(handles.listbox3,'Value');
-    selected = selected -1;
-    obj = allJobs{selected};
-    
-    %-- update parameter table
-    name = fieldnames(obj.params);
-    name = name{2};
-    [fields, values] = build_table(hObject,handles,obj,name);
-    set(handles.table1,'data',[fields, values']);
-    
-    %set popupmenu and make value column editable
-    str = get(handles.popupmenu1,'String');
-    set(handles.popupmenu1,'Value',find(ismember(str,strcat(name,'.m'))));
-    set(handles.table1,'ColumnEditable',[false true false]);
+selected = get(handles.listbox3,'Value');
+if ~isempty(selected)
+  updateParamTable(hObject, eventdata, handles);
 end
 drawnow;pause(0.05);
 
@@ -502,21 +502,13 @@ function Remove_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global allJobs;
 global selected;
-global num_jobs;
-
-sel = get(handles.listbox3,'Value');
-prev_str = get(handles.listbox3, 'String');
-if sel ~= 1
-    if ~isempty(prev_str)
-        prev_str(get(handles.listbox3,'Value')) = [];
-        set(handles.listbox3, 'String', prev_str, ...
-            'Value', min(sel,length(prev_str)));
-        allJobs(sel-1) = []; %remove job
-        num_jobs = num_jobs - 1; %decrease number of jobs
-        selected = 0; %deselect
-        popupmenu1_Callback(hObject, eventdata, handles);
-    end
+allJobs(selected) = [];
+if selected > length(allJobs)
+  selected = length(allJobs);
+  set(handles.listbox3,'Value',selected);
 end
+updateLoadedJobList(hObject, eventdata, handles);
+updateParamTable(hObject, eventdata, handles);
 drawnow;pause(0.05);
 
 % --- Executes on button press in Add_param.
@@ -682,25 +674,13 @@ function load_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global allJobs;
-global num_jobs;
 global selected;
-num_jobs = num_jobs+1;
-selected = num_jobs;
-
 paths = dataPaths( );
 [file,selected_job] = uigetfile(paths.workdir); %get file
-allJobs{num_jobs} = Gridjob(strcat(selected_job,file)); %create job object
-
-names = fieldnames(allJobs{selected}.params);
-val = names{2}; %get class type of object (names{1} = Gridjob)
-[fields, values] = build_table(hObject,handles,allJobs{selected},val);
-set(handles.table1,'data',[fields, values'])
-
-str = get(handles.popupmenu1,'String');
-set(handles.popupmenu1,'Value',find(ismember(str,strcat(val,'.m'))));
-current = cellstr(get(handles.listbox3,'String'));
-set(handles.listbox3,'String',[current;{allJobs{num_jobs}.params.Gridjob.jobname}]);
-set(handles.table1,'ColumnEditable',[false true false]);
+allJobs{end+1} = Gridjob(strcat(selected_job,file)); %create job object
+selected = length(allJobs);
+updateLoadedJobList(hObject, eventdata, handles);
+updateParamTable(hObject, eventdata, handles);
 
 
 % --- Executes on button press in stop.
@@ -790,3 +770,22 @@ if stopSelec
         system(['qdel ', id, '.',task]);
     end
 end
+
+
+% --- Executes on button press in pushbuttonCopyJob.
+function pushbuttonCopyJob_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbuttonCopyJob (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global allJobs;
+global selected;
+oldJob = allJobs{selected};
+name = fieldnames(oldJob.params);
+name = name{2};
+make = str2func(name);
+obj = make();
+obj.params = oldJob.params;
+obj.params.Gridjob.jobname = ['copy_of_' oldJob.params.Gridjob.jobname];
+allJobs{end+1} = obj;
+updateLoadedJobList(hObject, eventdata, handles);
+updateParamTable(hObject, eventdata, handles);
