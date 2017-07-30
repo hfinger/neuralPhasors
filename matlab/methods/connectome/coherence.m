@@ -14,13 +14,14 @@ function [ coh ] = coherence( simResult, washOut, meanCoh, windows, fullCoh)
 sig = simResult.Y(:,washOut:end);
 n = size(sig,1);
 nWindows = size(windows,2);
+d = length(simResult.sim.drivPos);
 
 if meanCoh
     
     if ~fullCoh
         
-        coh = zeros(length(simResult.sim.drivPos),n,nWindows);
-        for i=1:length(simResult.sim.drivPos)
+        coh = zeros(d,n,nWindows);
+        for i=1:d
             diff = bsxfun(@minus, sig(simResult.sim.drivPos(i),:), sig);
             for j=1:nWindows
                 coh(i,:,j) = abs(mean(exp(1i*diff(:,windows(1,j):windows(2,j))), 2));
@@ -36,6 +37,7 @@ if meanCoh
             coh(i,:,j) = abs(mean(exp(1i*diff(:,windows(1,j):windows(2,j))), 2));
         end
     end
+    coh = squeeze(mean(coh,3));
     
     end
     

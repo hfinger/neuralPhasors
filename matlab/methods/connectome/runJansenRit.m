@@ -10,7 +10,7 @@ C = k*C;
 N = size(C, 1);
 numIters = ceil(tMax/dt);
 xColl = zeros(N, numIters/sampling, 'double');
-driverColl = zeros(1, numIters/sampling, 'double');
+driverColl = zeros(length(DrivPO), numIters/sampling, 'double');
 
 % build buffer to realize delays in network
 ringBufferSize = fix(max(D(:)))+1;
@@ -37,9 +37,10 @@ for i = 0:numIters-1
     if t > DrivStart && t < DrivStart + DrivDur
         drivPhase = sin(t*2*pi*DrivFreqs + DrivPO);
     else
-        drivPhase = 0;
+        drivPhase = zeros(1,length(DrivPO));
     end
-    driver = Drivers .* drivPhase;
+    driver = Drivers .* repmat(drivPhase,size(Drivers,1),1);
+    driver = sum(driver,2);
     
     inp_tmp = sum(C .* WTP(x1Delayed', JRParams.e0, JRParams.u0, JRParams.r), 2);
     inp = 220 - inpAvg + snr * randn(N, 1) + inp_tmp;
@@ -56,7 +57,7 @@ for i = 0:numIters-1
     %save every sampling steps:
     if mod(i,sampling)==0 && t > d
         xColl(:,i/sampling + 1) = x(:,1);
-        driverColl(i/sampling + 1) = drivPhase;
+        driverColl(:,i/sampling + 1) = drivPhase;
     end
     
     %print progress:
@@ -67,4 +68,4 @@ for i = 0:numIters-1
 end
 
 xColl = xColl(:,(d/(dt*sampling))+1 : end);
-driverColl = driverColl((d/(dt*sampling))+1 : end);
+driverColl = driverColl(:,(d/(dt*sampling))+1 : end);
