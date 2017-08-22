@@ -1,11 +1,11 @@
 
-resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/JR_2Driver_k';
-resultPath2 = '/net/store/nbp/projects/phasesim/results/rgast/rateNetSim2';
+resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale';
+resultPath2 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_ParamSearch';
 resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast';
 resultPath4 = '/net/store/nbp/projects/phasesim/results/rgast/rate1StimSim';
 resultPath6 = '/net/store/nbp/projects/phasesim/results/rgast/JR_Driver_LTEffects';
 
-coherence_measure1 = 'drivPosCohVar';
+coherence_measure1 = 'drivPosCoh';
 coherence_measure2 = 'Coherence';
 coherence_measure3 = 'corr_SimFC';
 
@@ -14,24 +14,22 @@ dist_driver = 66;
 useSP = 1;
 
 %dataStruct = getArgsFromFiles(resultPath6,'JansenRitResults*',coherence_measure2,'drivPos','drivStart','drivDur','d','sampling','dt');
-dataStruct = getArgsFromFiles(resultPath3,'JansenRitResults*',{coherence_measure1, coherence_measure2},'drivScale','drivFreq','k','v');
+dataStruct = getArgsFromFiles(resultPath1,'JR_2Driver_POvsScale*',{coherence_measure1, coherence_measure2},'drivScale','drivFreq','k','v');
 
 fnames = fieldnames(dataStruct);
 dataTmp = dataStruct.(fnames{1});
 %stimPos = dataTmp.drivPos;
 
-%% extract parameter set with highest coherence variance between driven regions for 2 drivers with different phase offsets
+%% plot coherence for different driver phase offsets and extract parameter set with highest variance in coherence over POs
+logCoh = false;
+clim = [0,0.8];
+drivPosCohs = pltCohOverPhaseOffset(dataStruct,'drivScale',clim,logCoh);
 
-drivPosCohVars = zeros(length(fnames),1);
-for f=1:length(fnames)
-    data_tmp = dataStruct.(fnames{f});
-    drivPosCohVars(f) = var(cell2mat(data_tmp.drivPosCohVar),1);
-    %drivPosCohVars(f) = data_tmp.drivPosCohVar;
-end
-[maxVar, idx] = max(drivPosCohVars);
-highestVarFname = fnames{idx};
-highestVarData = dataStruct.(fnames{idx});
-highestVar = var(cell2mat(highestVarData.drivPosCohVar),1)
+drivPosCohSD = std(drivPosCohs,[],2);
+[maxSD, idx] = max(drivPosCohSD);
+highestSDFname = fnames{idx};
+highestSDData = dataStruct.(fnames{idx});
+
 
 %% plot phase difference between 2 target nodes
 env.t_rm = 1; % time to start bandpassing the signal at [s]

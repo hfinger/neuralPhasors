@@ -1,4 +1,4 @@
-function [ dataStruct ] = getArgsFromFiles( resultPath, identifier, coherence_measure, incData, coh_index, varargin )
+function [ dataStruct ] = getArgsFromFiles( resultPath, identifier, dvs, varargin )
 %GETARGSFROMFILES Reads in all data from resultpath including identifier in
 %their name, extracts the coherence_measure and simulation parameters
 %defined by varargin and puts them into a struct
@@ -16,12 +16,8 @@ n = length(fnames);
 
 for f=1:n
     data = load(strcat(resultPath, '/', fnames{f}));
-    struct_tmp.Coherence = data.(coherence_measure);
-    if coh_index > 0
-        struct_tmp.Coherence = struct_tmp.Coherence(:,:,coh_index);
-    end
-    if incData
-        struct_tmp.Y = data.simResult.Y;
+    for i=1:length(dvs)
+        struct_tmp.(dvs{i}) = data.simResult.(dvs{i});
     end
     for v=1:length(varargin)
         struct_tmp.(varargin{v}) = data.simResult.sim.(varargin{v});

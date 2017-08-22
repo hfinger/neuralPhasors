@@ -268,7 +268,7 @@ classdef JansenRitConnectome < Gridjob
       simResult.Coherence = Coherence;
       
       % save results
-      filename_JR = ['JansenRitResults_',num2str(this.currJobid)];
+      filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
       save([this.resultpath,'/', filename_JR], 'simResult')
       
       %%%% END EDIT HERE:                                %%%%
