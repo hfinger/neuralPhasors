@@ -22,6 +22,7 @@ largestClusterId = ClusterIdsforVoxel.largestClusterId;
 ClusterIdsforVoxel = ClusterIdsforVoxel.stepWiseClusters;
 
 figh = figure(1);
+set(figh, 'Position', [100, 100, 330, 300]);
 clf;
 
 % load brain surface and plot it:
@@ -56,33 +57,48 @@ end
 clusterColors = distinguishable_colors(finalNumClust);
 for k=1:finalNumClust
   h{k} = plotVoxelsInBrain(header, voxel_coords(finalClusterIdsForVoxel==k,:));
-  set(h{k},'MarkerFaceColor',clusterColors(k,:))
+  set(h{k},'MarkerFaceColor',clusterColors(k,:),'markersize',4);
 end
 
 %% video
 az=0;
-el=25;
+maxElevation=40;
 doCreateVideo = true;
 if doCreateVideo
   daObj=VideoWriter(fullfile(OutputPath,'clustering_video')); %for default video format. 
-  daObj.FrameRate=10;
+  daObj.FrameRate=20;
+  axis vis3d;
+  camva('manual');
+  camva(5.5);
   open(daObj);
 end
 
+initFramesPerCluster=13;
+
 %% now only recolor the clusters accordingly at each iteration:
+frameIter = 1;
 for clusterCount = clustRange
+  
+  framesPerCluster = ceil(initFramesPerCluster*0.985.^clusterCount);
+  
   for k=1:finalNumClust
     clustId = clusterSrcDst(clusterCount,k);
     set(h{k},'MarkerFaceColor',clusterColors(clustId,:))
   end
   
-  for t=1:36
-    az=az+10;
+  for t=1:round(framesPerCluster)
+    az = az + 2;
+    el = maxElevation * cos( frameIter / 200 );
     view(az,el);
     drawnow;
     if doCreateVideo
       writeVideo(daObj,getframe(figh)); %use figure, since axis changes size based on view
     end
+    
+    if mod(frameIter, 100)==0
+      disp(['frameIter =' num2str(frameIter)])
+    end
+    frameIter = frameIter + 1;
   end
 end
 
