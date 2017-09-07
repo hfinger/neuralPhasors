@@ -1,4 +1,4 @@
-function [ hg ] = plotBrainConnectivity( nodeVals, edgeVals, edgeMin, resort )
+function [ hg ] = plotBrainConnectivity( nodeVals, edgeVals, edgeMin, resort, rescaleEdgeVals )
 %PLOTBRAINCONNECTIVITY Function that plots 66 Nodes in brain and connections between those nodes 
 %   Input Parameters:                   
 %       nodeVals - Vector of length 66 which is used to color the nodes
@@ -17,6 +17,7 @@ savefolder = strcat('Coherence_Stimulated_subj',num2str(subject));
 mkdir(savefolder);
 subjectStr = num2str(subject,'%02u');
 
+addpath('/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e')
 g = gifti(['ca' subjectStr '_1_structcortex_8196.surf.gii']);
 fs_rois = load(['fs_rois/ca' subjectStr '_fs_rois.mat']);
 roi_center = fs_rois.fs_rois;
@@ -66,17 +67,21 @@ caxis([cmin cmax])
 % scale edge values
 conn=edgeVals;
 conn(conn<edgeMin) = 0;
-conn = log(conn);
-minConn = min(conn(conn > -inf));
-maxConn = 0;
-connRange = maxConn - minConn;
-
+if rescaleEdgeVals
+    conn = log(conn);
+    minConn = min(conn(conn > -inf));
+    maxConn = 0;
+    connRange = maxConn - minConn;
+    newConn = connRange ./ (maxConn - conn);
+else
+    newConn = conn;
+end
 % plot nodes and edges
 for k=1:66  
     plot3(roi_center(k,1),roi_center(k,2),roi_center(k,3),'o','MarkerSize',13,'color',cm(:,k), 'MarkerFaceColor', cm(:,k),'LineWidth', 2)
-    for m=1:k-1
-        if conn(m,k) > -inf
-            h=line([roi_center(k,1) roi_center(m,1)]',[roi_center(k,2) roi_center(m,2)]',[roi_center(k,3) roi_center(m,3)]','color','r','LineWidth', connRange / (maxConn - conn(m,k)));
+    for m=1:66
+        if conn(m,k) > -inf && conn(m,k) ~= 0
+            h=line([roi_center(k,1) roi_center(m,1)]',[roi_center(k,2) roi_center(m,2)]',[roi_center(k,3) roi_center(m,3)]','color','r','LineWidth', newConn(m,k));
         end
     end  
 end
