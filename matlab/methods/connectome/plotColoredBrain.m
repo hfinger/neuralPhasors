@@ -1,4 +1,4 @@
-function [ hg ] = plotColoredBrain( cData, resort )
+function [ hg ] = plotColoredBrain( cData, resort, transparency )
 %PLOTCOLOREDBRAIN Function that colors 66 areas of brain according to cData
 %   Input Parameters:
 %       cData - vector of length 66 that is used to color 66 brain regions
@@ -40,10 +40,12 @@ cdataPerVertex.cdata = cdataPerROI(regionmappingPlusOne,:);
 figure();
 clf; 
 hg=plot(g,cdataPerVertex);
-colormap('jet')
+colormap('cool')
 colorbar()
 shading flat
-alpha(cdataPerVertex.cdata);
+if transparency
+    alpha(cdataPerVertex.cdata);
+end
 view(-9.8705,72.0327);
 
 end
