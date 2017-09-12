@@ -1,4 +1,4 @@
-function [ hg ] = plotBrainConnectivity( nodeVals, edgeVals, edgeMin, resort, rescaleEdgeVals )
+function [ figh ] = plotBrainConnectivity( nodeVals, edgeVals, edgeMin, resort, rescaleEdgeVals )
 %PLOTBRAINCONNECTIVITY Function that plots 66 Nodes in brain and connections between those nodes 
 %   Input Parameters:                   
 %       nodeVals - Vector of length 66 which is used to color the nodes
@@ -32,8 +32,11 @@ if resort
         idx(resortIDs(i)) = i;
     end
     nodeVals = nodeVals(idx);
-    edgeVals = edgeVals(idx,:);
-    edgeVals = edgeVals(:,idx);
+    if length(size(edgeVals)) < 3
+        edgeVals = reshape(edgeVals, size(edgeVals,1), size(edgeVals,2), 1);
+    end
+    edgeVals = edgeVals(idx,:,:);
+    edgeVals = edgeVals(:,idx,:);
 end
 
 %% plot nodes and edges on brain surface
@@ -77,13 +80,21 @@ else
     newConn = conn;
 end
 % plot nodes and edges
-for k=1:66  
-    plot3(roi_center(k,1),roi_center(k,2),roi_center(k,3),'o','MarkerSize',13,'color',cm(:,k), 'MarkerFaceColor', cm(:,k),'LineWidth', 2)
-    for m=1:66
-        if conn(m,k) > -inf && conn(m,k) ~= 0
-            h=line([roi_center(k,1) roi_center(m,1)]',[roi_center(k,2) roi_center(m,2)]',[roi_center(k,3) roi_center(m,3)]','color','r','LineWidth', newConn(m,k));
-        end
-    end  
+if length(size(conn)) < 3
+    conns = 1;
+else
+    conns = size(newConn,3);
+end
+lineColor = hsv(conns);
+for l=1:conns
+    for k=1:size(newConn,1)  
+        plot3(roi_center(k,1),roi_center(k,2),roi_center(k,3),'o','MarkerSize',13,'color',cm(:,k), 'MarkerFaceColor', cm(:,k),'LineWidth', 2)
+        for m=1:size(newConn,2)
+            if newConn(m,k,l) > -inf && newConn(m,k,l) ~= 0
+                h=line([roi_center(k,1) roi_center(m,1)]',[roi_center(k,2) roi_center(m,2)]',[roi_center(k,3) roi_center(m,3)]','color',lineColor(l,:),'LineWidth', newConn(m,k,l));
+            end
+        end  
+    end
 end
 hold off;
 %   colorbar
@@ -96,22 +107,22 @@ OptionZ.Periodic=true;
 view(0,40)
 
 % export only colorbar as pdf
-%figh = sfigure();
-%clf;
-%set(gcf,'color','w');
-%set(figh,'Position', [100, 100, 200, 200])
-%colormap(cmap)
-%caxis([cmin cmax])
-%set(gca,'FontSize',12)
-%c = colorbar;
-%x1=get(gca,'position');
-%x=get(c,'Position');
-%x(3)=0.03;
-%set(c,'Position',x)
-%x1(1)=-5+x1(1);
-%set(gca,'position',x1)
-%set(gca,'fontsize', 12);
-%set(gcf,'PaperUnits','inches','PaperPosition',[0 0 2 2])
+% figh = sfigure();
+% clf;
+% set(gcf,'color','w');
+% set(figh,'Position', [100, 100, 200, 200])
+% colormap(cmap)
+% caxis([cmin cmax])
+% set(gca,'FontSize',12)
+% c = colorbar;
+% x1=get(gca,'position');
+% x=get(c,'Position');
+% x(3)=0.03;
+% set(c,'Position',x)
+% x1(1)=-5+x1(1);
+% set(gca,'position',x1)
+% set(gca,'fontsize', 12);
+% set(gcf,'PaperUnits','inches','PaperPosition',[0 0 2 2])
 %export_fig(fullfile(savefolder,['SC_' fnames{fid} '_colorbar.pdf']));
 
 end

@@ -36,7 +36,7 @@ classdef JansenRitConnectome < Gridjob
       this.params.JansenRitConnectome.corrSimFC = false; % if true, compare simulated coherence to empirical coherence
       this.params.JansenRitConnectome.fullCoherence = false; %whether to store full coherence matrix or only coherence of driven region
       this.params.JansenRitConnectome.nWindows = 4; %number of timewindows over which to calculate mean coherence 
-
+      this.params.JansenRitConnectome.crossCorr = false; % if true, calculate cross-correlation between driven regions
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,20 +143,20 @@ classdef JansenRitConnectome < Gridjob
       resortIds = [resortIdsMarlene, resortIdsMarlene + 33];
       
       % get 3d coordinates for each node and for eeg electrodes
-      path_ROICoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e/fs_rois/ca03_fs_rois.mat';
-      path_electrodeCoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/ca_electrodeLocations/ca03_EEGLocations.txt';
-      roiData = load(path_ROICoordinates);
-      electrodeCoordinatesTable = readtable(path_electrodeCoordinates,'Delimiter',' ','ReadVariableNames',false);
+      %path_ROICoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e/fs_rois/ca03_fs_rois.mat';
+      %path_electrodeCoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/ca_electrodeLocations/ca03_EEGLocations.txt';
+      %roiData = load(path_ROICoordinates);
+      %electrodeCoordinatesTable = readtable(path_electrodeCoordinates,'Delimiter',' ','ReadVariableNames',false);
       
-      roiCoordinates = roiData.fs_rois;
-      electrodeCoordinates = table2array(electrodeCoordinatesTable(:,2:end));
+      %roiCoordinates = roiData.fs_rois;
+      %electrodeCoordinates = table2array(electrodeCoordinatesTable(:,2:end));
       
       % reorder C, D and roi coordinates after anatomical indices
       C = C(resortIds,:);
       C = C(:,resortIds);
       D = D(resortIds,:);
       D = D(:,resortIds);
-      roiCoordinates = roiCoordinates(resortIds,:);
+      %roiCoordinates = roiCoordinates(resortIds,:);
       
       % add homotopic connections and normalize rows to 1
       C = C + 0.1 * diag(ones(size(C,1)/2,1),size(C,1)/2) + 0.1 * diag(ones(size(C,1)/2,1),-size(C,1)/2);
@@ -175,15 +175,16 @@ classdef JansenRitConnectome < Gridjob
           %     find electrode position closest to node to be stimulated and extract
           %     stimulation strength for each node from gaussian centered around that
           %     electrode position
-          ED = pdist2(electrodeCoordinates, roiCoordinates);
           drivers = zeros(size(C,1),size(drivPos',1));
+          %ED = pdist2(electrodeCoordinates, roiCoordinates);
           for i = 1:size(drivers, 2)
-              [~,pos] = min(ED(:,drivPos(i)));
-              drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
-              drivStrength = drivStrength - min(drivStrength);
-              drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
+          %    [~,pos] = min(ED(:,drivPos(i)));
+          %    drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
+          %    drivStrength = drivStrength - min(drivStrength);
+          %    drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
+               drivers(drivPos(i),i) = 1 * sim.drivScale; 
           end
-
+          
           % run jansen rit simulation and store PSPs of pyramidal cells
           nStatesJR = 13;
           StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
@@ -233,7 +234,15 @@ classdef JansenRitConnectome < Gridjob
           %simResult.Y = Y_raw;
           simResult = rmfield(simResult,'Y');
           drivPosCoh{p} = drivPosCoh_tmp;
-
+          
+          % calculate cross-correlation between driven regions
+          if this.params.JansenRitConnectome.crossCorr
+              maxLag = size(Y_raw,2)-round(size(Y_raw,2)/2);
+              for i=2:size(drivPos',1)
+                  crossCorr{p,i} = xcorr(Y_raw(drivPos(1),:),Y_raw(drivPos(i),:),maxLag);
+              end
+          end
+          
           % calculate match with empirical FC data
           if this.params.JansenRitConnectome.corrSimFC
             % load empirical FC
@@ -263,6 +272,10 @@ classdef JansenRitConnectome < Gridjob
             simResult.corr_SimFC = corr_SimFC;
           end
           
+      end
+      if this.params.JansenRitConnectome.crossCorr
+          crossCorr = squeeze(cell2mat(crossCorr));
+          simResult.crossCorr = crossCorr;
       end
       simResult.drivPosCoh = drivPosCoh;
       simResult.Coherence = Coherence;

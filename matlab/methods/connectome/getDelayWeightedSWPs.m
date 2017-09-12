@@ -25,13 +25,10 @@ resortIds = [resortIdsMarlene, resortIdsMarlene + 33];
 % resorting
 C = C(resortIds,:);
 C = C(:,resortIds);
-D = D(resortIds,:);
-D = D(:,resortIds);
 
 %normalizing
 C = C + 0.1 * diag(ones(size(C,1)/2,1),size(C,1)/2) + 0.1 * diag(ones(size(C,1)/2,1),-size(C,1)/2);
 C = bsxfun(@rdivide,C,sum(C.^p,2).^(1/p));
-D = D/(v*1e03);
 
 %% find all paths of a certain maximum lenght between target nodes, get their connection weights and time delays and create delay-weighted shortest-weighted paths
 
@@ -51,26 +48,21 @@ for p=1:size(allpaths,2)
 end
 
 % calculate pathlengths based on delay-weighted connectivity matrix
-C_dw = C ./ D;
-
+C = 1./C;
 pathlengths = zeros(1,length(paths));
 for p=1:length(paths)
     for i=1:length(paths{1,p})-1
-        pathlengths(p) = pathlengths(p) + C_dw(paths{1,p}(i),paths{1,p}(i+1));
+        pathlengths(p) = pathlengths(p) + C(paths{1,p}(i),paths{1,p}(i+1));
     end
-    pathlengths(p) = pathlengths(p) / (length(paths{1,p})-1);
 end
 
 % sort pathlengths
 [pl_ordered,idx] = sort(pathlengths);
-pl_ordered = fliplr(pl_ordered);
-idx = fliplr(idx);
 
 % order paths according to indices
 for i=1:length(idx)
     paths_ordered{i} = paths{1,idx(i)};
 end
-
 
 end
 
