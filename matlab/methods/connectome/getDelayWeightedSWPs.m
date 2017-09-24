@@ -39,13 +39,31 @@ C = bsxfun(@rdivide,C,sum(C.^p,2).^(1/p));
 n = 1;
 for p=1:size(allpaths,2)
     p_tmp = allpaths(:,p);
-    p_tmp = p_tmp(p_tmp ~= 0);
     if sum(p_tmp == targets(2)) > 0
         idx = find(p_tmp == targets(2));
         paths{n} = p_tmp(1:idx);
         n = n+1;
     end
 end
+
+% get rid of path multiples
+finalPaths = {};
+n = 1;
+for p=1:length(paths)
+    inc = true;
+    for p2 = 1:length(finalPaths)
+        if length(paths{1,p}) == length(finalPaths{1,p2})
+            if paths{1,p} == finalPaths{1,p2}
+                inc = false;
+            end
+        end
+    end
+    if inc
+        finalPaths{n} = paths{1,p};
+        n = n+1;
+    end
+end
+paths = finalPaths;
 
 % calculate pathlengths based on delay-weighted connectivity matrix
 C = 1./C;

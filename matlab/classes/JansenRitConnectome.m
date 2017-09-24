@@ -239,7 +239,7 @@ classdef JansenRitConnectome < Gridjob
           if this.params.JansenRitConnectome.crossCorr
               maxLag = size(Y_raw,2)-round(size(Y_raw,2)/2);
               for i=2:size(drivPos',1)
-                  crossCorr{p,i} = xcorr(Y_raw(drivPos(1),:),Y_raw(drivPos(i),:),maxLag);
+                  crossCorr{p,i} = xcorr(Y_raw(drivPos(1),:),Y_raw(drivPos(i),:),maxLag,'unbiased');
               end
           end
           
