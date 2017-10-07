@@ -1,4 +1,4 @@
-function [ mutualCoherence ] = plotMutualCoherence( dataStruct, targetPO, dv, pltCoh, drivPosCoh )
+function [ mutualCoherence, dvSorted ] = plotMutualCoherence( dataStruct, targetPO, dv, pltCoh, drivPosCoh )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 

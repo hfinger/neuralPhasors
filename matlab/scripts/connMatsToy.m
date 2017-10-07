@@ -22,7 +22,7 @@ dataTmp = dataStruct.(fnames{1});
 
 %% plot mutual coherence for driven regions over different target phase offsets
 stimPos = dataTmp.drivPos;
-POI = [0,2];
+POI = [0,2]; % target phase offsets (does not need to match the exact simulation values)
 mutualCoherence = cell(1,length(POI));
 for p=1:length(POI)
     mutualCoherence{p} = plotMutualCoherence(dataStruct,POI(p),'drivScale',1);
@@ -36,7 +36,7 @@ addpath('/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransf
 drivPosCohs = pltCohOver2DVs(dataStruct,{'drivPO','drivScale'},0);
 
 % calculate difference between mutual coherence at min and max PO
-cohDiff = plotMutualCoherence(dataStruct,'minmax','drivScale',0,drivPosCohs');
+[cohDiff, drivScales] = plotMutualCoherence(dataStruct,'minmax','drivScale',0,drivPosCohs');
 
 % load connectivity matrix
 path_SCmat = '/net/store/nbp/projects/phasesim/databases/avg_SC.mat';
@@ -52,15 +52,15 @@ C = C(:,resortIds);
 C = C + 0.1 * diag(ones(size(C,1)/2,1),size(C,1)/2) + 0.1 * diag(ones(size(C,1)/2,1),-size(C,1)/2);
 C = bsxfun(@rdivide,C,sum(C.^2,2).^(1/2));
 
-% for each drivScale plot difference in mutual coherence over all nodes
-nodeScale = 30/max(max(cohDiff));
-nodeMinSize = 10;
-CColor = 'k';
-CMin = 0.1;
-surfaceVisibility = 0.1;
+% visualization parameters
+nodeScale = 30/max(max(cohDiff)); % how strong should node size be scaled with nodeVal
+nodeMinSize = 10; % minimum size of network nodes
+CColor = 'k'; % edge color
+CMin = 0.1; % cut-off value for edges
+surfaceVisibility = 0.1; % transparency of brain surface (0 == no brain surface)
 
-drivScales = [0:0.001:0.025];
-for i=2:3:20
+% for each drivScale plot difference in mutual coherence over all nodes
+for i=1:2
     m = max(cohDiff(i,:));
     nodeRange = [-m,m];
     figh = figure();
@@ -93,13 +93,17 @@ nodeVals(:,1,:) = mutualCoh1;
 nodeVals(:,2,:) = mutualCoh2;
 nodeVals = nodeVals(2:end,:,:);
 
-edgeMin = 0.0005;
-nodeMin = 10;
-nodeScale = 20;
-invCoh = 1;
-edgeScale = 4;
+% visualization parameters
+edgeMin = 0.0005; % cut-off value for edges
+nodeMin = 10; % minimum size of nodes
+nodeScale = 20; % how strong node size should scale with nodeVal
+invCoh = true; % invert coherence to calculate most active path or not
+edgeScale = 4; % how strong edge size should scale with edge value
+
+% plot paths in connectome
 results = plotBrainInfoChannels(paths,dataStruct,k,kPlt,{'drivScale','drivPO'},targetVals,nodeVals,nodeMin,nodeScale,edgeMin,edgeScale,invCoh);
 
+% plot activation of most active path over phase offsets and driver scales
 drivScales = unique(results.drivScale);
 pathActivations = zeros(length(unique(results.drivPO)),length(drivScales));
 for d=1:length(drivScales)
