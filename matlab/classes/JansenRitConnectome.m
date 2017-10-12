@@ -19,7 +19,7 @@ classdef JansenRitConnectome < Gridjob
       
       this.params.JansenRitConnectome.p = 2; %defines what kind of p norm to use for normalization of structural connectivity
       this.params.JansenRitConnectome.k = 8; %global connection strength scaling
-      this.params.JansenRitConnectome.v = 4; % velocity [m/s]
+      this.params.JansenRitConnectome.v = 4.5; % velocity [m/s]
       this.params.JansenRitConnectome.tMax = 125; %max simulation time [seconds]
       this.params.JansenRitConnectome.dt = 0.0001; % simulation step size [seconds]
       this.params.JansenRitConnectome.sampling = 10; % sampling every x steps

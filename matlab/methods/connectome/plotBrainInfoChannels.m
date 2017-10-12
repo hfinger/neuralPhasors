@@ -1,4 +1,4 @@
-function [ results ] = plotBrainInfoChannels( paths, dataStruct, k, kPlt, dvs, dvTargets, nodeVals, nodeMin, nodeScale, edgeMin, edgeScale, invCoh )
+function [ results ] = plotBrainInfoChannels( paths, dataStruct, k, kPlt, dvs, dvTargets, nodeVals, nodeMin, nodeScale, edgeMin, edgeScale, invCoh, useNodeCoh )
 %PLOTBRAININFOCHANNELS Function that plots a number of paths through the
 %connectome specified by paths, with edges based on coherence data in
 %dataStruct. Paths will be re-arranged according to coherence data
@@ -26,6 +26,10 @@ function [ results ] = plotBrainInfoChannels( paths, dataStruct, k, kPlt, dvs, d
 %       edgeScale - Scaling of edge thickness with edgeVals (scalar)
 %       invCoh - if true, coherence values will be inverted before using
 %                them to find the shortest path between the target nodes
+%       useNodeCoh - only important if node values are not specified, but
+%                    target values are. Then set to true, if nodes should
+%                    be colored according to their coherence with the
+%                    driven regions
 %
 %   Output:
 %       results - structure, containing the paths, the path
@@ -107,7 +111,6 @@ if ~isempty(dvTargets) && sum(dvTargets(1,:)) ~= 0
 end
 
 % set plotting parameters
-nodeRange = [min(min(min(nodeVals))),max(max(max(nodeVals)))];
 surfaceVisibility = 0.1;
 edgeAlphas = linspace(0.2,1.0,kPlt);
 
@@ -125,7 +128,6 @@ for d1=1:length(dv1Vals)
     idx1 = dvColl(:,1) == dv1Vals(d1);
     dvColl_tmp = dvColl(idx1,:);
     paths_ordered_tmp = paths_ordered(idx1,:);
-    pathInds_tmp = pathInds(idx1,:);
     fnames_tmp = fnames(idx1);
     
     % get relevant values of second dependent variable
@@ -140,10 +142,29 @@ for d1=1:length(dv1Vals)
         dv2Vals = unique(dv2Vals_tmp);
     end
     
-    if length(size(nodeVals)) < 3
+    % get node values for all specified target values
+    if ~isempty(dvTargets) && useNodeCoh
+        
+        dv1Vals_tmp = unique(dvColl(:,1));
+        ind = zeros(size(dv1Vals_tmp));
+        for dv1val = 1:length(dv1Vals)
+            ind_tmp = dv1Vals_tmp == dv1Vals(dv1val);
+            ind = ind + ind_tmp;
+        end
+        
+        nodeVals = zeros(length(dv1Vals),length(dv2Vals),length(Coh));
+        for dv2val = 1:length(dv2Vals)
+            nodeVals_tmp = plotMutualCoherence(dataStruct,dvTargets(2,dv2val),dvs{1},0);
+            nodeVals(:,dv2val,:) = nodeVals_tmp(ind == 1,:);
+        end
+        
+    elseif length(size(nodeVals)) < 3
+        
        nodeVals = reshape(nodeVals,1,1,length(nodeVals));
        nodeVals = repmat(nodeVals,length(dv1Vals),length(dv2Vals),1);
+       
     end
+    nodeRange = [min(min(min(nodeVals))),max(max(max(nodeVals)))];
     
     % loop over second dependent variable
     for d2=1:length(dv2Vals)
@@ -151,7 +172,6 @@ for d1=1:length(dv1Vals)
         % get data where dv2 has specified value
         idx2 = dvColl_tmp(:,2) == dv2Vals(d2);
         paths_ordered_tmp2 = paths_ordered_tmp(idx2,:);
-        pathInds_tmp2 = pathInds_tmp(idx2,:);
         fnames_tmp2 = fnames_tmp(idx2);
         
         % loop over number of paths to plot
@@ -161,9 +181,9 @@ for d1=1:length(dv1Vals)
             % get coherence of simulation to plot
             Coh = dataStruct.(fnames_tmp2{1}).Coherence{1,1}(length(targets)+1:end,length(targets)+1:end);
             % get edge values for path plotting
-            for j=1:length(paths_ordered_tmp2{1,pathInds_tmp2(path)})-1;
-                i1 = paths_ordered_tmp2{1,pathInds_tmp2(path)}(j);
-                i2 = paths_ordered_tmp2{1,pathInds_tmp2(path)}(j+1);
+            for j=1:length(paths_ordered_tmp2{1,path})-1;
+                i1 = paths_ordered_tmp2{1,path}(j);
+                i2 = paths_ordered_tmp2{1,path}(j+1);
                 %coh = Coh(i1,i2);  
                 edgeVals(i1,i2,kPlt-path+1) = (kPlt-path+1)*edgeScale;
             end
