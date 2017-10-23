@@ -28,9 +28,8 @@ savefolder = strcat('Coherence_Stimulated_subj',num2str(subject));
 mkdir(savefolder);
 subjectStr = num2str(subject,'%02u');
 
-addpath('/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e')
 g = gifti(['ca' subjectStr '_1_structcortex_8196.surf.gii']);
-fs_rois = load(['fs_rois/ca' subjectStr '_fs_rois.mat']);
+fs_rois = load(['/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e/fs_rois/ca' subjectStr '_fs_rois.mat']);
 roi_center = fs_rois.fs_rois;
 
 %% resort data if necessary

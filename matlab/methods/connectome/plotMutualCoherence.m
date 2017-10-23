@@ -28,7 +28,7 @@ n = length(fnames);
 dataTmp = dataStruct.(fnames{1});
 drivPos = dataTmp.drivPos;
 
-mutualCoherence = zeros(n,size(dataTmp.Coherence{1,1}(:,length(drivPos)+1:end),2));
+mutualCoherence = zeros(n,2,size(dataTmp.Coherence{1,1}(:,length(drivPos)+1:end),2));
 POs = zeros(1,n);
 dvColl = zeros(1,n);
 drivPosCoh = zeros(1,n);
@@ -38,7 +38,8 @@ for f=1:n
     dvColl(f) = data.(dv);
     drivPosCoh(f) = data.Coherence{1,1}(drivPos(1),drivPos(2));
     Coh = data.Coherence{1,1}(:,length(drivPos)+1:end);
-    mutualCoherence(f,:) = Coh(drivPos(1),:) .* Coh(drivPos(2),:);
+    mutualCoherence(f,1,:) = Coh(drivPos(1),:);
+    mutualCoherence(f,2,:) = Coh(drivPos(2),:);
 end
 
 %% calculate mutual coherence for target phase offset and all values of dv
@@ -83,10 +84,10 @@ else
     
     % get mutual coherence at target PO and sort it after dv
     idx1 = POs == targetPO;
-    mutualCoherence_tmp = mutualCoherence(idx1,:);
+    mutualCoherence_tmp = mutualCoherence(idx1,:,:);
     dvColl_tmp = dvColl(idx1);
     [dvSorted, idx2] = sort(dvColl_tmp);
-    mutualCoherence = mutualCoherence_tmp(idx2,:);
+    mutualCoherence = mutualCoherence_tmp(idx2,:,:);
 
 end
 
