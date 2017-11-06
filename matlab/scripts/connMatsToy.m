@@ -1,7 +1,7 @@
 
 resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale';
 resultPath2 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_ParamSearch';
-resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale/nodes29_17'; %8_4, 11_8, 17_50, 21_32, 29_17, 30_7
+resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale/nodes8_4'; %8_4, 11_8, 17_50, 21_32, 29_17, 30_7
 resultPath4 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_PathTest';
 resultPath6 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_InfoChannels';
 
@@ -37,7 +37,7 @@ end
 %% plot difference in mutual coherence between max and min coherence PO in connectome
 
 % calculate difference between mutual coherence at min and max PO
-[cohDiff, drivScales] = plotMutualCoherence(dataStruct,'minmax','drivScale',0);
+[cohDiff, drivScales] = plotMutualCoherence(dataStruct,0,'drivScale',0);
 
 % load connectivity matrix
 path_SCmat = '/net/store/nbp/projects/phasesim/databases/avg_SC.mat';
@@ -55,7 +55,7 @@ C = C + 0.1 * diag(ones(size(C,1)/2,1),size(C,1)/2) + 0.1 * diag(ones(size(C,1)/
 C = bsxfun(@rdivide,C,sum(C.^p,2).^(1/p));
 
 % visualization parameters
-m = max(max(cohDiff));
+m = max(max(max(cohDiff)));
 nodeRange = [-m,m];
 nodeScale = 20/m; % how strong should node size be scaled with nodeVal
 nodeMinSize = 10; % minimum size of network nodes
@@ -64,11 +64,11 @@ CMin = 0.05; % cut-off value for edges
 surfaceVisibility = 0.1; % transparency of brain surface (0 == no brain surface)
 
 % for each target drivScale plot difference in mutual coherence over all nodes
-targets = [0. 0.013]; % target drivScales
+targets = [0.01 0.016]; % target drivScales
 for i=1:length(targets)
     idx = round(drivScales,3) == targets(i);
     figh = figure();
-    plotBrainConnectivity( cohDiff(idx,:), C, nodeMinSize, nodeScale, nodeRange, CColor, CMin, [], surfaceVisibility, 1, 1 )
+    plotBrainConnectivity( squeeze(cohDiff(idx,1,:)), C, nodeMinSize, nodeScale, nodeRange, CColor, CMin, [], surfaceVisibility, 1, 1 )
     set(figh, 'name',['Difference in mutual coherence for drivScale = ',num2str(targets(i))])
 end
 
@@ -88,7 +88,7 @@ targets = targets - length(targets);
 [paths, ~] = getDelayWeightedSWPs(targets, maxPathLength, p, v);
 
 % target values for drivScale and phase offset
-targetVals = [ 0. 0.013 ; % target values for drivScale
+targetVals = [ 0.01 0.016 ; % target values for drivScale
                 0. 3.1416]; % target values for drivPO
 
 % visualization parameters
