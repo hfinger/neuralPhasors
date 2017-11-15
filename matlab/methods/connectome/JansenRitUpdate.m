@@ -1,12 +1,40 @@
 function [ dx, da ] = JansenRitUpdate( x, a, Pp, Pe, Ke, Ki, Ka, Cpe, Cpi, Cep, Cip, Cii, de1, de2, di1, di2, e0, u0, r, S0 )
-% JANSENRITUPDATE Function that updates the 6 state variables of the
-% standard Jansen-Rit-Modell (Jansen & Rit, 1995)
-% Parameters:
-%   x   -   2-dim array with 1.dim = Nodes and 2.dim = states
-%   Pp  -   external input to the pyramidal cells. Vector with lenght =
-%           number of nodes
-%   Pe  -   input from network to excitatory interneurons. Vector with
-%           length = number of nodes
+% JANSENRITUPDATE Function that updates the 13 state variables of the
+% Jansen-Rit-Modell as well as a spike rate adaption variable a.
+% Follows the architecture as proposed by Moran et al. 2008.
+%
+%   Input Parameters:
+%
+%       x   -   2-dim array with 1.dim = Nodes and 2.dim = states
+%       a   -   spike rate adaption (scalar)
+%       Pp  -   External input to the pyramidal cells. Vector with length =
+%               number of nodes [V]
+%       Pe  -   Input from network to excitatory interneurons. Vector with
+%               length = number of nodes [mean firing rate]
+%       Ke  -   Average synaptic gain for excitatory synapses per second.
+%               Scalar [V/s]
+%       Ki  -   Average synaptic gain for inhibitory synapses per second.
+%               Scalar [V/s]
+%       Ka  -   Adaptation rate constant [1/s]
+%       Cpe -   Connectivity from pyramidal cells to excitatory interneurons
+%       Cpi -   Connectivity from pyramidal cells to inhibitory interneurons
+%       Cep -   Connectivity from excitatory interneurons to pyramidal cells
+%       Cip -   Connectivity from inhibitory interneurons to pyramidal cells
+%       de1 -   Time constant of excitatory synapses for first derivative [s]
+%       de2 -   Time constant of excitatory synapses for second derivative [s]
+%       di1 -   Time constant of inhibitory synapses for first derivative [s]
+%       di2 -   Time constant of inhibitory synapses for second derivative [s]
+%       e0  -   Determines maximum mean firing rate [1/s]
+%       u0  -   Membrane voltage for which 50 % of maximum mean firing rate is observed [V]
+%       r   -   Steepness of the sigmoid transfer function from mean psp to mean firing rate [1/V]
+%       S0  -   Mean firing rate constant offset (baseline firing rate)
+%
+%   Output:
+%
+%       dx  -   Derivative of the 13 state variables
+%       da  -   Derivative of the spike rate adaption
+
+%% pre-calculate constants
 
 dx = zeros(size(x));
 

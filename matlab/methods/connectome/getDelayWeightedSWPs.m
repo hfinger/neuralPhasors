@@ -1,39 +1,22 @@
-function [ paths_ordered, pl_ordered ] = getDelayWeightedSWPs( targets, maxPathLength, p, v  )
+function [ paths_ordered, pl_ordered ] = getDelayWeightedSWPs( C, threshold, targets, maxPathLength )
 %GETDELAYWEIGHTEDSWPS Function that extracts all shortest weighted paths
 %between 2 target nodes, weights them according to information transmition
 %delays and orderes them from shortest to longest
 %
 % Input Parameters:
+%   C - 2d connectivity matrix (will be binarized with threshold)
+%   threshold - Connectivity threshold used to binarize C (scalar)
 %   targets - vector with 2 indices indicating the two nodes to search for paths betwenn
 %   maxPathLength - maximum number of edges for each path between the 2 nodes
-%   p - order of the norm with which to normalize the connectivity matrix
-%   v - velocity of information transfer in the network [m/s]
 %
 % Output:
 % paths_ordered - cell with one entry for each SWP (ordered in increasing length
 % pl_ordered - summed up pathlengths for each path in paths_ordered
 
-%% Load connectivity/distance matrix, resort areas and normalize them
-
-% loading
-path_SCmat = '/net/store/nbp/projects/phasesim/databases/avg_SC.mat';
-path_ResortIDs = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/resortIdsMarlene.mat';
-load(path_SCmat);
-load(path_ResortIDs);
-resortIds = [resortIdsMarlene, resortIdsMarlene + 33];
-
-% resorting
-C = C(resortIds,:);
-C = C(:,resortIds);
-
-%normalizing
-C = C + 0.1 * diag(ones(size(C,1)/2,1),size(C,1)/2) + 0.1 * diag(ones(size(C,1)/2,1),-size(C,1)/2);
-C = bsxfun(@rdivide,C,sum(C.^p,2).^(1/p));
-
 %% find all paths of a certain maximum lenght between target nodes, get their connection weights and time delays and create delay-weighted shortest-weighted paths
 
 % get all paths from target node 1 of specified maximum length
-[~,~,~,~,allpaths,~] = findpaths(C > 0.05, targets(1), maxPathLength, 1);
+[~,~,~,~,allpaths,~] = findpaths(C > threshold, targets(1), maxPathLength, 1);
 
 % extract paths that include specified target node
 n = 1;
