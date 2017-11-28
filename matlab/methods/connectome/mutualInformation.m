@@ -29,8 +29,9 @@ windowLength = floor(tmax/nWindows);
 
 % discretize variables
 edges = linspace(min(min(sig)), max(max(sig)), nBins);
-values = bsxfun(@plus,edges,[edges(2:end),0])/2;
-sigDiscrete = discretize(sig,edges,values(1:end-1));
+sigDiscrete = discretize(sig,edges);
+%values = bsxfun(@plus,edges,[edges(2:end),0])/2;
+%sigDiscrete = discretize(sig,edges,values(1:end-1));
 
 % if not fullMI, calculate mutual information only for driven regions 
 if ~fullMI

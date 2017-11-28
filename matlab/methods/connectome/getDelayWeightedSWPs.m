@@ -1,4 +1,4 @@
-function [ paths_ordered, pl_ordered ] = getDelayWeightedSWPs( C, threshold, targets, maxPathLength )
+function [ paths_ordered, pl_ordered ] = getDelayWeightedSWPs( C, threshold, targets, maxPathLength, invC )
 %GETDELAYWEIGHTEDSWPS Function that extracts all shortest weighted paths
 %between 2 target nodes, weights them according to information transmition
 %delays and orderes them from shortest to longest
@@ -8,6 +8,8 @@ function [ paths_ordered, pl_ordered ] = getDelayWeightedSWPs( C, threshold, tar
 %   threshold - Connectivity threshold used to binarize C (scalar)
 %   targets - vector with 2 indices indicating the two nodes to search for paths betwenn
 %   maxPathLength - maximum number of edges for each path between the 2 nodes
+%   invC - if True, pathlengths will be calculated based on 1./C (should be
+%          used for weighted Cs)
 %
 % Output:
 % paths_ordered - cell with one entry for each SWP (ordered in increasing length
@@ -48,8 +50,10 @@ for p=1:length(paths)
 end
 paths = finalPaths;
 
-% calculate pathlengths based on delay-weighted connectivity matrix
-C = 1./C;
+% calculate pathlengths based on connectivity matrix
+if invC
+    C = 1./C;
+end
 pathlengths = zeros(1,length(paths));
 for p=1:length(paths)
     for i=1:length(paths{1,p})-1

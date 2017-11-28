@@ -42,6 +42,9 @@ if p > 0
 end
 
 if singleHemisphere
-    C = C
+    C = C(1:33,1:33);
+    D = D(1:33,1:33);
+end
+
 end
 

@@ -1,11 +1,13 @@
-function [ coh ] = coherence( simResult, washOut, windows, fullCoh)
+function [ coh ] = coherence( simResult, washOut, windows, fullCoh, complexCoh)
 %COHERENCE calculates the coherence of the simulation results
 %   simResult            = structure including simulation results,
 %                          parameters, Connectivity and Distance matrix
 %   washOut              = initial washOut time to remove
 %   windows              = time windows between which to calculate mean
-%   stimRegionOnly       = if true, only evaluate coherence of each region
+%   fullCoh              = if false, only evaluate coherence of each region
 %                           with the stimulated region
+%   complexCoh           = if true, store complex coherence values instead
+%                          of absolute value of complex coherence
 %
 %   Returns:
 %       coh              = 3 dimensional coherence matrix
@@ -26,7 +28,7 @@ if ~fullCoh
         diff = bsxfun(@minus, sig(simResult.sim.drivPos(i),:), sig);
         for j=1:nWindows
             % calculate coherence
-            coh(i,:,j) = abs(mean(exp(1i*diff(:,windows(1,j):windows(2,j))), 2));
+            coh(i,:,j) = mean(exp(1i*diff(:,windows(1,j):windows(2,j))), 2);
         end
     end
 
@@ -39,12 +41,15 @@ else
         diff = bsxfun(@minus, sig(i,:), sig);
         for j=1:nWindows
             % calculate coherence
-            coh(i,:,j) = abs(mean(exp(1i*diff(:,windows(1,j):windows(2,j))), 2));
+            coh(i,:,j) = mean(exp(1i*diff(:,windows(1,j):windows(2,j))), 2);
         end
     end
 
 end
 
+if ~complexCoh
+    coh = abs(coh); 
+end
 coh = squeeze(mean(coh,3));
 
 end

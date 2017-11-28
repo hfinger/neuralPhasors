@@ -1,4 +1,4 @@
-function [ dx, da ] = JansenRitUpdate( x, a, Pp, Pe, Ke, Ki, Ka, Cpe, Cpi, Cep, Cip, Cii, de1, de2, di1, di2, e0, u0, r, S0 )
+function [ dx, da ] = JansenRitUpdate( x, a, Pp, Psc, Inp, Ke, Ki, Ka, Cpe, Cpi, Cep, Cip, Cii, de1, de2, di1, di2, e0, u0, r, S0 )
 % JANSENRITUPDATE Function that updates the 13 state variables of the
 % Jansen-Rit-Modell as well as a spike rate adaption variable a.
 % Follows the architecture as proposed by Moran et al. 2008.
@@ -9,7 +9,9 @@ function [ dx, da ] = JansenRitUpdate( x, a, Pp, Pe, Ke, Ki, Ka, Cpe, Cpi, Cep, 
 %       a   -   spike rate adaption (scalar)
 %       Pp  -   External input to the pyramidal cells. Vector with length =
 %               number of nodes [V]
-%       Pe  -   Input from network to excitatory interneurons. Vector with
+%       Psc -   Input from subcortical regions to target neurons. 
+%               Vector with length = number of nodes [mean firing rate]
+%       Inp -   Input from network to all cells. Vector with
 %               length = number of nodes [mean firing rate]
 %       Ke  -   Average synaptic gain for excitatory synapses per second.
 %               Scalar [V/s]
@@ -50,6 +52,8 @@ Mip = Cip * Ki * Si;
 Mpe = Cpe * Ke * Spe;
 Mpi = Cpi * Ke * Spi;
 Mii = Cii * Ki * Si;
+Mex = Ke * Inp;
+Msc = Ke * Psc;
 
 %% voltage/current changes
 
@@ -58,7 +62,7 @@ dx(:,1) = x(:,4) - x(:,9) + Pp;
 
     % excitatory input
     dx(:,7) = x(:,4);
-    dx(:,4) = Mep + de1*x(:,4) + de2*x(:,7);
+    dx(:,4) = Msc(:,1) + Mex(:,1) + Mep + de1*x(:,4) + de2*x(:,7);
     
     % inhibitory input
     dx(:,8) = x(:,9);
@@ -66,14 +70,14 @@ dx(:,1) = x(:,4) - x(:,9) + Pp;
 
 % excitatory interneurons
 dx(:,2) = x(:,5);
-dx(:,5) = Ke*Pe + Mpe + de1*x(:,5) + de2*x(:,2);
+dx(:,5) = Msc(:,2) + Mex(:,2) + Mpe + de1*x(:,5) + de2*x(:,2);
 
 % inhibitory interneurons
 dx(:,3) = x(:,11) - x(:,13);
 
     % excitatory input
     dx(:,10) = x(:,11);
-    dx(:,11) = Mpi + de1*x(:,11) + de2*x(:,10);
+    dx(:,11) = Msc(:,3) + Mex(:,3) + Mpi + de1*x(:,11) + de2*x(:,10);
     
     % recurrent intrinsic inhibitory connection
     dx(:,12) = x(:,13);

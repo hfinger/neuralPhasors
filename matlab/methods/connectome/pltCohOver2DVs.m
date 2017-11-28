@@ -1,4 +1,4 @@
-function [ CohsOrdered, uniqueDVs ] = pltCohOver2DVs( struct, dvs, targets, pltCoh, clim, logCoh, meshplt )
+function [ CohsOrdered, uniqueDVs ] = pltCohOver2DVs( struct, dvs, targets, pltCoh, clim, logCoh, pltType, cohIdx, baseline )
 %PLTCOHOVER2DVS Function that plots the coherence over two dependent
 %variables
 %   Input Parameters:
@@ -11,7 +11,11 @@ function [ CohsOrdered, uniqueDVs ] = pltCohOver2DVs( struct, dvs, targets, pltC
 %       pltCoh - if false, no plot is created
 %       clim - vector with upper and lower bound for the color plot
 %       logCoh - if true, log coherence will be plotted
-%       meshplt - if true, surface plot will be created. Else imagesc
+%       pltType - can be 'surface' for surface plot and 'line' for line 
+%                 plot. Else, the plot will be a 2d image
+%       cohIdx - if coherence on structure is cell, this indicates which
+%                cell entry to use (scalar)
+%       baseline - if provided, will be substracted from CohsOrdered
 %
 %   Output:
 %
@@ -35,14 +39,17 @@ for f=1:length(fnames)
     % extract coherence
     Coh = dataTmp.FC;
     if iscell(Coh)
-        Cohs(f) = Coh{1,1}(targets(1),targets(2));
+        Cohs(f) = Coh{1,cohIdx}(targets(1),targets(2));
     else
         Cohs(f) = Coh(targets(1),targets(2));
     end
+    if ~isreal(Cohs(f))
+        Cohs(f) = abs(Cohs(f));
+    end
     
     % extract dependent variables
-    dv_coll(f,1) = dataTmp.(dvs{1,1});
-    dv_coll(f,2) = dataTmp.(dvs{1,2});
+    dv_coll(f,1) = dataTmp.(dvs{1,1})(end);
+    dv_coll(f,2) = dataTmp.(dvs{1,2})(end);
     
 end
 
@@ -97,18 +104,23 @@ uniqueDVs{2} = dv2;
 
 %% Plotting
 
+if ~isempty(baseline)
+    CohsOrdered = CohsOrdered - baseline;
+end
+
 if pltCoh
     if logCoh
-        drivPosCohsOrdered = log(CohsOrdered);
+        CohsOrdered = log(CohsOrdered);
     end
 
     figure()
-    if meshplt
+    if strcmp(pltType,'surface')
         h = meshz(dv1, dv2, CohsOrdered');
         xlim([min(dv1) max(dv1)])
         set(gca,'XTick',xticks)
         set(gca,'XTickLabel',xticklabels)
         zlabel('Coherence')
+        ylabel(dvs{1,2})
         ylim([min(dv2) max(dv2)])
         set(gca,'fontsize',14)
         set(gca,'linewidth',2)
@@ -118,14 +130,22 @@ if pltCoh
         az = 55;
         el = 40;
         view(az, el);
+    elseif strcmp(pltType,'line')
+        plot(dv1, CohsOrdered', 'Linewidth', 2)
+        legend(cellfun(@(x) num2str(x),num2cell(dv2), 'UniformOutput', false), 'Location', 'NorthEastOutside')
+        ylabel('Coherence')
+        set(gca,'XTick',xticks,'XTickLabel',xticklabels)
+        xlim([min(dv1) max(dv1)])
+        set(gca,'fontsize',14)
+        set(gca,'linewidth',2)
     else
         imagesc(CohsOrdered')
         set(gca,'XTick',xtickTargets,'XTickLabel',xticklabels,'YTick',yticks,'YTickLabel',yticklabels,'CLim',clim)
         colorbar()
+        ylabel(dvs{1,2})
     end
-    title('Coherence between driven nodes')
+    title('Synchrony between driven nodes')
     xlabel(dvs{1,1})
-    ylabel(dvs{1,2})
 end
 
 end
