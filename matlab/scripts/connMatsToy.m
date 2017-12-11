@@ -1,34 +1,45 @@
 
-resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale';
+resultPath1 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/ToyModels/DelayEffects';
 resultPath2 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_ParamSearch';
-resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale/nodes8_4'; %8_4, 11_8, 17_50, 21_32, 29_17, 30_7
+resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_POvsScale/InpToExc'; %8_4, 11_8, 17_50, 21_32, 29_17, 30_7
 resultPath4 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_PathTest';
-resultPath6 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_InfoChannels';
+resultPath6 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/ToyModels/ArnoldTongue';
+resultPath7 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/NetworkParameters/InpToPyr';
 
-coherence_measure1 = 'drivPosCoh';
-coherence_measure2 = 'Coherence';
-coherence_measure3 = 'corr_SimFC';
-coherence_measure4 = 'crossCorr';
+measure1 = 'drivPosFC';
+measure2 = 'FC';
+measure3 = 'corr_SimFC';
+measure4 = 'crossCorr';
+measure5 = 'Y';
+measure6 = 'freqs';
 
 clusters = 0;
 dist_driver = 66;
 useSP = 1;
 
-%dataStruct = getArgsFromFiles(resultPath6,'JansenRitResults*',coherence_measure2,'drivPos','drivStart','drivDur','d','sampling','dt');
-dataStruct = getArgsFromFiles(resultPath3,'JR_2Driver_POvsScale_*',{coherence_measure2, coherence_measure1},'p','drivPO','k','v','drivPos','drivScale');
+dataStruct = getArgsFromFiles(resultPath1,'JR_DelayEffects*',{measure2, measure6},'C','D','drivFreq','drivScale','drivPO','drivPos');
 
 fnames = fieldnames(dataStruct);
 dataTmp = dataStruct.(fnames{1});
 
+%% build new data structures, dependent on entries in certain parameter
+
+newStructs = newStruct(dataStruct,'C','D',[1,2]);
+
 %% plot coherence between two driven regions over two dvs
+dataStruct_tmp = newStructs.newStruct_3;
 logCoh = false;
 clim = [0,1];
-meshplt = true;
-[drivPosCohs, dvs] = pltCohOver2DVs(dataStruct,{'drivPO','drivScale'},1,clim,logCoh,meshplt);
+pltType = 'im';
+drivPos = dataTmp.drivPos;
+targets = [drivPos];
+cohIdx = 2;
+baseline = [];
+[Cohs, dvs] = pltCohOver2DVs(dataStruct_tmp,{'drivPO','D'},targets,1,clim,logCoh,pltType,cohIdx,baseline);
 
 %% plot mutual coherence for driven regions over different target phase offsets
 stimPos = dataTmp.drivPos;
-POI = [0. 3.1416]; % target phase offsets (does not need to match the exact simulation values)
+POI = [2.35 5.]; % target phase offsets (does not need to match the exact simulation values)
 mutualCoherence = cell(1,length(POI));
 for p=1:length(POI)
     mutualCoherence{p} = plotMutualCoherence(dataStruct,POI(p),'drivScale',1);
@@ -37,38 +48,30 @@ end
 %% plot difference in mutual coherence between max and min coherence PO in connectome
 
 % calculate difference between mutual coherence at min and max PO
-[cohDiff, drivScales] = plotMutualCoherence(dataStruct,0,'drivScale',0);
+FCidx = 3;
+[cohDiff, drivScales] = plotMutualCoherence(dataStruct,FCidx,'minmax','drivScale',0);
 
 % load connectivity matrix
-path_SCmat = '/net/store/nbp/projects/phasesim/databases/avg_SC.mat';
-path_ResortIDs = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/resortIdsMarlene.mat';
-load(path_SCmat);
-load(path_ResortIDs);
-resortIds = [resortIdsMarlene, resortIdsMarlene + 33];
-clear D
-
-% reorder and rescale connectivity matrix
-p = 2;
-C = C(resortIds,:);
-C = C(:,resortIds);
-C = C + 0.1 * diag(ones(size(C,1)/2,1),size(C,1)/2) + 0.1 * diag(ones(size(C,1)/2,1),-size(C,1)/2);
-C = bsxfun(@rdivide,C,sum(C.^p,2).^(1/p));
+homotopeScaling = 0.1;
+p = 1;
+[C,~] = getConnectome(1,p,homotopeScaling,0);
 
 % visualization parameters
-m = max(max(max(cohDiff)));
-nodeRange = [-m,m];
+m = max(max(cohDiff));
+nodeRange = [0,m];
 nodeScale = 20/m; % how strong should node size be scaled with nodeVal
 nodeMinSize = 10; % minimum size of network nodes
 CColor = 'k'; % edge color
-CMin = 0.05; % cut-off value for edges
-surfaceVisibility = 0.1; % transparency of brain surface (0 == no brain surface)
+CMin = 0.02; % cut-off value for edges
+surfaceVisibility = 0.2; % transparency of brain surface (0 == no brain surface)
 
 % for each target drivScale plot difference in mutual coherence over all nodes
-targets = [0.01 0.016]; % target drivScales
+targets = [0.6]; % target drivScales
 for i=1:length(targets)
     idx = round(drivScales,3) == targets(i);
     figh = figure();
-    plotBrainConnectivity( squeeze(cohDiff(idx,1,:)), C, nodeMinSize, nodeScale, nodeRange, CColor, CMin, [], surfaceVisibility, 1, 1 )
+    nodeVals = [cohDiff(idx,:),zeros(1,33)];
+    plotBrainConnectivity( nodeVals, C, nodeMinSize, nodeScale, nodeRange, CColor, CMin, [], surfaceVisibility, 1, 1 )
     set(figh, 'name',['Difference in mutual coherence for drivScale = ',num2str(targets(i))])
 end
 
@@ -77,39 +80,48 @@ data = dataStruct.(fnames{1});
 
 % set parameters
 k = 10;
-kPlt = 3;
-maxPathLength = 4;
-p = data.p;
-v = data.v;
+kPlt = 1;
+maxPathLength = 5;
 targets = data.drivPos;
 targets = targets - length(targets);
 
-% get delay-weighted SPWs
-[paths, ~] = getDelayWeightedSWPs(targets, maxPathLength, p, v);
+% load C
+homotopeScaling = 0.1;
+p = 1;
+[C,~] = getConnectome(1,p,homotopeScaling,1);
+
+threshold = 0.05;
+invC = true;
+[paths, ~] = getDelayWeightedSWPs(C, threshold, targets, maxPathLength, invC);
 
 % target values for drivScale and phase offset
-targetVals = [ 0.01 0.016 ; % target values for drivScale
-                0. 3.1416]; % target values for drivPO
+targetVals = [ 0.6 0.6 ; % target values for drivScale
+                0. 1.7583]; % target values for drivPO
 
 % visualization parameters
 edgeMin = 0.001; % cut-off value for edges
 nodeMin = 10; % minimum size of nodes
-nodeScale = 30; % how strong node size should scale with nodeVal
+nodeScale = 20; % how strong node size should scale with nodeVal
 invCoh = true; % invert coherence to calculate most active path or not
-edgeScale = 4; % how strong edge size should scale with edge value
+edgeScale = 10; % how strong edge size should scale with edge value
 useNodeCoh = false; % whether to color nodes by their coherence with driven regions
+pltEdgeVal = true; % if false, edge thickness will scale with activation of the whole path, instead of with edge activation
+surfaceVisibility = 0.2; % determines transparency of the brain surface
 
-%
-[coherence1, dv1] = plotMutualCoherence(dataStruct,targetVals(2,1),'drivScale',0);
-[coherence2, dv2] = plotMutualCoherence(dataStruct,targetVals(2,1),'drivScale',0);
-nodeVals = zeros(size(targetVals,2),size(targetVals,2),2,66);
-nodeVals(1,1,:,:) = coherence1(dv1 == round(targetVals(1,1),2),:,:);
-nodeVals(2,1,:,:) = coherence1(dv1 == round(targetVals(1,2),2),:,:);
-nodeVals(1,2,:,:) = coherence2(dv2 == round(targetVals(1,1),2),:,:);
-nodeVals(2,2,:,:) = coherence2(dv2 == round(targetVals(1,2),2),:,:);
+% get node values
+drivPOs = unique(targetVals(2,:));
+drivScales = unique(targetVals(1,:));
+nodeVals = zeros(length(drivScales),length(drivPOs),66);
+FCidx = 3;
+for i=1:length(drivPOs)
+    [coherence, dv] = plotMutualCoherence(dataStruct,FCidx,drivPOs(i),'drivScale',0);
+    for j=1:length(drivScales)
+        nodeVals(j,i,1:33) = coherence(dv == round(drivScales(j),2),:);
+    end
+end
 
 % plot paths in connectome
-results = plotBrainInfoChannels(paths,dataStruct,k,kPlt,{'drivScale','drivPO'},targetVals,squeeze(nodeVals(:,:,1,:)),nodeMin,nodeScale,edgeMin,edgeScale,invCoh,useNodeCoh);
+results = plotBrainInfoChannels(paths,dataStruct,FCidx,k,kPlt,{'drivScale','drivPO'},targetVals,nodeVals,nodeMin,nodeScale,edgeMin,edgeScale,pltEdgeVal,invCoh,useNodeCoh,surfaceVisibility);
 
 % plot activation of most active path over phase offsets and driver scales
 drivScales = unique(results.drivScale);
@@ -129,6 +141,17 @@ colorbar()
 title('Activations of Shortest Paths')
 xlabel('drivPO')
 ylabel('drivScale')
+
+%% Calculate mutual information for each pair of nodes
+nWindows = 1;
+nBins = 1000;
+n = length(fnames);
+MIs = cell(1,n);
+
+for f=1:n
+    data = dataStruct.(fnames{f});
+    MIs{f} = mutualInformation(data,1,1,nWindows,nBins);
+end
 
 %% plot coherence for different driver phase offsets and extract parameter set with highest variance in coherence over POs
 logCoh = false;
@@ -160,7 +183,7 @@ phaseDiff = plotPhaseDiffOverTime(dataStruct, targets, pltWindow, drivEnd, env);
 
 
 %% look for best match between simulated and empirical FC
-[bestMatch, bestMatchInd, corrs] = getBestTrial(dataStruct,'Coherence');
+[bestMatch, bestMatchInd, corrs] = getBestTrial(dataStruct,'corr_SimFC');
 
 %% plot all connectivity matrices
 results1 = plotConnMats(dataStruct, ['stimRange', 'stimScale'], coherence_measure2);
