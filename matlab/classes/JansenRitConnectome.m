@@ -17,33 +17,36 @@ classdef JansenRitConnectome < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: define standard parameters for the job %%%%
       
-      this.params.JansenRitConnectome.p = 2; %defines what kind of p norm to use for normalization of structural connectivity
-      this.params.JansenRitConnectome.k = 8; %global connection strength scaling
-      this.params.JansenRitConnectome.v = 4.5; % velocity [m/s]
-      this.params.JansenRitConnectome.tMax = 305; %max simulation time [seconds]
-      this.params.JansenRitConnectome.dt = 0.0001; % simulation step size [seconds]
-      this.params.JansenRitConnectome.sampling = 10; % sampling every x steps
-      this.params.JansenRitConnectome.noiseVar = 100; % variance of white noise used to drive neural masses
-      this.params.JansenRitConnectome.noiseMu = 0; % mean of white noise used to drive neural masses
-      this.params.JansenRitConnectome.runningAvg = false; % if true, substract running average from input to neural masses
+      this.params.JansenRitConnectome.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
+      this.params.JansenRitConnectome.k = 19; %global connection strength scaling
+      this.params.JansenRitConnectome.v = 2.9; % velocity [m/s]
+      this.params.JansenRitConnectome.tMax = 405; %max simulation time [seconds]
+      this.params.JansenRitConnectome.dt = 0.0005; % simulation step size [seconds]
+      this.params.JansenRitConnectome.sampling = 2; % sampling every x steps
+      this.params.JansenRitConnectome.noiseVar = 0; % variance of white noise used to drive neural masses
+      this.params.JansenRitConnectome.noiseMu = 200; % mean of white noise used to drive neural masses
+      this.params.JansenRitConnectome.runningAvg = true; % if true, substract running average from input to neural masses
+      this.params.JansenRitConnectome.netInp = [1 1 1]; % scales the input to [pyramidal, excitatory, inhibitory] neurons from connectome
+      this.params.JansenRitConnectome.subInp = [1 0 0]; % scales the input to [pyramidal, excitatory, inhibitory] neurons from subcortical regions
       this.params.JansenRitConnectome.d = 5; %initial interval to remove [seconds]
       this.params.JansenRitConnectome.verbose = false; % if we want to print time steps to console
-      this.params.JansenRitConnectome.drivFreq = 29.5; %driving frequencies
-      this.params.JansenRitConnectome.drivPos = [1 2]; % network node to drive
-      this.params.JansenRitConnectome.drivRange = [1 1]; % variance of the gaussian centered around DrivPos determining the strength of stimulation
+      this.params.JansenRitConnectome.drivFreq = 6; %driving frequencies
+      this.params.JansenRitConnectome.drivPos = [1]; % network node to drive
+      %this.params.JansenRitConnectome.drivRange = [1 1]; % variance of the gaussian centered around DrivPos determining the strength of stimulation
       this.params.JansenRitConnectome.drivPO = [0]*pi; % phase offset of drivers
       this.params.JansenRitConnectome.drivScale = 0.; % amplitude/strength of drivers
       this.params.JansenRitConnectome.drivStart = 1; % timepoint at which to start driving [seconds]
-      this.params.JansenRitConnectome.drivDur = 305; % driving duration [seconds]
-      this.params.JansenRitConnectome.FCMeasure = 'Coherence';
+      this.params.JansenRitConnectome.drivDur = 405; % driving duration [seconds]
+      this.params.JansenRitConnectome.FCMeasure = {{'Coherence'}};
       this.params.JansenRitConnectome.fullFC = true; %whether to store full functional connectivity matrix or only FC of driven region
       this.params.JansenRitConnectome.corrSimFC = false; % if true, compare simulated FC to empirical FC
       this.params.JansenRitConnectome.nWindows = 1; %number of timewindows over which to calculate FC
       this.params.JansenRitConnectome.nBins = 80; % only important, if information theoretic FC measure is used. Number of bins to use to discretize phase signal
       this.params.JansenRitConnectome.storeY = false; % if true, raw signal will be stored on struct aswell
       this.params.JansenRitConnectome.filterSig = true; % if true, raw PSPs will be bandpass-filtered before coherence is calculated
-      this.params.JansenRitConnectome.C = zeros(33); % Connectivity matrix
-      this.params.JansenRitConnectome.D = ones(33); % Distance matrix
+      this.params.JansenRitConnectome.C = []; % Connectivity matrix
+      this.params.JansenRitConnectome.D = []; % Distance matrix
+      this.params.JansenRitConnectome.nodeLesions = 0; % number of nodes to lesion along the along the connections between driven nodes
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,6 +84,8 @@ classdef JansenRitConnectome < Gridjob
       sim.noiseVar = this.params.JansenRitConnectome.noiseVar;
       sim.noiseMu = this.params.JansenRitConnectome.noiseMu;
       sim.rAvg = this.params.JansenRitConnectome.runningAvg;
+      sim.netInp = this.params.JansenRitConnectome.netInp;
+      sim.subInp = this.params.JansenRitConnectome.subInp;
       sim.d = this.params.JansenRitConnectome.d;
       sim.verbose = this.params.JansenRitConnectome.verbose;
       sim.FCMeasure = this.params.JansenRitConnectome.FCMeasure;
@@ -88,6 +93,9 @@ classdef JansenRitConnectome < Gridjob
       sim.nWindows = this.params.JansenRitConnectome.nWindows;
       sim.nBins = this.params.JansenRitConnectome.nBins;
       sim.filterSig = this.params.JansenRitConnectome.filterSig;
+      sim.nodeLesions = this.params.JansenRitConnectome.nodeLesions;
+      sim.C = this.params.JansenRitConnectome.C;
+      sim.D = this.params.JansenRitConnectome.D;
       
       % Default Jansen Rit parameters
       He = 3.25e-3; % Average synaptic gain for excitatory synapses [V]
@@ -114,30 +122,43 @@ classdef JansenRitConnectome < Gridjob
       
       % initialize driver parameters
       drivPos = this.params.JansenRitConnectome.drivPos;
-      sim.drivRange = this.params.JansenRitConnectome.drivRange;
+      %sim.drivRange = this.params.JansenRitConnectome.drivRange;
       sim.drivFreq = this.params.JansenRitConnectome.drivFreq;
-      sim.drivPO = this.params.JansenRitConnectome.drivPO;
       sim.drivScale = this.params.JansenRitConnectome.drivScale;
+      sim.drivPO = this.params.JansenRitConnectome.drivPO;
       sim.drivStart = this.params.JansenRitConnectome.drivStart;
       sim.drivDur = this.params.JansenRitConnectome.drivDur;
       
-      % bandpass filter parameters
-      env.t_rm = 5; % time to start bandpassing the signal at [s]
-      env.sigBandpass(1).Fst1 = 7.5; % end stop band [Hz] 
-      env.sigBandpass(1).Fp1 = 8; % start pass band [Hz]
-      env.sigBandpass(1).Fp2 = 11; % [Hz] end pass band
-      env.sigBandpass(1).Fst2 = 11.5; % [Hz] start stop band
-      env.sigBandpass(1).Ast1 = 9; % frequency attenuation in first stopband
-      env.sigBandpass(1).Ap = 1; % passband ripples
-      env.sigBandpass(1).Ast2 = 9; % frequency attenuation in second stopband
+      if length(sim.drivPO) < length(drivPos)
+          sim.drivPO = [0,sim.drivPO];
+      end
       
       % load C,D and anatomical indices
-      if sum(sum(this.params.JansenRitConnectome.C)) == 0
-          homotopeScaling = 0.1;
-          [C,D] = getConnectome(1,sim.p,homotopeScaling);
+      if isempty(sim.C)
+          homotopeScaling = 0.;
+          singleHemisphere = true;
+          [C,D] = getConnectome(1,sim.p,homotopeScaling,singleHemisphere);
       else
-          C = this.params.JansenRitConnectome.C;
-          D = this.params.JansenRitConnectome.D;
+          C = sim.C;
+          D = sim.D;
+      end
+      
+      % lesion nodes in C
+      for i=1:sim.nodeLesions
+          [paths,~] = getDelayWeightedSWPs(C, 0.1, sim.drivPos, 5, false);
+          if isempty(paths)
+              break
+          else
+              path = paths{1,1};
+          end
+          if length(path) < 3
+              C(path(1),path(2)) = 0;
+              C(path(2),path(1)) = 0;
+          else
+              idx = randi([2,length(path(2:end-1))]);
+              C(idx,:) = 0;
+              C(:,idx) = 0;
+          end
       end
       
       % get 3d coordinates for each node and for eeg electrodes
@@ -163,13 +184,13 @@ classdef JansenRitConnectome < Gridjob
       %    drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
       %    drivStrength = drivStrength - min(drivStrength);
       %    drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
-           drivers(drivPos(i),i) = 1 * sim.drivScale; 
+           drivers(drivPos(i),i) = sim.drivScale; 
       end
 
       % run jansen rit simulation and store PSPs of pyramidal cells
       nStatesJR = 13;
       StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-      [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, [0,sim.drivPO], sim.drivStart, sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.d, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.sampling, sim.verbose, JRParams);
+      [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart, sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.d, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
       simResult.Y = vertcat(Driver,PSPs);
       sim.drivPos = drivPos + size(Driver, 1);
       simResult.sim = sim;
@@ -189,83 +210,70 @@ classdef JansenRitConnectome < Gridjob
         freqs(n) = f(target);
       end
       simResult.freqs = freqs;
-
+      fMean = mean(freqs);
+      
       % apply bandpass filter
-      [ simEval ] = calcEnvFC(env, sim.filterSig, simResult, 1, 0);
-
-      % calculate FC for phase of signal
+      if sim.filterSig
+          
+          % bandpass filter parameters
+          sigBandpass(1).Fst1 = sim.drivFreq-1.; % end stop band [Hz] 
+          sigBandpass(1).Fp1 = sim.drivFreq-0.5; % start pass band [Hz]
+          sigBandpass(1).Fp2 = sim.drivFreq+0.5; % [Hz] end pass band
+          sigBandpass(1).Fst2 = sim.drivFreq+1.; % [Hz] start stop band
+          sigBandpass(1).Ast1 = sim.drivFreq; % frequency attenuation in first stopband
+          sigBandpass(1).Ap = 1; % passband ripples
+          sigBandpass(1).Ast2 = sim.drivFreq; % frequency attenuation in second stopband
+          
+          % filter signal
+          Yfiltered = filterSig(simResult.Y,Fs,1,0,sigBandpass);
+          
+      else
+          Yfiltered = simResult.Y;
+      end
+      
       if this.params.JansenRitConnectome.storeY
           Y_raw = simResult.Y;
       end
+      simResult.Y = Yfiltered;
+      clear Yfiltered
+      
+      % calculate FC for phase of signal      
       winLength = floor((sim.tMax - sim.d) / sim.nWindows);
-      simResult.Y = simEval.phaseBP{1,1};
-      clear simEval
       WindowsStart = [1:winLength:sim.nWindows*winLength]; % starting points of time windows for which to evaluate coherence [seconds]
       WindowsEnd = [winLength:winLength:sim.nWindows*winLength]; % ending points of time windows for which to evaluate coherence [seconds]
       FCWindows = vertcat(WindowsStart, WindowsEnd);
-      if strcmp(sim.FCMeasure,'Coherence')
-          FC  = coherence( simResult, 1, round(FCWindows ./ (sim.dt * sim.sampling)), sim.fullFC);
-      elseif strcmp(sim.FCMeasure,'ShannonEntropy')
-          FC = shannonEntropy(simResult,sim.nBins,FCWindows,1,sim.fullFC);
-      elseif strcmp(sim.FCMeasure,'MutualInformation')
-          FC = mutualInformation(simResult,1,sim.fullFC,sim.nWindows,sim.nBins);
-      elseif strcmp(sim.FCMeasure,'all')
-          FC = coherence( simResult, 1, round(FCWindows ./ (sim.dt * sim.sampling)), sim.fullFC);
-          simResult.SE = shannonEntropy(simResult,sim.nBins,FCWindows,1,sim.fullFC);
-          %simResult.MI = mutualInformation(simResult,1,sim.fullFC,sim.nWindows,sim.nBins);
-      else
-          FC = zeros(66) - 66;
-      end
+      FC = getFC(simResult,sim.FCMeasure,FCWindows,1);
+
       if ~this.params.JansenRitConnectome.storeY
           simResult = rmfield(simResult,'Y');
       else
           simResult.Y = Y_raw;
           clear Y_raw
       end
-      
-      % calculate FC between driven regions
-      drivPosFC = zeros(length(sim.drivPos)-1,1);
-      if size(FC,1) == length(sim.drivPos)
-          for j=2:length(sim.drivPos)
-              drivPosFC(j-1) = mean(FC(1,sim.drivPos(j),:),3);
-          end
-      else
-          for j=2:length(sim.drivPos)
-              drivPosFC(j-1) = FC(sim.drivPos(1),sim.drivPos(j));
-          end
-      end
 
       % calculate match with empirical FC data
       if this.params.JansenRitConnectome.corrSimFC
-        % load resort IDs
-        path_ResortIDs = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/resortIdsMarlene.mat';
-        load(path_ResortIDs);
-        resortIds = [resortIdsMarlene, resortIdsMarlene + 33];
+          
         % load empirical FC
-        path_empFCmat = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/eeg_20150114_controls_fs_funconn_lcmv_bponetrial_hilbert_3_30.mat';
-        empFC_struct = load(path_empFCmat);
-
-        % get N x N empirical FC matrix
-        empFC_tmp = empFC_struct.coh_all;
-        clear empFC_struct
-        subjects = ones(size(empFC_tmp,1),1);
-        subjects(5) = 0; subjects(14) = 0; subjects(16) = 0;
-        empFC_tmp(6,2,:,:,:,:) = empFC_tmp(6,1,:,:,:,:);
-        empFC_tmp(7,2,6,:,:,:) = empFC_tmp(7,1,6,:,:,:);
-        empFC_tmp = squeeze(mean(empFC_tmp(subjects == 1,1,:,:,:,30), 1));
-        empFC = squeeze(mean(empFC_tmp(5:6,:,:), 1));
-
-        % reorder empFC according to marlenes IDs
-        empFC = empFC(resortIds,:);
-        empFC = empFC(:,resortIds);
+        fTarget = round(fMean);
+        if fTarget < 3
+            fTarget = 3;
+        elseif fTarget > 30
+            fTarget = 30;
+        end
+        empFC = getEmpFC(1,fTarget,1);
 
         % calculate correlation between simulated and empirical FC
-        Idx_mat = triu(ones(size(empFC)),1);
-        corr_SimFC =  min(min(corrcoef(FC(Idx_mat == 1), empFC(Idx_mat == 1))));
+        corr_SimFC = cell(1,length(FC));
+        for i=1:length(FC)
+            Idx_mat = triu(ones(size(empFC)),1);
+            FC_tmp = FC{1,i}(length(drivPos)+1:end,length(drivPos)+1:end);
+            corr_SimFC{i} =  min(min(corrcoef(abs(FC_tmp(Idx_mat == 1)), empFC(Idx_mat == 1))));
+        end
         simResult.corr_SimFC = corr_SimFC;
+        
       end
 
-      simResult.drivPosFC = drivPosFC;
       simResult.FC = FC;
       
       % save results
