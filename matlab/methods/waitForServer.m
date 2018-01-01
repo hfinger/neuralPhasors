@@ -17,7 +17,7 @@ if ~ispc
   counter = 1;
   waittime = 1;
   while true
-    [status, result] = system('/net/store/nbp/projects/phasesim/src_Arushi/matlab/methods/bandwidthUpDownag.sh 1');
+    [status, result] = system('/net/store/nbp/projects/phasesim/src_Arushi/matlab/methods/bandwidthUpDown.sh 1');
     if status
       disp('could not find bandwidthUpDown.sh... load anyway...')
       break;

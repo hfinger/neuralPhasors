@@ -5,7 +5,8 @@ resultPath3 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_
 resultPath4 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/2Driver_PathTest';
 resultPath6 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/ToyModels/ArnoldTongue';
 resultPath7 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/NetworkParameters/InpToPyr';
-
+resultPath8 = '/net/store/nbp/projects/phasesim/results/Holger/jansenRit/DelayEffects';
+resultPath9 = '/net/store/nbp/projects/phasesim/results/rgast/JansenRit/ToyModels/DelayEffects/2Internodes';
 measure1 = 'drivPosFC';
 measure2 = 'FC';
 measure3 = 'corr_SimFC';
@@ -17,17 +18,17 @@ clusters = 0;
 dist_driver = 66;
 useSP = 1;
 
-dataStruct = getArgsFromFiles(resultPath1,'JR_DelayEffects*',{measure2, measure6},'C','D','drivFreq','drivScale','drivPO','drivPos');
+dataStruct = getArgsFromFiles(resultPath9,'JR_DelayEffects*',{measure2, measure6},'C','D','drivFreq','drivScale','drivPO','drivPos');
 
 fnames = fieldnames(dataStruct);
 dataTmp = dataStruct.(fnames{1});
 
 %% build new data structures, dependent on entries in certain parameter
 
-newStructs = newStruct(dataStruct,'C','D',[1,2]);
+newStructs = newStruct(dataStruct,'C','D',[1,4]);
 
 %% plot coherence between two driven regions over two dvs
-dataStruct_tmp = newStructs.newStruct_3;
+dataStruct_tmp = newStructs.newStruct_6;
 logCoh = false;
 clim = [0,1];
 pltType = 'im';

@@ -190,7 +190,7 @@ classdef JansenRitConnectome < Gridjob
       % run jansen rit simulation and store PSPs of pyramidal cells
       nStatesJR = 13;
       StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-      [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart, sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.d, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+      [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.d, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
       simResult.Y = vertcat(Driver,PSPs);
       sim.drivPos = drivPos + size(Driver, 1);
       simResult.sim = sim;
@@ -278,6 +278,7 @@ classdef JansenRitConnectome < Gridjob
       
       % save results
       filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
+      mkdir(this.resultpath)
       save([this.resultpath,'/', filename_JR], 'simResult')
       
       %%%% END EDIT HERE:                                %%%%

@@ -56,24 +56,24 @@ function jr_euler()
     end
 
     %% Plot
-%     t = tstart:stepsize:tend;
-%     figure
-%     for i = 1:min(size(y))
-%        hold on;subplot 311; plot(t,y(i,1:length(t)),'Color',rand(1,3)); 
-%     end
-%     hold off;
-%     tt = t(ceil(end/2):10:end); 
-%     u = y(1,:);
-%     u = u(ceil(end/2):10:end); u = u - mean(u);
-%     subplot 312; plot(tt,u);axis tight
-%     %%spectrum
-%     Fs = 2/stepsize;
-%     T = 1/Fs;                     % Sample time
-%     L = 1000;                     % Length of signal
-%     NFFT = 2^nextpow2(L);         % Next power of 2 from length of y
-%     U = fft(u,NFFT)/L;
-%     f = Fs/2*linspace(0,1,NFFT/2);
-%     subplot 313; plot(f,2*abs(U(1:NFFT/2))); xlim([0 50]);     
+    t = tstart:stepsize:tend;
+    figure
+    for i = 1:min(size(y))
+       hold on;subplot 311; plot(t,y(i,1:length(t)),'Color',rand(1,3)); 
+    end
+    hold off;
+    tt = t(ceil(end/2):10:end); 
+    u = y(1,:);
+    u = u(ceil(end/2):10:end); u = u - mean(u);
+    subplot 312; plot(tt,u);axis tight
+    %%spectrum
+    Fs = 2/stepsize;
+    T = 1/Fs;                     % Sample time
+    L = 1000;                     % Length of signal
+    NFFT = 2^nextpow2(L);         % Next power of 2 from length of y
+    U = fft(u,NFFT)/L;
+    f = Fs/2*linspace(0,1,NFFT/2);
+    subplot 313; plot(f,2*abs(U(1:NFFT/2))); xlim([0 50]);     
     
     save(['euler_stepsize=' num2str(stepsize,'%.e') '.mat']);
    

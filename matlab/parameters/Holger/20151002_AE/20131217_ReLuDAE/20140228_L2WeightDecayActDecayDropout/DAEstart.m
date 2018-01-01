@@ -141,7 +141,7 @@ params.minFunc.progTol = 1e-14;
 paramsAll{4} = params;
 
 clear params;
-gridjobs = Gridjob(paramsAll);
+gridjobs = Gridjob(paramsAll(2:4));
 start(gridjobs);
 
 

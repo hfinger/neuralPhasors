@@ -3,7 +3,8 @@ function data = dataPaths( )
 if ispc
     basepath = 'E:';
 else
-    basepath = '/net/store/nbp/projects/phasesim';
+    %basepath = '/net/store/nbp/projects/phasesim';
+    basepath = '/media/hofinger/OS/Users/hofinger/phasesim/';
 end
 
 p = mfilename('fullpath');

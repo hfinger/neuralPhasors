@@ -92,12 +92,16 @@ for k=1:length(drivStrengths)
       legend(hPeakFreq,{['peak at ' num2str(peakFreq) ' Hz']},'Location','northwest')
     end
     saveas(gcf,['runJR_Test_holger_drivStrength' num2str(drivStrength) '_drivFreq' num2str(drivFreq) '.pdf'])
-    
+	
+	activity = x_all(:,1);
+    save(['runJR_Test_holger_drivStrength' num2str(drivStrength) '_drivFreq' num2str(drivFreq) '.mat'],'activity');
     
     counter = counter + 1;
-
+	
   end
 end
+
+
 
 % figure(2)
 % plot(0:dt:(Tmax-dt),x_all(:,1:3))

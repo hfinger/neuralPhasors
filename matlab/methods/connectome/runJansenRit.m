@@ -1,11 +1,11 @@
-function [ xColl, driverColl ] = runJansenRit( StartStates,Drivers,DrivFreqs,DrivPO,DrivStart,DrivDur,C,D,k,v,tMax,dt,d,nVar,nMu,rAvg,netInp,subInp,sampling,verbose,JRParams )
+function [ xColl, driverColl ] = runJansenRit( StartStates,Drivers,DrivFreqs,DrivPO,DrivStart,DrivDur,C,D,k,v,tMax,dt,initSampRem,nVar,nMu,rAvg,netInp,subInp,sampling,verbose,JRParams )
 %UNTITLED Function that simulates a number of coupled Jansen-Rit neural
 %masses over a certain time. A driver can be included to drive specific
 %neural masses externally.
 %
 %   Input Parameters:
 %
-%       StartStates - 2-dimensional array with first dimension = number of
+%       StartStates - 3-dimensional array with first dimension = number of
 %                     neural masses & second dimension = timesteps. Used as
 %                     initial states of the simulation
 %       Drivers     - 2-dimensional array with first dimension = number of
@@ -17,15 +17,15 @@ function [ xColl, driverColl ] = runJansenRit( StartStates,Drivers,DrivFreqs,Dri
 %                     the phase offset of each driver
 %       DrivStart   - Scalar, indicates when to start driving the network
 %       DrivDur     - Scalar, indicates how long to drive the network
-%       C           - N x N connectivity matrix with N being the number of
+%       C           - N (destination) x N (origin) connectivity matrix with N being the number of
 %                     neural masses
-%       D           - N x N distance matrix with N being the number of
+%       D           - N (destination) x N (origin) distance matrix with N being the number of
 %                     neural masses
 %       k           - Connectivity scaling constant
 %       v           - Velocity of information transfer [m/s]
 %       tMax        - Maximum simulation time [s]
 %       dt          - Simulation stepsize [s]
-%       d           - Initial time interval to be cut-off [s]
+%       initSampRem - Initial time interval to be cut-off [s]
 %       nVar        - Variance of white noise used to drive neural masses
 %       nMu         - Mean of white noise used to drive neural masses
 %       rAvg        - if true, substract running average of input from
@@ -63,8 +63,10 @@ subInp = repmat(subInp,N,1);
 
 % build buffer to realize delays in network
 ringBufferSize = fix(max(D(:)))+1;
-disp(['size of ring buffer: ' num2str(ringBufferSize)]);
-ringBuffer = squeeze(StartStates(:,1,end-ringBufferSize+1:end))';
+%disp(['size of ring buffer: ' num2str(ringBufferSize)]);
+ringBuffer = squeeze(StartStates(:,1,end-ringBufferSize+1:end))'; % timesteps x N
+
+ringBuffer = 2*JRParams.e0./(1 + exp(JRParams.r*(JRParams.u0 - ringBuffer))) - JRParams.S0;
 
 %% Run simulation
 
@@ -79,7 +81,7 @@ for i = 0:numIters-1
     curPosInRingBuff = mod(i,ringBufferSize); 
     lookupInBuffer = mod(curPosInRingBuff-1-D,ringBufferSize)+1;
     linInd = sub2ind(size(ringBuffer),lookupInBuffer,repmat(1:size(ringBuffer,2),[N 1]));
-    x1Delayed = ringBuffer(linInd);
+    x1DelayedSpikeRate = ringBuffer(linInd);
     
     % extrinsic input updates
     if t > DrivStart && t < DrivStart + DrivDur
@@ -90,7 +92,7 @@ for i = 0:numIters-1
     driver = Drivers .* repmat(drivPhase,size(Drivers,1),1);
     driver = sum(driver,2);
     
-    inp_net = sum(C .* WTP(x1Delayed, JRParams.e0, JRParams.u0, JRParams.r), 2);
+    inp_net = sum(C .* x1DelayedSpikeRate, 2);
     inp_net = netInp .* repmat(inp_net,1,size(netInp,2));
     inp_sub = (nMu - inpAvg + nVar * randn(N, 3)) .* subInp;
     if rAvg
@@ -103,10 +105,11 @@ for i = 0:numIters-1
     a = a + dt*da;
     
     %update ring buffer
-    ringBuffer(curPosInRingBuff+1,:) = x(:,1);
+    x1spikeRateOut = 2*JRParams.e0./(1 + exp(JRParams.r*(JRParams.u0 - x(:,1)))) - JRParams.S0;
+    ringBuffer(curPosInRingBuff+1,:) = x1spikeRateOut;
     
     %save every sampling steps:
-    if mod(i,sampling)==0 && t > d
+    if mod(i,sampling)==0 && t > initSampRem
         xColl(:,i/sampling + 1) = x(:,1);
         driverColl(:,i/sampling + 1) = drivPhase;
     end
@@ -120,7 +123,7 @@ end
 
 %% Store results
 
-xColl = xColl(:,(d/(dt*sampling))+1 : end);
-driverColl = driverColl(:,(d/(dt*sampling))+1 : end);
+xColl = xColl(:,(initSampRem/(dt*sampling))+1 : end);
+driverColl = driverColl(:,(initSampRem/(dt*sampling))+1 : end);
 
 end

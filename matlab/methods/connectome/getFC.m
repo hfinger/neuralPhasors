@@ -82,7 +82,7 @@ for m=1:length(FC)
             autoSpec = mean(conj(sigHilbert(:,FCWindows(1,n):FCWindows(2,n))) .* sigHilbert(:,FCWindows(1,n):FCWindows(2,n)) , 2);
 
             % calculate crossspectrum
-            crossSpec = zeros(size(FC_tmp));
+            crossSpec = zeros(length(targets),size(sigHilbert,1));
             for k=targets
                 crossSpec(k,:) = mean(bsxfun(@times, conj(sigHilbert(k,FCWindows(1,n):FCWindows(2,n))), sigHilbert(:,FCWindows(1,n):FCWindows(2,n))),2);
             end

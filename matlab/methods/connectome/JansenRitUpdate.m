@@ -41,10 +41,15 @@ function [ dx, da ] = JansenRitUpdate( x, a, Pp, Psc, Inp, Ke, Ki, Ka, Cpe, Cpi,
 dx = zeros(size(x));
 
 % mean spike rates
-Se = WTP(x(:,2), e0, u0, r) - S0;
-Si = WTP(x(:,3), e0, u0, r) - S0;
-Spe = WTP(x(:,1) - a, e0, u0, r) - S0;
-Spi = WTP(x(:,1), e0, u0, r) - S0;
+%Se = WTP(x(:,2), e0, u0, r) - S0;
+%Si = WTP(x(:,3), e0, u0, r) - S0;
+%Spe = WTP(x(:,1) - a, e0, u0, r) - S0;
+%Spi = WTP(x(:,1), e0, u0, r) - S0;
+
+Se = 2*e0./(1 + exp(r*(u0 - x(:,2)))) - S0;
+Si = 2*e0./(1 + exp(r*(u0 - x(:,3)))) - S0;
+Spe = 2*e0./(1 + exp(r*(u0 - (x(:,1) - a)))) - S0;
+Spi = 2*e0./(1 + exp(r*(u0 - x(:,1)))) - S0;
 
 % pre-synaptic inputs
 Mep = Cep * Ke * Se;

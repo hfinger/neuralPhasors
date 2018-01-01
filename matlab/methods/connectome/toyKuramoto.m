@@ -1,7 +1,27 @@
+clear all;
 
+N=10; %number of neurons per population
+numCluster=5; % number of populations
+
+k_intraCluster=1; %connections strenght within cluster
+delay_intraClust=0.1; %connections delays within cluster
+
+k_interCluster=1; %connections strenght between cluster
+delay_interClust=0.3; %connections delays between cluster
+
+k=1; %global scaling of connection strength;
+v=1; %global conduction delay
+
+weightedNetwork=true;
+binaryNetwork=false;
+
+f=60; %frequency of oscillators
+dt=0.001; %simulation step size (in seconds)
+sampling=0.001;  %saving frequency
+t_max=1; % simulation time (in seconds)
+sig_n=0.1;
 
 %%
-
 C=k_intraCluster*(ones(N,N) - diag(ones(1,N)));
 D=delay_intraClust*10*(ones(N,N) - diag(ones(1,N)));
 

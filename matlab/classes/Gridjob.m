@@ -46,7 +46,7 @@ classdef Gridjob
       this.params.Gridjob.runOnlyJobIds = [];
       
       % save folder from which the object is constructed
-      this.constructedFromFolder = pwd
+      this.constructedFromFolder = pwd;
       paths = dataPaths( );
       %find relative path from pwd to paths.paramdir
       filesepTmp=filesep();
