@@ -37,7 +37,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.drivPos = [1]; % network node to drive
       %this.params.JansenRitConnectomePaper.drivRange = [1 1]; % variance of the gaussian centered around DrivPos determining the strength of stimulation
       this.params.JansenRitConnectomePaper.drivPO = [0]*pi; % phase offset of drivers
-      this.params.JansenRitConnectomePaper.drivScale = 0.; % amplitude/strength of drivers
+      this.params.JansenRitConnectomePaper.drivScale = 0.; % amplitude/strength of drivers [mV]
       this.params.JansenRitConnectomePaper.drivStart = 1; % timepoint at which to start driving [seconds]
       this.params.JansenRitConnectomePaper.drivDur = 405; % driving duration [seconds]
       
@@ -63,6 +63,11 @@ classdef JansenRitConnectomePaper < Gridjob
       
       this.params.JansenRitConnectomePaper.calcFC_nwin1 = false;
       this.params.JansenRitConnectomePaper.subtract_S0 = false;
+      this.params.JansenRitConnectomePaper.use_moran = true;
+      this.params.JansenRitConnectomePaper.use_out_psp = false;
+      this.params.JansenRitConnectomePaper.use_sigm_as_out = false;
+      this.params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
+      this.params.JansenRitConnectomePaper.calcCohWithDriver = false;
       
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,9 +143,19 @@ classdef JansenRitConnectomePaper < Gridjob
       JRParams.di2 = -1/Ti^2; % constant for second derivative of inhibitory synapses
       JRParams.Ka = 0; % spyke frequency adaptation rate constant [1/s] (1.9531)
       JRParams.S0 = WTP(0, JRParams.e0, JRParams.u0, JRParams.r); % mean firing rate constant offset
+      JRParams.use_out_psp = this.params.JansenRitConnectomePaper.use_out_psp;
+      JRParams.use_sigm_as_out = this.params.JansenRitConnectomePaper.use_sigm_as_out;
+      JRParams.use_sigm_y0_as_out = this.params.JansenRitConnectomePaper.use_sigm_y0_as_out;
       
       if ~this.params.JansenRitConnectomePaper.subtract_S0
           JRParams.S0 = 0;
+      end
+      
+      if JRParams.use_out_psp
+        To = Te * 3;
+        JRParams.Ko = He/To; % excitatory synaptic constant
+        JRParams.do1 = -2/To; % constant for first derivative of excitatory synapses
+        JRParams.do2 = -1/To^2; % constant for second derivative of excitatory synapses
       end
       
       % initialize driver parameters
@@ -207,13 +222,25 @@ classdef JansenRitConnectomePaper < Gridjob
       %    drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
       %    drivStrength = drivStrength - min(drivStrength);
       %    drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
-           drivers(drivPos(i),i) = sim.drivScale; 
+           drivers(drivPos(i),i) = sim.drivScale * 1e-3;  % convert from mV to V
       end
 
       % run jansen rit simulation and store PSPs of pyramidal cells
-      nStatesJR = 13;
-      StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-      [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+      if this.params.JansenRitConnectomePaper.use_moran
+          nStatesJR = 13;
+          StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
+          [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+      else
+          
+          if JRParams.use_out_psp
+            nStatesJR = 8;
+          else
+            nStatesJR = 6;
+          end
+          
+          StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
+          [ PSPs, Driver ] = runJansenRitOriginal( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+      end
       simResult.Y = vertcat(Driver,PSPs);
       sim.drivPos = drivPos + size(Driver, 1);
       simResult.sim = sim;
@@ -235,17 +262,24 @@ classdef JansenRitConnectomePaper < Gridjob
       simResult.freqs = freqs;
       fMean = mean(freqs);
       
+      fTarget = this.params.JansenRitConnectomePaper.fTarget;
+      if fTarget < 3
+          fTarget = 3;
+      elseif fTarget > 30
+          fTarget = 30;
+      end
+        
       % apply bandpass filter
       if sim.filterSig
           
           % bandpass filter parameters
-          sigBandpass(1).Fst1 = sim.drivFreq-1.; % end stop band [Hz] 
-          sigBandpass(1).Fp1 = sim.drivFreq-0.5; % start pass band [Hz]
-          sigBandpass(1).Fp2 = sim.drivFreq+0.5; % [Hz] end pass band
-          sigBandpass(1).Fst2 = sim.drivFreq+1.; % [Hz] start stop band
-          sigBandpass(1).Ast1 = sim.drivFreq; % frequency attenuation in first stopband
+          sigBandpass(1).Fst1 = fTarget-1.; % end stop band [Hz] 
+          sigBandpass(1).Fp1 = fTarget-0.5; % start pass band [Hz]
+          sigBandpass(1).Fp2 = fTarget+0.5; % [Hz] end pass band
+          sigBandpass(1).Fst2 = fTarget+1.; % [Hz] start stop band
+          sigBandpass(1).Ast1 = fTarget; % frequency attenuation in first stopband
           sigBandpass(1).Ap = 1; % passband ripples
-          sigBandpass(1).Ast2 = sim.drivFreq; % frequency attenuation in second stopband
+          sigBandpass(1).Ast2 = fTarget; % frequency attenuation in second stopband
           
           % filter signal
           Yfiltered = filterSig(simResult.Y,Fs,1,0,sigBandpass);
@@ -289,13 +323,8 @@ classdef JansenRitConnectomePaper < Gridjob
       if this.params.JansenRitConnectomePaper.corrSimFC
           
         % load empirical FC
-        fTarget = this.params.JansenRitConnectomePaper.fTarget;
-        if fTarget < 3
-            fTarget = 3;
-        elseif fTarget > 30
-            fTarget = 30;
-        end
         empFC = getEmpFC(1,fTarget,1);
+        simResult.empFC = empFC;
 
         % calculate correlation between simulated and empirical FC
         corr_SimFC = cell(1,length(FC));
@@ -310,6 +339,16 @@ classdef JansenRitConnectomePaper < Gridjob
       end
 
       simResult.FC = FC;
+      
+      if this.params.JansenRitConnectomePaper.calcCohWithDriver
+          coh_of_roi_with_driver = cell(1,length(FC));
+          for i=1:length(FC)
+              FC_tmp = FC{1,i}(length(drivPos)+1:end,1);
+              coh_of_roi_with_driver{i} = FC_tmp(drivPos);
+              disp(['coh_of_roi_with_driver{i} = ' num2str(coh_of_roi_with_driver{i})])
+          end
+          simResult.coh_of_roi_with_driver = coh_of_roi_with_driver;
+      end
       
       % save results
       filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
