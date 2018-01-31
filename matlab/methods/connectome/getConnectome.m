@@ -18,10 +18,13 @@ function [ C,D,F ] = getConnectome( resort, p, homotopeScaling, singleHemisphere
 
 %% load C and D, resort them and normalize C
 
+data = dataPaths( );
+
+
 % load raw connectivity matrices
-path_SCmat = '/media/hofinger/OS/Users/hofinger/phasesim/dti2eeg/dti/SC.mat';
-path_Distmat = '/media/hofinger/OS/Users/hofinger/phasesim/dti2eeg/dti/dist.mat';
-path_FCmat = '/media/hofinger/OS/Users/hofinger/phasesim/dti2eeg/eeg_lcmv/COH.mat';
+path_SCmat = data.dti2eeg + '/dti/SC.mat';
+path_Distmat = data.dti2eeg + '/dti/dist.mat';
+path_FCmat = data.dti2eeg + '/eeg_lcmv/COH.mat';
 
 SC = load(path_SCmat);
 Dist = load(path_Distmat);

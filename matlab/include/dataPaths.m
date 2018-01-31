@@ -25,6 +25,7 @@ data.pdflatex = '/net/store/nbp/phasesim/texlive/2011/bin/x86_64-linux/pdflatex'
 data.labelMeToolbox = [basepath '/databases/LabelMeToolbox'];
 data.cifar100matlab = [basepath '/databases/cifar-100-matlab'];
 data.databases = [basepath '/databases'];
+data.dti2eeg = [basepath '/dti2eeg'];
 
 data.paramdir = [basepath '/' srcFolder '/matlab/parameters'];
 data.workdir = [basepath '/workdir'];
