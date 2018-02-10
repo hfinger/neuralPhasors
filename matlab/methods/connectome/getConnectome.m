@@ -20,11 +20,10 @@ function [ C,D,F ] = getConnectome( resort, p, homotopeScaling, singleHemisphere
 
 data = dataPaths( );
 
-
 % load raw connectivity matrices
-path_SCmat = data.dti2eeg + '/dti/SC.mat';
-path_Distmat = data.dti2eeg + '/dti/dist.mat';
-path_FCmat = data.dti2eeg + '/eeg_lcmv/COH.mat';
+path_SCmat = fullfile(data.dti2eeg, 'dti/SC.mat');
+path_Distmat = fullfile(data.dti2eeg, 'dti/dist.mat');
+path_FCmat = fullfile(data.dti2eeg, 'eeg_lcmv/COH.mat');
 
 SC = load(path_SCmat);
 Dist = load(path_Distmat);
