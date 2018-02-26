@@ -43,7 +43,7 @@ F = F + F';
 
 % resort C and D
 if resort
-    path_ResortIDs = '/media/hofinger/OS/Users/hofinger/phasesim/dti2eeg/sources_plot_order.mat';
+    path_ResortIDs = fullfile(data.dti2eeg, 'sources_plot_order.mat');
     %path_ResortIDs = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/resortIdsMarlene.mat';
     resortIds = load(path_ResortIDs);
     resortIds = resortIds.sort_ids;

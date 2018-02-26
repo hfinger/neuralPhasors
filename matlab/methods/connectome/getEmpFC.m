@@ -18,8 +18,10 @@ function [ F ] = getEmpFC( resort, fTarget, singleHemisphere )
 
 %% load C and D, resort them and normalize C
 
+data = dataPaths( );
+
 % load raw connectivity matrices
-path_FCmat = '/media/hofinger/OS/Users/hofinger/phasesim/dti2eeg/eeg_lcmv/COH.mat';
+path_FCmat = fullfile(data.dti2eeg, 'eeg_lcmv/COH.mat');
 
 FC = load(path_FCmat);
 F = squeeze(mean(mean(mean(FC.FC,1),2),3));
@@ -31,7 +33,7 @@ F = F + F';
 
 % resort C and D
 if resort
-    path_ResortIDs = '/media/hofinger/OS/Users/hofinger/phasesim/dti2eeg/sources_plot_order.mat';
+    path_ResortIDs = fullfile(data.dti2eeg, 'sources_plot_order.mat');
     %path_ResortIDs = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/resortIdsMarlene.mat';
     resortIds = load(path_ResortIDs);
     resortIds = resortIds.sort_ids;
