@@ -1,4 +1,4 @@
-function [ xColl, driverColl ] = runJansenRitOriginal( StartStates,Drivers,DrivFreqs,DrivPO,DrivStart,DrivDur,C,D,k,v,tMax,dt,initSampRem,nVar,nMu,rAvg,netInp,subInp,sampling,verbose,JRParams )
+function [ xColl, driverColl, xCollExtended ] = runJansenRitOriginal( StartStates,Drivers,DrivFreqs,DrivPO,DrivStart,DrivDur,C,D,k,v,tMax,dt,initSampRem,nVar,nMu,rAvg,netInp,subInp,sampling,verbose,JRParams )
 %UNTITLED Function that simulates a number of coupled Jansen-Rit neural
 %masses over a certain time. A driver can be included to drive specific
 %neural masses externally.
@@ -57,6 +57,13 @@ C = k*C;
 N = size(C, 1);
 numIters = ceil(tMax/dt);
 xColl = zeros(N, numIters/sampling, 'double');
+
+if JRParams.xCollExtended
+    xCollExtended = zeros(N, numIters/sampling, length(JRParams.xCollExtendedIdxs));
+else
+    xCollExtended = {};
+end
+
 driverColl = zeros(length(DrivPO), numIters/sampling, 'double');
 
 % build buffer to realize delays in network
@@ -115,6 +122,9 @@ for i = 0:numIters-1
     if mod(i,sampling)==0 && t > initSampRem
         xColl(:,i/sampling + 1) = x(:,1);
         driverColl(:,i/sampling + 1) = drivPhase;
+        if JRParams.xCollExtended 
+            xCollExtended(:,i/sampling + 1, :) = x(:,JRParams.xCollExtendedIdxs);
+        end
     end
     
     %print progress:

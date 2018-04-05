@@ -69,6 +69,9 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
       this.params.JansenRitConnectomePaper.calcCohWithDriver = false;
       
+      this.params.JansenRitConnectomePaper.xCollExtended = false;
+      this.params.JansenRitConnectomePaper.xCollExtendedIdxs = 1:4;
+
       %%%% END EDIT HERE:                                          %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
@@ -147,6 +150,9 @@ classdef JansenRitConnectomePaper < Gridjob
       JRParams.use_sigm_as_out = this.params.JansenRitConnectomePaper.use_sigm_as_out;
       JRParams.use_sigm_y0_as_out = this.params.JansenRitConnectomePaper.use_sigm_y0_as_out;
       
+      JRParams.xCollExtended = this.params.JansenRitConnectomePaper.xCollExtended;
+      JRParams.xCollExtendedIdxs = this.params.JansenRitConnectomePaper.xCollExtendedIdxs;
+      
       if ~this.params.JansenRitConnectomePaper.subtract_S0
           JRParams.S0 = 0;
       end
@@ -222,7 +228,7 @@ classdef JansenRitConnectomePaper < Gridjob
       %    drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
       %    drivStrength = drivStrength - min(drivStrength);
       %    drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
-           drivers(drivPos(i),i) = sim.drivScale * 1e-3;  % convert from mV to V
+           drivers(drivPos(i),i) = sim.drivScale * 1e-3 / 2;  % convert from mV to V and divide by 2 to use peak-to-peak amplitude for sin
       end
 
       % run jansen rit simulation and store PSPs of pyramidal cells
@@ -239,7 +245,7 @@ classdef JansenRitConnectomePaper < Gridjob
           end
           
           StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-          [ PSPs, Driver ] = runJansenRitOriginal( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+          [ PSPs, Driver, xCollExtended ] = runJansenRitOriginal( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
       end
       simResult.Y = vertcat(Driver,PSPs);
       sim.drivPos = drivPos + size(Driver, 1);
