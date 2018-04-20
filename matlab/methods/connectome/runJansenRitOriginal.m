@@ -99,7 +99,7 @@ for i = 0:numIters-1
     inp_sub = nMu + nVar * randn(N, 1);
     
     % intrinsic state variable updates
-    dx = odesys(x, driver, inp_sub, inp_net, JRParams);
+    [dx, inpP] = odesys(x, driver, inp_sub, inp_net, JRParams);
     x = x + dt*dx;
     
     %update ring buffer
@@ -109,6 +109,9 @@ for i = 0:numIters-1
     elseif JRParams.use_sigm_as_out
         % use Sigm(v_{e} - v_{i})
         x1spikeRateOut = WTP(x(:,2) - x(:,3), JRParams.e0, JRParams.u0, JRParams.r);
+    elseif JRParams.use_inpP_as_out
+        % use Sigm(v_{e} - v_{i} + driver)
+        x1spikeRateOut = inpP;
     elseif JRParams.use_sigm_y0_as_out
         % use Sigm(v_{p})
         x1spikeRateOut = WTP(x(:,1), JRParams.e0, JRParams.u0, JRParams.r);
@@ -141,7 +144,7 @@ driverColl = driverColl(:,(initSampRem/(dt*sampling))+1 : end);
 
 end
 
-function dy = odesys(y, driver, inp_sub, inp_net, JRParams)
+function [dy, inpP] = odesys(y, driver, inp_sub, inp_net, JRParams)
 
     % y(:,1) = v_{p}
     % y(:,2) = v_{e}

@@ -268,12 +268,20 @@ classdef JansenRitConnectomePaper < Gridjob
       simResult.freqs = freqs;
       fMean = mean(freqs);
       
-      fTarget = this.params.JansenRitConnectomePaper.fTarget;
+      if strcmp(this.params.JansenRitConnectomePaper.fTarget, 'fMean')
+          fTarget = fMean;
+      elseif strcmp(this.params.JansenRitConnectomePaper.fTarget, 'drivFreq')
+          fTarget = this.params.JansenRitConnectomePaper.drivFreq;
+      else
+          fTarget = this.params.JansenRitConnectomePaper.fTarget;
+      end
+      
       if fTarget < 3
           fTarget = 3;
       elseif fTarget > 30
           fTarget = 30;
       end
+      
         
       % apply bandpass filter
       if sim.filterSig
