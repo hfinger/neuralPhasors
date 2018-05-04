@@ -66,6 +66,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.use_moran = true;
       this.params.JansenRitConnectomePaper.use_out_psp = false;
       this.params.JansenRitConnectomePaper.use_sigm_as_out = false;
+      this.params.JansenRitConnectomePaper.use_inpP_as_out = false;
       this.params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
       this.params.JansenRitConnectomePaper.calcCohWithDriver = false;
       
@@ -148,6 +149,7 @@ classdef JansenRitConnectomePaper < Gridjob
       JRParams.S0 = WTP(0, JRParams.e0, JRParams.u0, JRParams.r); % mean firing rate constant offset
       JRParams.use_out_psp = this.params.JansenRitConnectomePaper.use_out_psp;
       JRParams.use_sigm_as_out = this.params.JansenRitConnectomePaper.use_sigm_as_out;
+      JRParams.use_inpP_as_out = this.params.JansenRitConnectomePaper.use_inpP_as_out;
       JRParams.use_sigm_y0_as_out = this.params.JansenRitConnectomePaper.use_sigm_y0_as_out;
       
       JRParams.xCollExtended = this.params.JansenRitConnectomePaper.xCollExtended;
