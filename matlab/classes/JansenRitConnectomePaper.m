@@ -99,6 +99,12 @@ classdef JansenRitConnectomePaper < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: implement the algorithm here %%%%
       
+      filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
+      
+      if exist([this.resultpath,'/', filename_JR], 'dir')
+          return
+      end
+      
       % initialze simulation parameters
       sim.p = this.params.JansenRitConnectomePaper.p;
       sim.k = this.params.JansenRitConnectomePaper.k;
@@ -367,7 +373,6 @@ classdef JansenRitConnectomePaper < Gridjob
       end
       
       % save results
-      filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
       if ~exist(this.resultpath, 'dir')
         mkdir(this.resultpath)
       end
