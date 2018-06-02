@@ -101,7 +101,7 @@ classdef JansenRitConnectomePaper < Gridjob
       
       filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
       
-      if exist([this.resultpath,'/', filename_JR], 'dir')
+      if exist([this.resultpath,'/', filename_JR], 'file')
           return
       end
       
