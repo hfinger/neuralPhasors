@@ -345,7 +345,7 @@ classdef JansenRitConnectomePaper < Gridjob
       if this.params.JansenRitConnectomePaper.corrSimFC
           
         % load empirical FC
-        empFC = getEmpFC(1,fTarget,1);
+        empFC = getEmpFC(1,round(fTarget),1);
         simResult.empFC = empFC;
 
         % calculate correlation between simulated and empirical FC
