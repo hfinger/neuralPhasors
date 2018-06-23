@@ -9,7 +9,7 @@ numJobs = size(paramComb, 2);
 
 all_coh = zeros(1,numJobs);
 for j=1:numJobs
-    fname = fullfile( path_results, ['JR_Connectome_Driver' num2str(j) '.mat']);
+    fname = fullfile( path_results, ['Moran_Driver' num2str(j) '.mat']);
     if exist(fname, 'file')
         tmp = load( fname );
         all_coh(j) = tmp.simResult.coh_of_roi_with_driver{1};
