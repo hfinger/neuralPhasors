@@ -7,6 +7,18 @@ paramComb = jobDesc.paramComb;
 variableParams = jobDesc.variableParams;
 numJobs = size(paramComb, 2);
 
+paramValues = cell(1, length(jobDesc.variableParams));
+for k=1:length(jobDesc.variableParams)
+    newStruct = jobDesc.params;
+    for f=1:length(jobDesc.variableParams{k})
+        fname = jobDesc.variableParams{k}{f};
+        newStruct = newStruct.(fname);
+    end
+    paramValues{k} = newStruct;
+end
+    
+%%
+
 all_coh = zeros(1,numJobs);
 for j=1:numJobs
     fname = fullfile( path_results, ['Moran_Driver' num2str(j) '.mat']);
@@ -18,5 +30,5 @@ for j=1:numJobs
     end
 end
 
-save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams')
+save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues')
 
