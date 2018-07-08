@@ -33,6 +33,9 @@ classdef JansenRitConnectomePaper < Gridjob
       
       this.params.JansenRitConnectomePaper.fTarget = 9; % [Hz]
 
+      c_tmp = 135;
+      this.params.JansenRitConnectomePaper.cs = [c_tmp, c_tmp*0.8, c_tmp*0.25, c_tmp*0.25, 0]; % connectivity strength (can sometimes be interpreted as average synaptic contacts)
+      
       this.params.JansenRitConnectomePaper.drivFreq = 6; %driving frequencies
       this.params.JansenRitConnectomePaper.drivPos = [1]; % network node to drive
       %this.params.JansenRitConnectomePaper.drivRange = [1 1]; % variance of the gaussian centered around DrivPos determining the strength of stimulation
@@ -134,8 +137,7 @@ classdef JansenRitConnectomePaper < Gridjob
       Te = this.params.JansenRitConnectomePaper.Te; %10e-3; % Average time constant for excitatory signal transfer (synaptic delays,..) [s]
       Ti = this.params.JansenRitConnectomePaper.Ti; %20e-3; % Average time constant for inhibitory signal transfer (synaptic delays,..) [s]
       
-      c_tmp = 135;
-      cs = [c_tmp, c_tmp*0.8, c_tmp*0.25, c_tmp*0.25, 0]; % connectivity strength (can sometimes be interpreted as average synaptic contacts)
+      cs = this.params.JansenRitConnectomePaper.cs;
       
       JRParams.Cpe = cs(1); % Connection from pyramidal cells to excitatory interneurons
       JRParams.Cpi = cs(3); % Connection from pyramidal cells to inhibitory interneurons

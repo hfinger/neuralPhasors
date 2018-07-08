@@ -14,3 +14,5 @@ freqs = cell2mat(results.paramValues{4});
 imagesc(squeeze(mean(results.coh,1)))
 set(gca, 'XTick', 1:length(freqs), 'XTickLabel', freqs)
 set(gca, 'YTick', 1:length(strengths), 'YTickLabel', strengths)
+xlabel('Freq [Hz]')
+ylabel('Driver Strength [mV]')

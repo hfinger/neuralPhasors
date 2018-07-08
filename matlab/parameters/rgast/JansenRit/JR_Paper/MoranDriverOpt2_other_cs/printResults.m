@@ -1,5 +1,5 @@
 data = dataPaths();
-path_results = fullfile(data.resultsdir, 'rgast/JansenRit/JR_Paper/MoranDriverOpt1');
+path_results = fullfile(data.resultsdir, 'rgast/JansenRit/JR_Paper/MoranDriverOpt2');
 
 results = load(fullfile( path_results, 'all_coh.mat'));
 
