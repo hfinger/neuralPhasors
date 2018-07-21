@@ -2,14 +2,14 @@ clear paramsAll;
 
 clear params;
 
-params.Gridjob.runLocal = true;
+params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 3000;
 params.Gridjob.wc_host = '!(*saturn*)';
 params.Gridjob.jobname = 'Moran_Driver';
 params.Gridjob.continue = false;
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '00:59:00';
+params.Gridjob.walltime = '00:14:00';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
