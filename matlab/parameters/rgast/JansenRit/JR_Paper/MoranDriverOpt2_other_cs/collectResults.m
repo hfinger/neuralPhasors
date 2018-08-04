@@ -1,7 +1,8 @@
 data = dataPaths();
-path_results = fullfile(data.resultsdir, 'rgast/JansenRit/JR_Paper/MoranDriverOpt2');
+[~,my_foldername] = fileparts(pwd);
+path_results = fullfile(data.resultsdir, ['rgast/JansenRit/JR_Paper/' my_foldername]);
 
-jobDesc = load( fullfile(data.workdir, 'rgast/JansenRit/JR_Paper/MoranDriverOpt2','temp_Moran_Driver','jobDesc.mat') );
+jobDesc = load( fullfile(data.workdir, 'rgast/JansenRit/JR_Paper',my_foldername,'temp_Moran_Driver','jobDesc.mat') );
 
 paramComb = jobDesc.paramComb;
 variableParams = jobDesc.variableParams;
