@@ -8,7 +8,8 @@ if ispc
   systemCmd = ['plink.exe ' paths.plinkArg ' "qstat"'];
   system(systemCmd)
 elseif system('command -v qstat >/dev/null 2>&1')
-  system('ssh isonoe "qstat"');
+  paths = dataPaths();
+  system([paths.linSSHArg ' "qstat"']);
 else
   system('qstat');
 end

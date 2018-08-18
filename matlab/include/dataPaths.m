@@ -38,6 +38,7 @@ data.sge_pathToAddScriptPaths = [basepath '/' srcFolder '/matlab'];
 % data.plinkArg = '-ssh -i D:\Daten\putty\puttyUOS\putty_nopw.ppk hofinger@gate.ikw.uni-osnabrueck.de';
 % use putty gateway instead:
 data.plinkArg = '-ssh -P 5555 -i D:\Daten\putty\puttyUOS\putty_nopw.ppk hofinger@localhost';
+data.linSSHArg = 'ssh -p 5000 localhost';
 
 [~,name] = system('whoami');
 data.localTempDir = fullfile('/work',name(1:end-1));
