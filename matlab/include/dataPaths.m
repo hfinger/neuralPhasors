@@ -1,21 +1,24 @@
 function data = dataPaths( )
-
-if ispc
-    basepath = 'E:';
-else
-    basepath = '/net/store/nbp/projects/phasesim';
-    if ~exist(basepath, 'dir')
-        basepath = '/media/hofinger/OS/Users/hofinger/phasesim/';
-    end
-end
+% 
+% if ispc
+%     basepath = 'E:';
+% else
+%     basepath = '/net/store/nbp/projects/phasesim';
+%     if ~exist(basepath, 'dir')
+%         basepath = '/media/hofinger/OS/Users/hofinger/phasesim/';
+%     end
+% end
 
 p = mfilename('fullpath');
-
 if exist('strsplit')
   p = strsplit(p,filesep);
 else
   p = strread(p,'%s','delimiter',[filesep]);
 end
+
+removeFromPath = fullfile(filesep, p{end-3:end});
+pathSplited = strsplit(mfilename('fullpath'),removeFromPath);
+basepath = fullfile(pathSplited{1});
 
 srcFolder = p{end-3};
 
