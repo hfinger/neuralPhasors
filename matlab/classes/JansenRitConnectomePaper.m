@@ -245,7 +245,7 @@ classdef JansenRitConnectomePaper < Gridjob
       if this.params.JansenRitConnectomePaper.use_moran
           nStatesJR = 13;
           StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-          [ PSPs, Driver ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+          [ PSPs, Driver, xCollExtended ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
       else
           
           if JRParams.use_out_psp
