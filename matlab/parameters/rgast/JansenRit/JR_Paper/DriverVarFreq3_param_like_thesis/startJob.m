@@ -13,7 +13,7 @@ params.Gridjob.walltime = '00:09:00';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
-params.JansenRitConnectomePaper.k = 4; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
+params.JansenRitConnectomePaper.k = 30; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
 params.JansenRitConnectomePaper.v = 3.2; %num2cell(2.4:0.1:3.2); %3.2; % velocity [m/s]
 params.JansenRitConnectomePaper.tMax = 605; %max simulation time [seconds]
 params.JansenRitConnectomePaper.dt = 0.0005; % simulation step size [seconds]
@@ -23,8 +23,11 @@ params.JansenRitConnectomePaper.noiseMu = 220; %num2cell(round(20:20:140)); %220
 params.JansenRitConnectomePaper.runningAvg = false; % if true, substract running average from input to neural masses
 params.JansenRitConnectomePaper.netInp = [1,0,0]; % scales the input to [pyramidal, excitatory, inhibitory] neurons from connectome
 params.JansenRitConnectomePaper.subInp = [0,1,0]; % scales the input to [pyramidal, excitatory, inhibitory] neurons from connectome
-params.JansenRitConnectomePaper.initSampRem = 304; %initial interval to remove [seconds]
+params.JansenRitConnectomePaper.initSampRem = 124; %initial interval to remove [seconds]
 params.JansenRitConnectomePaper.verbose = false; % if we want to print time steps to console
+
+c_tmp = 135;
+params.JansenRitConnectomePaper.cs = [c_tmp, c_tmp*0.8, c_tmp*0.25, c_tmp*0.25, 0]; % connectivity strength (can sometimes be interpreted as average synaptic contacts)
 
 params.JansenRitConnectomePaper.fTarget = 'drivFreq'; % [Hz]
 
@@ -68,9 +71,9 @@ params.JansenRitConnectomePaper.D = D;
 idx = randperm(length(C),2);
 
 params.JansenRitConnectomePaper.drivPos = num2cell(idx); % indices of network nodes to be driven
-params.JansenRitConnectomePaper.drivScale = num2cell(2.^(-7:0.5:0)); % driver strength [mV]
+params.JansenRitConnectomePaper.drivScale = num2cell(2.^(-7:1)); % driver strength [mV]
 params.JansenRitConnectomePaper.drivPO = 0; % phase offset of drivers
-params.JansenRitConnectomePaper.drivFreq = num2cell([4:0.5:22]); % frequency of driver [Hz]
+params.JansenRitConnectomePaper.drivFreq = num2cell([7:1:18]); % frequency of driver [Hz]
 params.JansenRitConnectomePaper.drivDur = 605; % duration of driver [s]
 
 paramsAll{1} = params;

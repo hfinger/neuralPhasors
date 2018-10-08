@@ -484,6 +484,8 @@ classdef Gridjob
       run(this);
       fclose(fopen(fullfile(this.temppath,'isfinished',num2str(jobid)), 'w'));
       
+      pause(7);
+      
       %check if all jobs are finished:
       filelist = dir(fullfile(this.temppath,'isfinished'));
       filelist = cellfun(@str2num,{filelist.name},'UniformOutput',false);
