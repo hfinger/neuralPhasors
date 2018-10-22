@@ -102,9 +102,10 @@ classdef JansenRitConnectomePaper < Gridjob
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: implement the algorithm here %%%%
       
-      filename_JR = [this.params.Gridjob.jobname,num2str(this.currJobid)];
+      filename_JR = [this.params.Gridjob.jobname num2str(this.currJobid) '.mat'];
       
-      if exist([this.resultpath,'/', filename_JR], 'file')
+      if exist(fullfile(this.resultpath, filename_JR), 'file')
+          disp('job output already exists')
           return
       end
       
@@ -390,6 +391,36 @@ classdef JansenRitConnectomePaper < Gridjob
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %%%% START EDIT HERE: do some clean up and saving %%%%
+      
+      disp('finishing job now...')
+      
+      paramComb = this.paramComb;
+      variableParams = this.variableParams;
+      numJobs = size(paramComb, 2);
+      
+      paramValues = cell(1, length(this.variableParams));
+      for k=1:length(this.variableParams)
+          newStruct = this.params;
+          for f=1:length(this.variableParams{k})
+              fname = this.variableParams{k}{f};
+              newStruct = newStruct.(fname);
+          end
+          paramValues{k} = newStruct;
+      end
+      
+      %%
+      all_coh = zeros(1,numJobs);
+      for j=1:numJobs
+          fname = fullfile( this.resultpath, [this.params.Gridjob.jobname num2str(j) '.mat']);
+          if exist(fname, 'file')
+              tmp = load( fname );
+              all_coh(j) = tmp.simResult.coh_of_roi_with_driver{1};
+          else
+              disp(['file missing: ' fname]);
+          end
+      end
+      
+      save(fullfile( this.resultpath, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues')
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
