@@ -4,7 +4,7 @@ clear params;
 
 params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 3000;
-params.Gridjob.wc_host = '!(*saturn*)';
+params.Gridjob.wc_host = '!(*saturn*|*c01grid*|*ramsauer*|*kuma*)';
 params.Gridjob.jobname = 'Moran_Driver';
 params.Gridjob.continue = false;
 params.Gridjob.initRandStreamWithJobid = true;
