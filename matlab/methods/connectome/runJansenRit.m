@@ -101,7 +101,13 @@ for i = 0:numIters-1
     
     inp_net = sum(C .* x1DelayedSpikeRate, 2);
     inp_net = netInp .* repmat(inp_net,1,size(netInp,2));
-    inp_sub = (nMu - inpAvg + nVar * randn(N, 3)) .* subInp;
+    
+    if length(nMu)>1
+        inp_sub = (nMu(1) + (nMu(2)-nMu(1)) * rand(N, 3)) .* subInp;
+    else
+        inp_sub = (nMu - inpAvg + nVar * randn(N, 3)) .* subInp;
+    end
+    
     if rAvg
         inpAvg = 0.9999 * inpAvg + 0.0001 * inp_net;
     end

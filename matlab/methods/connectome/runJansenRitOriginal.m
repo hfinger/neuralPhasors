@@ -96,7 +96,11 @@ for i = 0:numIters-1
     driver = sum(driver,2);
     
     inp_net = sum(C .* x1DelayedSpikeRate, 2);
-    inp_sub = nMu + nVar * randn(N, 1);
+    if length(nMu)>1
+        inp_sub = nMu(1) + (nMu(2)-nMu(1)) * rand(N, 1);
+    else
+        inp_sub = nMu + nVar * randn(N, 1);
+    end
     
     % intrinsic state variable updates
     [dx, inpP] = odesys(x, driver, inp_sub, inp_net, JRParams);

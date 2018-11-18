@@ -277,7 +277,7 @@ classdef JansenRitConnectomePaper < Gridjob
         freqs(n) = f(target);
       end
       simResult.freqs = freqs;
-      fMean = mean(freqs);
+      fMean = mean(freqs(length(drivPos)+1:end));
       
       if strcmp(this.params.JansenRitConnectomePaper.fTarget, 'fMean')
           fTarget = fMean;
@@ -394,8 +394,10 @@ classdef JansenRitConnectomePaper < Gridjob
       
       disp('finishing job now...')
       
-      paramComb = this.paramComb;
-      variableParams = this.variableParams;
+      jobDesc = load( fullfile(this.workdir,['temp_' this.params.Gridjob.jobname],'jobDesc.mat') );
+      
+      paramComb = jobDesc.paramComb;
+      variableParams = jobDesc.variableParams;
       numJobs = size(paramComb, 2);
       
       paramValues = cell(1, length(this.variableParams));
@@ -410,17 +412,27 @@ classdef JansenRitConnectomePaper < Gridjob
       
       %%
       all_coh = zeros(1,numJobs);
+      all_FC = cell(1,numJobs);
+      all_corr_SimFC = cell(1,numJobs);
       for j=1:numJobs
           fname = fullfile( this.resultpath, [this.params.Gridjob.jobname num2str(j) '.mat']);
           if exist(fname, 'file')
               tmp = load( fname );
-              all_coh(j) = tmp.simResult.coh_of_roi_with_driver{1};
+              
+              all_FC{j} = tmp.simResult.FC;
+              if this.params.JansenRitConnectomePaper.corrSimFC
+                all_corr_SimFC{j} = tmp.simResult.corr_SimFC;
+              end
+              
+              if this.params.JansenRitConnectomePaper.calcCohWithDriver
+                all_coh(j) = tmp.simResult.coh_of_roi_with_driver{1};
+              end
           else
               disp(['file missing: ' fname]);
           end
       end
       
-      save(fullfile( this.resultpath, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues')
+      save(fullfile( this.resultpath, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')
       
       %%%% END EDIT HERE:                               %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
