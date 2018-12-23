@@ -1,12 +1,12 @@
+clear all;
 data = dataPaths();
 [~,my_foldername] = fileparts(pwd);
-path_results = fullfile(data.resultsdir, ['rgast/JansenRit/JR_Paper/' my_foldername]);
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/SingleNode/' my_foldername]);
 
-jobDesc = load( fullfile(data.workdir, 'rgast/JansenRit/JR_Paper',my_foldername,'temp_Connectome','jobDesc.mat') );
+jobDesc = load( fullfile(data.workdir, 'Holger/2018_JR/SingleNode',my_foldername,'temp_Connectome','jobDesc.mat') );
 
 paramComb = jobDesc.paramComb;
 variableParams = jobDesc.variableParams;
-params = jobDesc.params;
 numJobs = size(paramComb, 2);
 
 paramValues = cell(1, length(jobDesc.variableParams));
@@ -41,4 +41,4 @@ for j=1:numJobs
   end
 end
 
-save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'params', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')
+save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')

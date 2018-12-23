@@ -23,12 +23,14 @@ end
 all_coh = zeros(1,numJobs);
 all_FC = cell(1,numJobs);
 all_corr_SimFC = cell(1,numJobs);
+all_freqs = cell(1,numJobs);
 for j=1:numJobs
   fname = fullfile( path_results, ['Connectome' num2str(j) '.mat']);
   if exist(fname, 'file')
       tmp = load( fname );
 
       all_FC{j} = tmp.simResult.FC;
+      all_freqs{j} = tmp.simResult.freqs;
       if jobDesc.params.JansenRitConnectomePaper.corrSimFC
         all_corr_SimFC{j} = tmp.simResult.corr_SimFC;
       end
@@ -36,9 +38,11 @@ for j=1:numJobs
       if jobDesc.params.JansenRitConnectomePaper.calcCohWithDriver
         all_coh(j) = tmp.simResult.coh_of_roi_with_driver{1};
       end
+      
+      
   else
       disp(['file missing: ' fname]);
   end
 end
 
-save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'params', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')
+save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'params', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC', 'all_freqs')

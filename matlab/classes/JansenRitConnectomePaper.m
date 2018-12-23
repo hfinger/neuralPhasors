@@ -72,6 +72,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.use_inpP_as_out = false;
       this.params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
       this.params.JansenRitConnectomePaper.calcCohWithDriver = false;
+      this.params.JansenRitConnectomePaper.saveSpectrum = false;
       
       this.params.JansenRitConnectomePaper.xCollExtended = false;
       this.params.JansenRitConnectomePaper.xCollExtendedIdxs = 1:4;
@@ -104,7 +105,7 @@ classdef JansenRitConnectomePaper < Gridjob
       
       filename_JR = [this.params.Gridjob.jobname num2str(this.currJobid) '.mat'];
       
-      if exist(fullfile(this.resultpath, filename_JR), 'file')
+      if exist(fullfile(this.workpath, filename_JR), 'file')
           disp('job output already exists')
           return
       end
@@ -177,6 +178,7 @@ classdef JansenRitConnectomePaper < Gridjob
       
       % initialize driver parameters
       drivPos = this.params.JansenRitConnectomePaper.drivPos;
+      
       %sim.drivRange = this.params.JansenRitConnectomePaper.drivRange;
       sim.drivFreq = this.params.JansenRitConnectomePaper.drivFreq;
       sim.drivScale = this.params.JansenRitConnectomePaper.drivScale;
@@ -268,6 +270,9 @@ classdef JansenRitConnectomePaper < Gridjob
       Fs = 1/(sim.dt*sim.sampling);
       Hs = spectrum.periodogram;
       freqs = zeros(size(simResult.Y,1),1);
+      if this.params.JansenRitConnectomePaper.saveSpectrum
+          simResult.spectrumPower = cell(size(simResult.Y,1),1);
+      end
       for n=1:size(simResult.Y,1)
         h = psd(Hs,simResult.Y(n,:),'Fs',Fs);
         f = h.Frequencies;
@@ -275,6 +280,11 @@ classdef JansenRitConnectomePaper < Gridjob
         d(1:100) = 0;
         [~,target] = max(d);
         freqs(n) = f(target);
+        if this.params.JansenRitConnectomePaper.saveSpectrum
+            saveTo = find(f>30,1);
+            simResult.spectrumFreq = f(1:saveTo);
+            simResult.spectrumPower{n} = d(1:saveTo);
+        end
       end
       simResult.freqs = freqs;
       fMean = mean(freqs(length(drivPos)+1:end));
@@ -369,21 +379,39 @@ classdef JansenRitConnectomePaper < Gridjob
           coh_of_roi_with_driver = cell(1,length(FC));
           for i=1:length(FC)
               FC_tmp = FC{1,i}(length(drivPos)+1:end,1);
-              coh_of_roi_with_driver{i} = FC_tmp(drivPos);
-              disp(['coh_of_roi_with_driver{i} = ' num2str(coh_of_roi_with_driver{i})])
+              coh_of_roi_with_driver{i} = zeros(1, length(drivPos));
+              for j=1:length(drivPos)
+                coh_of_roi_with_driver{i}(j) = FC_tmp(drivPos(j));
+                disp(['coh_of_roi_with_driver{i}(j) = ' num2str(coh_of_roi_with_driver{i}(j))])
+              end
           end
           simResult.coh_of_roi_with_driver = coh_of_roi_with_driver;
       end
       
       % save results
-      if ~exist(this.resultpath, 'dir')
-        mkdir(this.resultpath)
+      if ~exist(this.workpath, 'dir')
+        mkdir(this.workpath)
       end
-      save([this.resultpath,'/', filename_JR], 'simResult')
+      save([this.workpath,'/', filename_JR], 'simResult')
       
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
+    end
+    
+    %% finishJobs: is executed once (after all individual parameter jobs are finished)
+    function [all_missing_job_ids] = getUnfinishedJobIds(this)
+      jobDesc = load( fullfile(this.temppath,'jobDesc.mat') );
+      paramComb = jobDesc.paramComb;
+      numJobs = size(paramComb, 2);
+      all_missing_job_ids = [];
+      for j=1:numJobs
+          fname = fullfile( this.workpath, [this.params.Gridjob.jobname num2str(j) '.mat']);
+          if ~exist(fname, 'file')
+              disp([num2str(j) ',']);
+              all_missing_job_ids(end+1) = j;
+          end
+      end
     end
     
     %% finishJobs: is executed once (after all individual parameter jobs are finished)
@@ -394,44 +422,52 @@ classdef JansenRitConnectomePaper < Gridjob
       
       disp('finishing job now...')
       
-      jobDesc = load( fullfile(this.workdir,['temp_' this.params.Gridjob.jobname],'jobDesc.mat') );
+      jobDesc = load( fullfile(this.temppath,'jobDesc.mat') );
       
       paramComb = jobDesc.paramComb;
       variableParams = jobDesc.variableParams;
       numJobs = size(paramComb, 2);
       
-      paramValues = cell(1, length(this.variableParams));
-      for k=1:length(this.variableParams)
-          newStruct = this.params;
-          for f=1:length(this.variableParams{k})
-              fname = this.variableParams{k}{f};
+      paramValues = cell(1, length(jobDesc.variableParams));
+      for k=1:length(jobDesc.variableParams)
+          newStruct = jobDesc.params;
+          for f=1:length(jobDesc.variableParams{k})
+              fname = jobDesc.variableParams{k}{f};
               newStruct = newStruct.(fname);
           end
           paramValues{k} = newStruct;
       end
       
       %%
-      all_coh = zeros(1,numJobs);
+      all_coh = cell(1,numJobs);
       all_FC = cell(1,numJobs);
       all_corr_SimFC = cell(1,numJobs);
+      all_missing_job_ids = [];
       for j=1:numJobs
-          fname = fullfile( this.resultpath, [this.params.Gridjob.jobname num2str(j) '.mat']);
+          fname = fullfile( this.workpath, [this.params.Gridjob.jobname num2str(j) '.mat']);
           if exist(fname, 'file')
               tmp = load( fname );
               
               all_FC{j} = tmp.simResult.FC;
-              if this.params.JansenRitConnectomePaper.corrSimFC
+              if jobDesc.params.JansenRitConnectomePaper.corrSimFC
                 all_corr_SimFC{j} = tmp.simResult.corr_SimFC;
               end
               
-              if this.params.JansenRitConnectomePaper.calcCohWithDriver
-                all_coh(j) = tmp.simResult.coh_of_roi_with_driver{1};
+              if jobDesc.params.JansenRitConnectomePaper.calcCohWithDriver
+                all_coh{j} = tmp.simResult.coh_of_roi_with_driver{1};
               end
           else
               disp(['file missing: ' fname]);
+              all_missing_job_ids(end+1) = j;
           end
       end
       
+      disp('all_missing_job_ids:');
+      disp(all_missing_job_ids);
+      
+      if ~exist(this.resultpath, 'dir')
+        mkdir(this.resultpath)
+      end
       save(fullfile( this.resultpath, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')
       
       %%%% END EDIT HERE:                               %%%%

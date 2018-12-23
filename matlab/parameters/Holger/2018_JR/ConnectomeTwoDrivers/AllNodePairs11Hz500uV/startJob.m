@@ -4,18 +4,19 @@ clear params;
 
 params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 3000;
-params.Gridjob.wc_host = '!(*saturn*|*c01grid*|*ramsauer*|*kuma*)';
+params.Gridjob.wc_host = '!(*saturn*|*c01grid*|*ramsauer*|*kuma*|*taygete*|*helike*|*themisto*)';
 params.Gridjob.jobname = 'Connectome';
-params.Gridjob.continue = false;
+params.Gridjob.runOnlyJobIds = [6610];
+params.Gridjob.continue = true;
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.combParallel = false;
 params.Gridjob.walltime = '00:09:00';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
-params.JansenRitConnectomePaper.k = num2cell(20:2:40); %30; %num2cell(round(22:2:34)); %global connection strength scaling
-params.JansenRitConnectomePaper.v = num2cell(2.0:0.1:5.0); %3.2; % velocity [m/s]
-params.JansenRitConnectomePaper.tMax = 1085; %max simulation time [seconds]
+params.JansenRitConnectomePaper.k = 20; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
+params.JansenRitConnectomePaper.v = 3; %num2cell(2.4:0.1:3.2); %3.2; % velocity [m/s]
+params.JansenRitConnectomePaper.tMax = 605; %max simulation time [seconds]
 params.JansenRitConnectomePaper.dt = 0.0005; % simulation step size [seconds]
 params.JansenRitConnectomePaper.sampling = 2; % sampling every x steps
 params.JansenRitConnectomePaper.noiseVar = 0; % variance of noise used to drive neural masses (22 was mentioned in msc thesis)
@@ -26,20 +27,14 @@ params.JansenRitConnectomePaper.subInp = [1,0,0]; % scales the input to [pyramid
 params.JansenRitConnectomePaper.initSampRem = 124; %initial interval to remove [seconds]
 params.JansenRitConnectomePaper.verbose = false; % if we want to print time steps to console
 
-params.JansenRitConnectomePaper.drivFreq = 10; % frequency of driver [Hz]
-params.JansenRitConnectomePaper.drivPos = [1,2]; % indices of network nodes to be driven
-params.JansenRitConnectomePaper.drivPO = [0]; % phase offset of drivers
-params.JansenRitConnectomePaper.drivScale = 0; % driver strength [V]
-params.JansenRitConnectomePaper.drivDur = 0; % duration of driver [s]
-
 c_tmp = 135;
 params.JansenRitConnectomePaper.cs = [c_tmp, c_tmp*0.8, c_tmp*0.25, c_tmp*0.25, 0]; % connectivity strength (can sometimes be interpreted as average synaptic contacts)
 
-params.JansenRitConnectomePaper.fTarget = 'fMean'; % [Hz]
+params.JansenRitConnectomePaper.fTarget = 'drivFreq'; % [Hz]
 
 params.JansenRitConnectomePaper.FCMeasure = {{'Coherence'}}; % FC measure to use
 params.JansenRitConnectomePaper.fullFC = true; %whether to store full coherence matrix or only coherence of driven region
-params.JansenRitConnectomePaper.corrSimFC = true; % if true, compare simulated coherence to empirical coherence
+params.JansenRitConnectomePaper.corrSimFC = false; % if true, compare simulated coherence to empirical coherence
 params.JansenRitConnectomePaper.nWindows = 1; %number of timewindows over which to calculate mean coherence
 params.JansenRitConnectomePaper.nBins = 32; % number of bins to use to discretize phase signal (only for MI and SE)
 params.JansenRitConnectomePaper.storeY = false; %if true, store raw signal on simResults
@@ -63,7 +58,8 @@ params.JansenRitConnectomePaper.use_out_psp = false;
 params.JansenRitConnectomePaper.use_sigm_as_out = false;
 params.JansenRitConnectomePaper.use_inpP_as_out = true;
 params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
-params.JansenRitConnectomePaper.calcCohWithDriver = false;
+params.JansenRitConnectomePaper.calcCohWithDriver = true;
+params.JansenRitConnectomePaper.saveSpectrum = false;
 
 p = params.JansenRitConnectomePaper.p;
 [C,D,F] = getConnectome(1,p,0.1,1); % get Connectivity and Delay matrix of Connectome
@@ -72,12 +68,23 @@ C(C < threshold) = 0;
 params.JansenRitConnectomePaper.C = bsxfun(@rdivide,C,sum(C,2));
 params.JansenRitConnectomePaper.D = D;
 
-% figure(1);
-% imagesc(params.JansenRitConnectomePaper.C);
-% figure(2);
-% imagesc(params.JansenRitConnectomePaper.D);
-% colormap(flipud(colormap()));
+nodes = 1:33;
+pairs = nchoosek(nodes,2);
+driv_positions = cell(1,size(pairs,1));
+for i=1:size(pairs,1)
+    driv_positions{i} = pairs(i,:);
+end
+
+%% set driver params
+params.JansenRitConnectomePaper.drivPos = driv_positions; % indices of network nodes to be driven
+params.JansenRitConnectomePaper.drivScale = 0.5; % 0.25, 0.5 driver strength [mV]
+params.JansenRitConnectomePaper.drivPO = num2cell([0:0.0625:1]*2*pi); % phase offset of drivers
+params.JansenRitConnectomePaper.drivFreq = 11; % 10 and 11 frequency of driver [Hz]
+params.JansenRitConnectomePaper.drivDur = 605; % duration of driver [s]
 
 paramsAll{1} = params;
 gridjobs = Gridjob(paramsAll);
 start(gridjobs);
+
+%job = JansenRitConnectomePaper('/net/store/nbp/projects/phasesim/workdir/Holger/2018_JR/ConnectomeTwoDrivers/AllNodePairs11Hz500uV/temp_Connectome/jobDesc.mat');
+%job.finishJobs()

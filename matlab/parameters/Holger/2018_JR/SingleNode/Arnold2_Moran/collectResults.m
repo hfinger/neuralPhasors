@@ -6,7 +6,6 @@ jobDesc = load( fullfile(data.workdir, 'rgast/JansenRit/JR_Paper',my_foldername,
 
 paramComb = jobDesc.paramComb;
 variableParams = jobDesc.variableParams;
-params = jobDesc.params;
 numJobs = size(paramComb, 2);
 
 paramValues = cell(1, length(jobDesc.variableParams));
@@ -41,4 +40,4 @@ for j=1:numJobs
   end
 end
 
-save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'params', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')
+save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')

@@ -1,16 +1,31 @@
+clear all;
+
 data = dataPaths();
 [~,my_foldername] = fileparts(pwd);
-path_results = fullfile(data.resultsdir, ['rgast/JansenRit/JR_Paper/' my_foldername]);
-
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ConnectomeTwoDrivers/' my_foldername]);
 results = load(fullfile( path_results, 'all_coh.mat'));
 
 paramSizes = cellfun(@length, results.paramValues);
 
-results.coh = squeeze(reshape(results.all_coh, paramSizes));
-results.FC = squeeze(reshape(results.all_FC, paramSizes));
-results.FC = cellfun(@(x) x{1}, results.FC, 'UniformOutput', false);
-results.coh_driv_to_net = cell2mat(cellfun(@(x) mean(x(1,2:end)), results.FC, 'UniformOutput', false));
+%%
+stim_pair_coh = zeros(length(results.all_FC),1);
+for k=1:length(results.all_FC)
+    FC = results.all_FC{k}{1}(3:end, 3:end);
+    stim_pairs = results.paramComb{2,k};
+    stim_pair_coh(k) = FC(stim_pairs(1),stim_pairs(2));
+end
 
+%%
+stim_pair_coh = squeeze(reshape(stim_pair_coh, paramSizes));
+
+%%
+[maxVals, maxInd] = max(stim_pair_coh, [], 2);
+[minVals, minInd] = min(stim_pair_coh, [], 2);
+hist(minInd)
+IPSF = maxVals - minVals;
+hist(IPSF);
+
+%%
 C = results.params.JansenRitConnectomePaper.C;
 C = C' + C;
 C = C > 0;
@@ -32,7 +47,7 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('coherence to driven node')
-saveas(gcf,'coh_to_driven_node.png')
+saveas(gcf,fullfile( path_results, 'coh_to_driven_node.png'))
 
 figure(6);
 imagesc(driver_coh_to_net)
@@ -43,17 +58,18 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('mean coherence to all network nodes')
-saveas(gcf,'mean_coh_to_net.png')
+saveas(gcf,fullfile( path_results, 'mean_coh_to_net.png'))
 
 %%
 target_freq = 11;
-target_coh = 0.6;
+target_coh = 0.7;
 driver_idx = 1;
 
 target_freq_idx = find(freqs == target_freq);
 target_driver_strength_idx = find(driver_coh(:,target_freq_idx) > target_coh, 1);
 
 FC = results.FC{driver_idx, target_driver_strength_idx, target_freq_idx};
+peakFreqsPerNode = results.freqs{driver_idx, target_driver_strength_idx, target_freq_idx};
 cur_driver_node_idx = driver_node_idx(driver_idx);
 coh_roi_with_driver = FC(2:end,1);
 coh_roi_with_roi = FC(2:end,2:end);
@@ -68,6 +84,10 @@ plot([coh_roi_with_driver, coh_roi_with_net])
 
 figure(3); 
 imagesc(FC)
+
+figure(4);
+plot(peakFreqsPerNode)
+title('peakFreqsPerNode');
 
 %%
 coh_driv_to_nn = zeros(size(results.FC));
@@ -87,4 +107,4 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('mean coherence to nearest neigbors in network')
-saveas(gcf,'mean_coh_to_nn.png')
+saveas(gcf,fullfile( path_results, 'mean_coh_to_nn.png'))

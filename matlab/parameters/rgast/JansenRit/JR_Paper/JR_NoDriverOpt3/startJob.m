@@ -13,7 +13,7 @@ params.Gridjob.walltime = '00:09:00';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
-params.JansenRitConnectomePaper.k = num2cell(20:2:40); %30; %num2cell(round(22:2:34)); %global connection strength scaling
+params.JansenRitConnectomePaper.k = num2cell(10:2:18); %30; %num2cell(round(22:2:34)); %global connection strength scaling
 params.JansenRitConnectomePaper.v = num2cell(2.0:0.1:5.0); %3.2; % velocity [m/s]
 params.JansenRitConnectomePaper.tMax = 1085; %max simulation time [seconds]
 params.JansenRitConnectomePaper.dt = 0.0005; % simulation step size [seconds]
