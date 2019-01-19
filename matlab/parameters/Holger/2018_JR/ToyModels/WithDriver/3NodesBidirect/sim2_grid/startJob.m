@@ -4,13 +4,13 @@ clear params;
 
 params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 5000; % measured 3400 MB
-params.Gridjob.wc_host = '';
+params.Gridjob.wc_host = '!(*saturn*|*c01grid*|*ramsauer*|*kuma*|*taygete*|*helike*|*leda*|*orthosie*|*themisto*)';
 params.Gridjob.jobname = 'Connectome';
 params.Gridjob.continue = true;
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.runOnlyJobIds = [];
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '00:14:00';
+params.Gridjob.walltime = '00:29:00';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
@@ -76,7 +76,7 @@ end
 C = C_full;
 
 % delay matrix
-d213 = 0:10:200;
+d213 = 0:5:200;
 Delays = cell(1,length(d213));
 for d=1:length(d213)
     D = zeros(num_nodes, num_nodes);
