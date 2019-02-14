@@ -7,6 +7,9 @@ results = load(fullfile( path_results, 'all_coh.mat'));
 
 paramSizes = cellfun(@length, results.paramValues);
 
+phase_offsets = [0:0.0625:1]*2*pi;
+d12 = 0:5:100;
+
 %%
 stim_pair_coh = zeros(length(results.all_FC),16);
 for k=1:length(results.all_FC)
@@ -14,6 +17,11 @@ for k=1:length(results.all_FC)
     FC_per_SPO = diag(FC,1);
     stim_pair_coh(k,:) = FC_per_SPO(2:3:end);
 end
+stim_pair_coh = cat(2, stim_pair_coh, stim_pair_coh(:,1));
 
 %%
-imagesc(stim_pair_coh)
+imagesc(phase_offsets,d12,stim_pair_coh)
+xlabel('stimulation phase offset [rad]')
+ylabel('distance [mm]')
+set(gca,'YDir','normal')
+colorbar;
