@@ -99,7 +99,7 @@ for d12_idx=1:length(d12)
         Delays{d12_idx,d23_idx} = D_full;
     end
 end
-Delays = Delays(:);
+Delays = Delays(:)';
 
 params.JansenRitConnectomePaper.C = C; % connectivity matrix
 params.JansenRitConnectomePaper.D = Delays; % distance matrix
