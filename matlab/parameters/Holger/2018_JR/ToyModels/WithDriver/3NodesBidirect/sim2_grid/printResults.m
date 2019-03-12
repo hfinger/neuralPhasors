@@ -20,8 +20,28 @@ end
 stim_pair_coh = cat(2, stim_pair_coh, stim_pair_coh(:,1));
 
 %%
-imagesc(phase_offsets,d213,stim_pair_coh)
-xlabel('stimulation phase offset [rad]')
-ylabel('distance [mm]')
+figure(1)
+imagesc(d213,phase_offsets,stim_pair_coh')
+set(gca,'clim',[0; 0.6])
+xlabel('distance [mm]')
+ylabel('stimulation phase offset [rad]')
 set(gca,'YDir','normal')
 colorbar;
+saveas(gcf,fullfile(path_results,'coh_vs_spo.png'))
+saveas(gcf,fullfile(path_results,'coh_vs_spo.pdf'))
+
+%% calc IPSF:
+[maxCoh, maxInd] = max(stim_pair_coh(:,1:16)');
+[minCoh, minInd] = min(stim_pair_coh(:,1:16)');
+stdCoh = std(stim_pair_coh(:,1:16)');
+IPSF = maxCoh - minCoh;
+
+figure(2);
+set(gcf, 'Position',  [100, 100, 500, 250])
+clf;
+plot(d213,[IPSF; 3*stdCoh]')
+xlabel('distance [mm]')
+ylabel('IPSF')
+set(gca,'ylim',[0; 0.6])
+saveas(gcf,fullfile(path_results,'ipsf.png'))
+saveas(gcf,fullfile(path_results,'ipsf.pdf'))

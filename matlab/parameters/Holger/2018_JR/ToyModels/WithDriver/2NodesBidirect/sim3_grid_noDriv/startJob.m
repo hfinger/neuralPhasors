@@ -2,14 +2,15 @@ clear paramsAll;
 
 clear params;
 
-params.Gridjob.runLocal = true;
-params.Gridjob.requiremf = 3000;
-params.Gridjob.wc_host = '';
+params.Gridjob.runLocal = false;
+params.Gridjob.requiremf = 5000; % measured 3400 MB
+params.Gridjob.wc_host = '!(*saturn*|*c01grid*|*ramsauer*|*kuma*|*taygete*|*helike*|*leda*|*orthosie*|*themisto*)';
 params.Gridjob.jobname = 'Connectome';
-params.Gridjob.continue = false;
+params.Gridjob.continue = true;
 params.Gridjob.initRandStreamWithJobid = true;
+params.Gridjob.runOnlyJobIds = [];
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '00:14:00';
+params.Gridjob.walltime = '00:29:00';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
@@ -31,7 +32,7 @@ params.JansenRitConnectomePaper.cs = [c_tmp, c_tmp*0.8, c_tmp*0.25, c_tmp*0.25, 
 
 params.JansenRitConnectomePaper.fTarget = 'drivFreq'; % [Hz]
 
-params.JansenRitConnectomePaper.FCMeasure = {{'Coherence'}}; % FC measure to use
+params.JansenRitConnectomePaper.FCMeasure = {{'Coherence','phaseDiffHist'}}; % FC measure to use
 params.JansenRitConnectomePaper.fullFC = true; %whether to store full coherence matrix or only coherence of driven region
 params.JansenRitConnectomePaper.corrSimFC = false; % if true, compare simulated coherence to empirical coherence
 params.JansenRitConnectomePaper.nWindows = 1; %number of timewindows over which to calculate mean coherence
@@ -60,6 +61,7 @@ params.JansenRitConnectomePaper.saveSpectrum = false;
 % connectivity matrix
 C = zeros(2);
 C(1,2) = 0.1;
+C(2,1) = 0.1;
 
 % concat many to do multiple simulations simulatanously:
 num_repeats = 16;
@@ -71,7 +73,7 @@ end
 C = C_full;
 
 % delay matrix
-d12 = [0:10:5]; % was [0:200] distance between nodes at the ends of chain
+d12 = 0:5:200; % distance between nodes at the ends of chain
 D = zeros(2);
 
 Delays = cell(1,length(d12));
@@ -93,7 +95,7 @@ params.JansenRitConnectomePaper.D = Delays; % distance matrix
 
 %% set driver params
 params.JansenRitConnectomePaper.drivPos = 1:32; % indices of network nodes to be driven
-params.JansenRitConnectomePaper.drivScale = {0.3, 0.4}; % 0.25, 0.5 driver strength [mV]
+params.JansenRitConnectomePaper.drivScale = 0; % 0.25, 0.5 driver strength [mV]
 phase_offsets = [0:0.0625:(1-0.0625)]*2*pi;
 phase_offsets = cat(1, phase_offsets, zeros(size(phase_offsets)));
 phase_offsets = phase_offsets(:);
@@ -104,3 +106,7 @@ params.JansenRitConnectomePaper.drivDur = 605; % duration of driver [s]
 paramsAll{1} = params;
 gridjobs = Gridjob(paramsAll);
 start(gridjobs);
+
+%data = dataPaths();
+%job = JansenRitConnectomePaper(fullfile(data.workdir, 'Holger/2018_JR/ToyModels/WithDriver/2NodesBidirect', my_foldername, 'temp_Connectome/jobDesc.mat'));
+%job.finishJobs()

@@ -72,6 +72,25 @@ for m=1:length(FC)
             end
         end
         FC_tmp = squeeze(mean(FC_tmp,3));
+  
+    elseif strcmp(FCMeasure,'phaseDiffHist')
+        
+        % get phase from analytic signal
+        sigPhase = angle(sigHilbert);
+        
+        FC_tmp = zeros(length(targets),size(sigHilbert,1),size(FCWindows,2),simResult.sim.nBins);
+        histEdges = linspace(0, 2*pi, simResult.sim.nBins+1);
+        % calculate phase locking value
+        for n=1:size(FCWindows,2)
+            for k=targets
+                phaseDiffs = bsxfun(@minus, sigPhase(k,FCWindows(1,n):FCWindows(2,n)), sigPhase(:,FCWindows(1,n):FCWindows(2,n)));
+                phaseDiffs = mod(phaseDiffs, 2*pi);
+                tmpPhaseDiffs = num2cell(phaseDiffs,2);
+                histResults = cellfun(@(x) histcounts(x,histEdges), tmpPhaseDiffs, 'UniformOutput', false);
+                FC_tmp(k,:,n,:) = cell2mat(histResults);
+            end
+        end
+        FC_tmp = squeeze(mean(FC_tmp,3));
 
     elseif strcmp(FCMeasure,'Coherence') || strcmp(FCMeasure,'Coherency')
         
