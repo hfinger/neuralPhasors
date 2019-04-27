@@ -505,21 +505,21 @@ ylabel('number of region pairs')
 saveas(gcf,fullfile('hist_of_pvalues_of_PAdiff.png'))
 
 %% now richards suggested hypothesis test:
-distributionPAsDiffs = cell2mat(diffPAsFilteredByPathLengthFilteredPairs');
-for k=1:length(diffPAsFilteredByPathLengthFilteredPairs)
-    tmp = diffPAsFilteredByPathLengthFilteredPairs{k};
-    if length(tmp) >= num_pathways
-        if use_winzorising
-            meanTmp = mean(tmp(2:end-1));
-            stdTmp = std(tmp(2:end-1));
-        else
-            meanTmp = mean(tmp);
-            stdTmp = std(tmp);
-        end
-        testingDist = meanTmp + stdTmp * randn(length(tmp), num_hypo_test);
-        pValues{k} = sum(logical(sum(testingDist > tmp(1), 1))) / num_hypo_test;
-    end
-end
+% distributionPAsDiffs = cell2mat(diffPAsFilteredByPathLengthFilteredPairs');
+% for k=1:length(diffPAsFilteredByPathLengthFilteredPairs)
+%     tmp = diffPAsFilteredByPathLengthFilteredPairs{k};
+%     if length(tmp) >= num_pathways
+%         if use_winzorising
+%             meanTmp = mean(tmp(2:end-1));
+%             stdTmp = std(tmp(2:end-1));
+%         else
+%             meanTmp = mean(tmp);
+%             stdTmp = std(tmp);
+%         end
+%         testingDist = meanTmp + stdTmp * randn(length(tmp), num_hypo_test);
+%         pValues{k} = sum(logical(sum(testingDist > tmp(1), 1))) / num_hypo_test;
+%     end
+% end
 
 %% now the same as above but with normalizing:
 use_paths_with_min_lengths = 5;
@@ -567,30 +567,43 @@ ylabel('path activation')
 %%
 figure(21);
 clf;
-set(gcf, 'Position',  [100, 100, 1200, 800])
-plot_counter = 1;
-rng(444);
-for plot_pairs_with_shortest_path_length = 1:3
-    idxs = find(shortestPathPerStimPair == plot_pairs_with_shortest_path_length);
-    idxs = idxs(randperm(length(idxs),5));
-    for repeat=1:5
-        subplot(3,5,plot_counter)
-        plotDataX = radPerIndexUnique';
-        %plotDataY = PAs_per_SPO_maxMean{idxs(repeat)};
-        %plotDataY = PAs_per_SPO_maxMax{idxs(repeat)};
-        plotDataY = PAs_per_SPO_maxMaxMin{idxs(repeat)};
-        plotDataX = [plotDataX; plotDataX(1,:)];
-        plotDataY = [plotDataY; plotDataY(1,:)];
-        polarplot(plotDataX, plotDataY)
-        thetaticks(0:45:315)
-        rlim([0, 0.9])
-        if repeat==3
-            title(['PA per SPO for 5 randomly selected pairs with shortest path length ' num2str(plot_pairs_with_shortest_path_length) '. Colors correspond to different paths connecting the pair.'])
+set(gcf, 'Position',  [100, 100, 1600, 800])
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','normalized');
+set(gcf,'PaperPosition', [0 0 1 1]);
+num_per_grpup = 8;
+for rng_seed = 1:10
+    plot_counter = 1;
+    rng(rng_seed);
+    for plot_pairs_with_shortest_path_length = 1:3
+        idxs = find(shortestPathPerStimPair == plot_pairs_with_shortest_path_length);
+        idxs = idxs(randperm(length(idxs),num_per_grpup));
+        for repeat=1:num_per_grpup
+            subplot(3,num_per_grpup,plot_counter)
+            plotDataX = radPerIndexUnique';
+            %plotDataY = PAs_per_SPO_maxMean{idxs(repeat)};
+            %plotDataY = PAs_per_SPO_maxMax{idxs(repeat)};
+            plotDataY = PAs_per_SPO_maxMaxMin{idxs(repeat)};
+            plotDataX = [plotDataX; plotDataX(1,:)];
+            plotDataY = [plotDataY; plotDataY(1,:)];
+            polarplot(plotDataX, plotDataY)
+            pax = gca; pax.ThetaAxisUnits = 'radians';
+            %thetaticks(0:90:315)
+            thetaticks([0, pi/2, pi, 3*pi/2])
+            tmp_rlim = rlim();
+            tmp_rlim(1) = 0;
+            rlim(tmp_rlim)
+            rticks(tmp_rlim(2))
+            if repeat==round(num_per_grpup/2)
+                title(['PA per SPO for 5 randomly selected pairs with shortest path length ' num2str(plot_pairs_with_shortest_path_length) '. Colors correspond to different paths connecting the pair.'])
+            end
+            plot_counter = plot_counter + 1;
         end
-        plot_counter = plot_counter + 1;
     end
+    %saveas(gcf,fullfile(['PA_per_SPO_for_random_pairs_rng' num2str(rng_seed) '.png']))
+    saveas(gcf,fullfile(['PA_per_SPO_for_random_pairs_rng' num2str(rng_seed) '.pdf']))
 end
-saveas(gcf,fullfile('PA_per_SPO_for_random_pairs.png'))
 
 %% compare most active path with second most active path that has no overlap with first:
 use_max_path_length = 5;

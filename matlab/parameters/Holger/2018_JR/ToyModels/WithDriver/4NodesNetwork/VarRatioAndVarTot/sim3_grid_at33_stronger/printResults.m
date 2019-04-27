@@ -57,7 +57,7 @@ fractionSPO_PA1_active = mean(diffPA(:, :, 1:16) > 0, 3);
 %%
 figure(1)
 imagesc(d24,d213,IPSF)
-set(gca,'clim',[0; 0.6])
+set(gca,'clim',[0; 0.8])
 xlabel('node on P2 [mm]')
 ylabel('total distance P1 [mm]')
 title('IPSF')
@@ -67,7 +67,7 @@ colorbar;
 %%
 figure(2)
 imagesc(d24,d213,PA1_at_max_SPO)
-set(gca,'clim',[0; 0.5])
+set(gca,'clim',[0; 1])
 xlabel('node on P2 [mm]')
 ylabel('total distance P1 [mm]')
 title('PA1 at max SPO')
@@ -77,7 +77,7 @@ colorbar;
 %%
 figure(3)
 imagesc(d24,d213,PA2_at_max_SPO)
-set(gca,'clim',[0; 0.5])
+set(gca,'clim',[0; 1])
 xlabel('node on P2 [mm]')
 ylabel('total distance P1 [mm]')
 title('PA2 at max SPO')
