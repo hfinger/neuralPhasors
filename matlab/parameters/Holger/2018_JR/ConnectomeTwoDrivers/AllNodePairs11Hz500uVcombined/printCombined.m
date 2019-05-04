@@ -6,6 +6,10 @@ path_results1 = fullfile(data.resultsdir, ['Holger/2018_JR/ConnectomeTwoDrivers/
 path_results2 = fullfile(data.resultsdir, ['Holger/2018_JR/ConnectomeTwoDrivers/AllNodePairs11Hz500uVsameSeed']);
 results1 = load(fullfile( path_results1, 'all_coh.mat'));
 results2 = load(fullfile( path_results2, 'all_coh.mat'));
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ConnectomeTwoDrivers/' my_foldername]);
+if ~exist(path_results,'dir')
+    mkdir(path_results)
+end
 
 results = results1;
 for k=1:length(results.all_FC)
@@ -164,6 +168,7 @@ end
 %% select examplary pairs and plot polarplot with most important PAs for different SPOs:
 num_paths = 7;
 PAs_per_SPO_maxMean = cell(size(paths_unique_PAs, 1), 1);
+PAs_per_SPO_maxMean_node_idxs = cell(size(paths_unique_PAs, 1), 1);
 PAs_per_SPO_maxMax = cell(size(paths_unique_PAs, 1), 1);
 PAs_per_SPO_maxMaxMin = cell(size(paths_unique_PAs, 1), 1);
 for k=1:size(paths_unique_PAs, 1)
@@ -174,6 +179,7 @@ for k=1:size(paths_unique_PAs, 1)
     meanPA_per_path = mean(PAs_per_SPO,1);
     [~,sortIdxs] = sort(meanPA_per_path, 2, 'descend');
     PAs_per_SPO_maxMean{k} = PAs_per_SPO(:,sortIdxs(1:num_paths));
+    PAs_per_SPO_maxMean_node_idxs{k} = paths_unique{k,1}(sortIdxs(1:num_paths));
     
     % select paths with maxMax:
     maxPA_per_path = max(PAs_per_SPO);
@@ -218,8 +224,8 @@ set(gca,'xlim',[0.5, 6.5])
 xlabel('shortest path length')
 ylabel('IPSF')
 title(anova_result)
-saveas(gcf,fullfile('IPSF_vs_shortest_path_length.png'))
-saveas(gcf,fullfile('IPSF_vs_shortest_path_length.pdf'))
+saveas(gcf,fullfile(path_results, 'IPSF_vs_shortest_path_length.png'))
+saveas(gcf,fullfile(path_results, 'IPSF_vs_shortest_path_length.pdf'))
 
 %% log IPSF_vs_shortest_path_length:
 use_shortest_path_lengths = [1, 2, 3, 4, 5, 6];
@@ -241,8 +247,8 @@ yticklabels(tmp_tick_labels)
 xlabel('shortest path length')
 ylabel('IPSF')
 title(anova_result)
-saveas(gcf,fullfile('logIPSF_vs_shortest_path_length.png'))
-saveas(gcf,fullfile('logIPSF_vs_shortest_path_length.pdf'))
+saveas(gcf,fullfile(path_results, 'logIPSF_vs_shortest_path_length.png'))
+saveas(gcf,fullfile(path_results, 'logIPSF_vs_shortest_path_length.pdf'))
 
 %% IPSF_vs_fiber_length
 figure(5);
@@ -260,8 +266,8 @@ yticklabels(tmp_tick_labels)
 title(['corr = ' num2str(rho) ' pval = ' num2str(pval)])
 xlabel('average fiber length')
 ylabel('IPSF')
-saveas(gcf,fullfile('IPSF_vs_fiber_length.png'))
-saveas(gcf,fullfile('IPSF_vs_fiber_length.pdf'))
+saveas(gcf,fullfile(path_results, 'IPSF_vs_fiber_length.png'))
+saveas(gcf,fullfile(path_results, 'IPSF_vs_fiber_length.pdf'))
 
 %% IPSF_vs_num_paths no log IPSF
 filter_path_lengths = [1; 2; 3; 4; 5];
@@ -282,8 +288,8 @@ set(h(1),'marker','.')
 title(['corr = ' num2str(rho) ' pval = ' num2str(pval)])
 xlabel('number of paths with length <= 5')
 ylabel('IPSF')
-saveas(gcf,fullfile('IPSF_vs_num_paths.png'))
-saveas(gcf,fullfile('IPSF_vs_num_paths.pdf'))
+saveas(gcf,fullfile(path_results, 'IPSF_vs_num_paths.png'))
+saveas(gcf,fullfile(path_results, 'IPSF_vs_num_paths.pdf'))
 
 figure(7); 
 clf;
@@ -319,8 +325,8 @@ yticklabels(tmp_tick_labels)
 title(['corr = ' num2str(rho) ' pval = ' num2str(pval)])
 xlabel('number of paths with length <= 5')
 ylabel('IPSF')
-saveas(gcf,fullfile('logIPSF_vs_num_paths.png'))
-saveas(gcf,fullfile('logIPSF_vs_num_paths.pdf'))
+saveas(gcf,fullfile(path_results, 'logIPSF_vs_num_paths.png'))
+saveas(gcf,fullfile(path_results, 'logIPSF_vs_num_paths.pdf'))
 
 [p,tbl,stats] = anova1(log(IPSF(filter_zero_idxs)), num_unique_paths_per_pair_thresh, 'off');
 anova_result = ['F(' num2str(tbl{2, 3}) ',' num2str(tbl{3, 3}) ') = ' num2str(tbl{2, 5}) ', p = ' num2str(tbl{2, 6}) ];
@@ -336,8 +342,8 @@ yticklabels(tmp_tick_labels)
 xlabel('number of paths with length <= 5')
 ylabel('IPSF')
 title(anova_result)
-saveas(gcf,fullfile('logIPSF_vs_num_paths_nobox.png'))
-saveas(gcf,fullfile('logIPSF_vs_num_paths_nobox.pdf'))
+saveas(gcf,fullfile(path_results, 'logIPSF_vs_num_paths_nobox.png'))
+saveas(gcf,fullfile(path_results, 'logIPSF_vs_num_paths_nobox.pdf'))
 
 
 
@@ -353,8 +359,8 @@ for k=1:6
     %rlim([0, 15])
     title(['SP=' num2str(k) ' counts=' num2str(counts)])
 end
-saveas(gcf,fullfile('polarhistogram_IPSF_phases.png'))
-saveas(gcf,fullfile('polarhistogram_IPSF_phases.pdf'))
+saveas(gcf,fullfile(path_results, 'polarhistogram_IPSF_phases.png'))
+saveas(gcf,fullfile(path_results, 'polarhistogram_IPSF_phases.pdf'))
 
 %% polar plots of max IPSF phases AND filter to include only pairs with IPSF > 0.1:
 figure(11);
@@ -388,7 +394,7 @@ hist(num_maxPAs,min(num_maxPAs):max(num_maxPAs))
 xlabel('number of switching pathways')
 ylabel('number of region pairs')
 title('number of different active paths depending on phase offset')
-saveas(gcf,fullfile('histogram_of_PA_counts.png'))
+saveas(gcf,fullfile(path_results, 'histogram_of_PA_counts.png'))
 
 %% plot PAs but filter for real switching without noise switching
 figure(15);
@@ -422,7 +428,7 @@ hold off;
 title('Mean PA at max SPO (blue), diff to min SPO (red)')
 xlabel('path index')
 ylabel('path activation')
-saveas(gcf,fullfile('MeanPAsAtMaxVsMinSPO.png'))
+saveas(gcf,fullfile(path_results, 'MeanPAsAtMaxVsMinSPO.png'))
 
 %% use only paths with maximum length 5 and use only the pairs with more than 10 pathways:
 use_paths_with_max_lengths = 4;
@@ -451,15 +457,15 @@ hold off;
 title('Mean PA at max SPO (blue), diff to min SPO (red)')
 xlabel('path index')
 ylabel('path activation')
-saveas(gcf,fullfile('MeanPAsAtMaxVsMinSPO_filtered.png'))
-saveas(gcf,fullfile('MeanPAsAtMaxVsMinSPO_filtered.pdf'))
+saveas(gcf,fullfile(path_results, 'MeanPAsAtMaxVsMinSPO_filtered.png'))
+saveas(gcf,fullfile(path_results, 'MeanPAsAtMaxVsMinSPO_filtered.pdf'))
 
 figure(18);
 h = notBoxPlot(diffPAsFiltered, 'jitter', 0.4);
 xlabel('path index (sorted by PA difference)')
 ylabel('mean PA difference (per sorting position)')
-saveas(gcf,fullfile('MeanPAsAtMaxVsMinSPO_filtered_nobox.png'))
-saveas(gcf,fullfile('MeanPAsAtMaxVsMinSPO_filtered_nobox.pdf'))
+saveas(gcf,fullfile(path_results, 'MeanPAsAtMaxVsMinSPO_filtered_nobox.png'))
+saveas(gcf,fullfile(path_results, 'MeanPAsAtMaxVsMinSPO_filtered_nobox.pdf'))
 
 %% hypothesis test as suggested by Peter:
 use_paths_with_max_lengths = 5;
@@ -484,7 +490,8 @@ for k=1:length(paths_unique_lengths)
             stdTmp = std(tmp);
         end
         testingDist = meanTmp + stdTmp * randn(length(tmp), num_hypo_test);
-        pValues{k} = sum(logical(sum(testingDist > tmp(1), 1))) / num_hypo_test;
+        maxOfTestingDist = max(testingDist,[],1);
+        pValues{k} = sum(logical(sum(maxOfTestingDist > tmp(1), 1))) / num_hypo_test;
     end
 end
 
@@ -502,24 +509,7 @@ hist(pValues, 40)
 title(['geomean=' num2str(geom_pval) ' fisher p=' num2str(fisher_group_pval)])
 xlabel('p')
 ylabel('number of region pairs')
-saveas(gcf,fullfile('hist_of_pvalues_of_PAdiff.png'))
-
-%% now richards suggested hypothesis test:
-% distributionPAsDiffs = cell2mat(diffPAsFilteredByPathLengthFilteredPairs');
-% for k=1:length(diffPAsFilteredByPathLengthFilteredPairs)
-%     tmp = diffPAsFilteredByPathLengthFilteredPairs{k};
-%     if length(tmp) >= num_pathways
-%         if use_winzorising
-%             meanTmp = mean(tmp(2:end-1));
-%             stdTmp = std(tmp(2:end-1));
-%         else
-%             meanTmp = mean(tmp);
-%             stdTmp = std(tmp);
-%         end
-%         testingDist = meanTmp + stdTmp * randn(length(tmp), num_hypo_test);
-%         pValues{k} = sum(logical(sum(testingDist > tmp(1), 1))) / num_hypo_test;
-%     end
-% end
+saveas(gcf,fullfile(path_results, 'hist_of_pvalues_of_PAdiff.png'))
 
 %% now the same as above but with normalizing:
 use_paths_with_min_lengths = 5;
@@ -564,50 +554,17 @@ title('Mean PA at max SPO (blue), diff to min SPO (red)')
 xlabel('path index')
 ylabel('path activation')
 
-%%
-figure(21);
-clf;
-set(gcf, 'Position',  [100, 100, 1600, 800])
-set(gcf,'PaperOrientation','landscape');
-set(gcf,'PaperOrientation','landscape');
-set(gcf,'PaperUnits','normalized');
-set(gcf,'PaperPosition', [0 0 1 1]);
-num_per_grpup = 8;
-for rng_seed = 1:10
-    plot_counter = 1;
-    rng(rng_seed);
-    for plot_pairs_with_shortest_path_length = 1:3
-        idxs = find(shortestPathPerStimPair == plot_pairs_with_shortest_path_length);
-        idxs = idxs(randperm(length(idxs),num_per_grpup));
-        for repeat=1:num_per_grpup
-            subplot(3,num_per_grpup,plot_counter)
-            plotDataX = radPerIndexUnique';
-            %plotDataY = PAs_per_SPO_maxMean{idxs(repeat)};
-            %plotDataY = PAs_per_SPO_maxMax{idxs(repeat)};
-            plotDataY = PAs_per_SPO_maxMaxMin{idxs(repeat)};
-            plotDataX = [plotDataX; plotDataX(1,:)];
-            plotDataY = [plotDataY; plotDataY(1,:)];
-            polarplot(plotDataX, plotDataY)
-            pax = gca; pax.ThetaAxisUnits = 'radians';
-            %thetaticks(0:90:315)
-            thetaticks([0, pi/2, pi, 3*pi/2])
-            tmp_rlim = rlim();
-            tmp_rlim(1) = 0;
-            rlim(tmp_rlim)
-            rticks(tmp_rlim(2))
-            if repeat==round(num_per_grpup/2)
-                title(['PA per SPO for 5 randomly selected pairs with shortest path length ' num2str(plot_pairs_with_shortest_path_length) '. Colors correspond to different paths connecting the pair.'])
-            end
-            plot_counter = plot_counter + 1;
-        end
-    end
-    %saveas(gcf,fullfile(['PA_per_SPO_for_random_pairs_rng' num2str(rng_seed) '.png']))
-    saveas(gcf,fullfile(['PA_per_SPO_for_random_pairs_rng' num2str(rng_seed) '.pdf']))
-end
 
 %% compare most active path with second most active path that has no overlap with first:
 use_max_path_length = 5;
-collected_paths = cell(1,1,length(paths_unique_lengths));
+PAs_of_collected_paths_cell = cell(1,1,length(paths_unique_lengths));
+first_path_idxs_cell = cell(1,1,length(paths_unique_lengths));
+first_path_PAs_cell = cell(1,1,length(paths_unique_lengths));
+second_path_idxs_cell = cell(1,1,length(paths_unique_lengths));
+PAs_of_collected_third_paths = cell(1,1,length(paths_unique_lengths));
+IPSFs_of_collected_paths = cell(1,1,length(paths_unique_lengths));
+maxSpoIdx_of_collected_paths = cell(1,1,length(paths_unique_lengths));
+cohUnique_of_collected_paths = cell(1,1,length(paths_unique_lengths));
 for k=1:length(paths_unique_lengths)
     use_paths_idx = (use_max_path_length >= paths_unique_lengths{k});
     this_PAs = cell2mat(paths_unique_PAs(k,:)');
@@ -615,8 +572,10 @@ for k=1:length(paths_unique_lengths)
     [~, sidx] = sort(avg_PAs, 2, 'descend');
     
     first_path_idx = sidx(1);
+    first_path_idxs_cell{1,1,k} = first_path_idx;
     first_path_PA = this_PAs(:, first_path_idx);
     nodes_on_first_path = paths_unique{k,1}{first_path_idx}(2:end-1);
+    first_path_PAs_cell{1,1,k} = first_path_PA;
     
     % now search for second best without overlap:
     for j=2:length(sidx)
@@ -625,18 +584,317 @@ for k=1:length(paths_unique_lengths)
         if isempty(intersect(nodes_on_first_path, nodes_on_second_path))
             % found disjoint path:
             second_path_PA = this_PAs(:, second_path_idx);
-            collected_paths{1,1,k} = [first_path_PA, second_path_PA];
+            PAs_of_collected_paths_cell{1,1,k} = [first_path_PA, second_path_PA];
+            second_path_idxs_cell{1,1,k} = second_path_idx;
+            IPSFs_of_collected_paths{1,1,k} = IPSF(k);
+            maxSpoIdx_of_collected_paths{1,1,k} = maxInd(k);
+            cohUnique_of_collected_paths{1,1,k} = cohUnique(k,:);
+            
+            % now search for third best without overlap:
+            for l=(j+1):length(sidx)
+                third_path_idx = sidx(l);
+                nodes_on_third_path = paths_unique{k,1}{third_path_idx}(2:end-1);
+                if isempty(intersect(nodes_on_first_path, nodes_on_third_path)) && isempty(intersect(nodes_on_second_path, nodes_on_third_path))
+                    % found third disjoint path:
+                    third_path_PA = this_PAs(:, third_path_idx);
+                    PAs_of_collected_third_paths{1,1,k} = [first_path_PA, third_path_PA];
+                    break;
+                end
+            end
+            
             break;
         end
     end
 end
-collected_paths2 = cell2mat(collected_paths);
 
-collected_paths2 = bsxfun(@minus, collected_paths2, mean(collected_paths2, 1));
-collected_paths2 = bsxfun(@rdivide, collected_paths2, std(collected_paths2, 1));
+PAs_of_collected_paths = cell2mat(PAs_of_collected_paths_cell);
+PAs_of_collected_third_paths = cell2mat(PAs_of_collected_third_paths);
+IPSFs_of_collected_paths = cell2mat(IPSFs_of_collected_paths);
+maxSpoIdx_of_collected_paths = cell2mat(maxSpoIdx_of_collected_paths);
+cohUnique_of_collected_paths = squeeze(cell2mat(cohUnique_of_collected_paths));
+cohUnique_of_collected_paths_ztrafo = bsxfun(@minus, cohUnique_of_collected_paths, mean(cohUnique_of_collected_paths,1));
+cohUnique_of_collected_paths_ztrafo = bsxfun(@rdivide, cohUnique_of_collected_paths_ztrafo, std(cohUnique_of_collected_paths_ztrafo,1));
 
-first_paths = squeeze(collected_paths2(:,1,:));
-second_paths = squeeze(collected_paths2(:,2,:));
+maxSpoRad_of_collected_paths = radPerIndex(maxSpoIdx_of_collected_paths);
 
-figure(22)
-plot(first_paths(:), second_paths(:), '.')
+unit_circle = exp(1i * radPerIndex(1:16))';
+circMean = squeeze(mean( bsxfun(@times, PAs_of_collected_paths(1:16, :, :), unit_circle), 1));
+angleWithMostPA = mod( angle(circMean) ,2*pi);
+absWithMostPA = abs(circMean);
+
+[~, maxIndPAs1] = max(PAs_of_collected_paths(1:16, 1, :), [], 1);
+[~, maxIndPAs2] = max(PAs_of_collected_paths(1:16, 2, :), [], 1);
+maxSPO_PAs1 = radPerIndex(maxIndPAs1);
+maxSPO_PAs2 = radPerIndex(maxIndPAs2);
+angleWithMostPA_using_max = cat(1, maxSPO_PAs1, maxSPO_PAs2);
+
+cohZ_at_maxIndPAs1 = diag(cohUnique_of_collected_paths_ztrafo(maxIndPAs1,:));
+cohZ_at_maxIndPAs2 = diag(cohUnique_of_collected_paths_ztrafo(maxIndPAs2,:));
+
+angleWithMostPA_relToMaxSpo = mod( angleWithMostPA_using_max - maxSpoRad_of_collected_paths, 2*pi);
+
+angleWithMostPA_relToMaxSpo_histCounts1 = histcounts(angleWithMostPA_relToMaxSpo(1,:), circHistBinEdges);
+angleWithMostPA_relToMaxSpo_histCounts2 = histcounts(angleWithMostPA_relToMaxSpo(2,:), circHistBinEdges);
+
+expected = sum(angleWithMostPA_relToMaxSpo_histCounts1) / 16;
+chi_square1 = sum((expected - angleWithMostPA_relToMaxSpo_histCounts1).^2 / expected);
+chi_square2 = sum((expected - angleWithMostPA_relToMaxSpo_histCounts2).^2 / expected);
+p1 = chi2cdf(chi_square1,16-1,'upper');
+p2 = chi2cdf(chi_square2,16-1,'upper');
+
+figure(21);
+clf;
+polarhistogram(angleWithMostPA_relToMaxSpo(1,:),circHistBinEdges)
+pax = gca; pax.ThetaAxisUnits = 'radians';
+thetaticks([0, pi/2, pi, 3*pi/2])
+rlim([0, 120])
+rticks([0, 120])
+saveas(gcf,fullfile(path_results, ['angleWithMostPA_relToMaxSpo_Path1.png']))
+saveas(gcf,fullfile(path_results, ['angleWithMostPA_relToMaxSpo_Path1.pdf']))
+
+figure(22);
+clf;
+polarhistogram(angleWithMostPA_relToMaxSpo(2,:),circHistBinEdges)
+pax = gca; pax.ThetaAxisUnits = 'radians';
+thetaticks([0, pi/2, pi, 3*pi/2])
+rlim([0, 120])
+rticks([0, 120])
+saveas(gcf,fullfile(path_results, ['angleWithMostPA_relToMaxSpo_Path2.png']))
+saveas(gcf,fullfile(path_results, ['angleWithMostPA_relToMaxSpo_Path2.pdf']))
+
+diffAngle = mod( angleWithMostPA_relToMaxSpo(1,:) - angleWithMostPA_relToMaxSpo(2,:), 2*pi);
+
+where_PA1_larger_than_PA2 = squeeze(PAs_of_collected_paths(1:16, 1, :) > PAs_of_collected_paths(1:16, 2, :));
+fraction_of_switchers = mean(sum(where_PA1_larger_than_PA2, 1)<14);
+
+figure(77)
+hist(mean(where_PA1_larger_than_PA2, 1));
+saveas(gcf,fullfile(path_results, ['hist_of_fraction_SPO_where_PA1_larger_than_PA2.pdf']))
+
+[switching_index] = pathway_switching_index(PAs_of_collected_paths(1:16, 1, :),PAs_of_collected_paths(1:16, 2, :));
+
+hist_edges = exp(-5:0.5:-1);
+hist_edges = [-hist_edges(end:-1:1), 0, hist_edges];
+hist_pair_counts = histcounts(switching_index, hist_edges);
+
+figure(23);
+clf;
+bar(hist_pair_counts);
+set(gca,'xtick',[0.5:length(hist_pair_counts)]);
+set(gca,'xticklabels',round(hist_edges*1000)/1000)
+xlabel('pathway switching index (PSI)')
+ylabel('number node pairs')
+
+%%
+figure(24);
+clf;
+histogram(switching_index, -0.5:0.02:0.5)
+xlim([-0.5 0.5])
+set(gca,'xtick',[-0.5, 0, 0.5])
+set(gca,'ytick',[0, 40])
+xlabel('pathway switching index (PSI)')
+ylabel('number node pairs')
+hold on;
+plot([0, 0], [0, 40], 'LineWidth', 2)
+hold off;
+saveas(gcf,fullfile(path_results, ['hist_PSI.pdf']))
+
+[h,p,ci,stats] = ttest(switching_index);
+
+first_path_PAs = squeeze(cell2mat(first_path_PAs_cell));
+first_path_PAs = first_path_PAs(1:16, :);
+all_first_path_SPO_selectivity = max(first_path_PAs, [], 1) - min(first_path_PAs, [], 1);
+
+figure(88);
+clf;
+edges = 0:0.05:0.8;
+edges(end) = 0.81;
+histogram(all_first_path_SPO_selectivity, edges)
+xlim([0 0.8])
+set(gca,'xtick',[0 0.4 0.8])
+set(gca,'ytick',[0, 180])
+xlabel('pathway phase selectivity (PPS)')
+ylabel('number node pairs')
+saveas(gcf,fullfile(path_results, ['hist_PPS.pdf']))
+
+%%
+showPSI = true;
+plotOnlyNonOverlapping = true;
+
+figure(25);
+set(gcf, 'Position',  [100, 100, 1600, 800])
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','normalized');
+set(gcf,'PaperPosition', [0 0 1 1]);
+num_per_grpup = 8;
+plotDataX = radPerIndexUnique';
+plotDataX = [plotDataX; plotDataX(1,:)];
+for rng_seed = 1:8
+    clf;
+    plot_counter = 1;
+    rng(rng_seed);
+    for plot_pairs_with_shortest_path_length = 1:3
+        idxs = find(shortestPathPerStimPair == plot_pairs_with_shortest_path_length);
+        idxs = idxs(randperm(length(idxs),num_per_grpup));
+        for repeat=1:num_per_grpup
+            global_pair_idx = idxs(repeat);
+            subplot(3,num_per_grpup,plot_counter)
+            plot_counter = plot_counter + 1;
+            
+            if plotOnlyNonOverlapping
+                
+                this_PAs = cell2mat(paths_unique_PAs(global_pair_idx,:)');
+                this_PAs = [this_PAs(1:16, :); this_PAs(1, :)];
+                
+                remaining_path_idxs = setdiff(1:size(this_PAs,2), [first_path_idx, second_path_idx]);
+                rest_PAs = this_PAs(:,remaining_path_idxs);
+                [~, rest_PAs_sort_idxs] = sort(mean(rest_PAs(1:16,:),1),'descend');
+                
+                
+                % first plot remaining and only at last the strongest
+                polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(1)), 'Color', [0.4660, 0.6740, 0.1880]	)
+                hold on;
+                polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(2)), 'Color', [0.4660, 0.6740, 0.1880]	)
+                polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(3)), 'Color', [0.4660, 0.6740, 0.1880]	)
+                
+                second_path_idx = second_path_idxs_cell{1,1,global_pair_idx};
+                second_path_PAs = this_PAs(:, second_path_idx);
+                if size(second_path_PAs,2)>0
+                    polarplot(plotDataX, second_path_PAs, 'Color', [0.6350, 0.0780, 0.1840])
+                end
+                
+                first_path_idx = first_path_idxs_cell{1,1,global_pair_idx};
+                first_path_PAs = this_PAs(:, first_path_idx);
+                polarplot(plotDataX, first_path_PAs, 'Color', [0, 0.4470, 0.7410])
+                
+                hold off;
+            else
+                plotDataY = PAs_per_SPO_maxMean{global_pair_idx};
+                %plotDataY = PAs_per_SPO_maxMax{idxs(repeat)};
+                %plotDataY = PAs_per_SPO_maxMaxMin{idxs(repeat)};
+                
+                plotDataY = [plotDataY; plotDataY(1,:)];
+                polarplot(plotDataX, plotDataY)
+            end
+            
+            pax = gca; pax.ThetaAxisUnits = 'radians';
+            %thetaticks(0:90:315)
+            thetaticks([0, pi/2, pi, 3*pi/2])
+            
+            hold on;
+            
+            %plotDataYcoh = [cohUnique(idxs(repeat),:), cohUnique(idxs(repeat),1)]';
+            %polarplot(plotDataX, plotDataYcoh, 'color', 'k', 'LineStyle', ':')
+            
+            tmp_rlim = rlim();
+            tmp_rlim(1) = 0;
+            rlim(tmp_rlim)
+            rticks(tmp_rlim(2))
+            
+            %polarplot([maxPhaseRad(idxs(repeat)), maxPhaseRad(idxs(repeat))], [0, 1])
+            
+            hold off;
+            
+            if rng_seed==3 && plot_pairs_with_shortest_path_length==1 && repeat==1
+                surfacePlotIdx{1} = idxs(repeat);
+            end
+            if rng_seed==5 && plot_pairs_with_shortest_path_length==2 && repeat==6
+                surfacePlotIdx{2} = idxs(repeat);
+            end
+            if rng_seed==8 && plot_pairs_with_shortest_path_length==2 && repeat==1
+                surfacePlotIdx{3} = idxs(repeat);
+            end
+            
+            if showPSI
+                if size(PAs_of_collected_paths_cell{idxs(repeat)},1)>0
+                    switching_index = pathway_switching_index(PAs_of_collected_paths_cell{idxs(repeat)}(1:16, 1),PAs_of_collected_paths_cell{idxs(repeat)}(1:16, 2));
+                    PPS = all_first_path_SPO_selectivity(idxs(repeat));
+                    title(['PSI=' num2str(round(switching_index*100)/100) ' PPS=' num2str(round(PPS*100)/100)])
+                end
+            else
+                if repeat==round(num_per_grpup/2)
+                    title(['PA per SPO for 5 randomly selected pairs with shortest path length ' num2str(plot_pairs_with_shortest_path_length) '. Colors correspond to different paths connecting the pair.'])
+                end
+            end
+            
+        end
+    end
+    saveas(gcf,fullfile(path_results, ['PA_per_SPO_for_random_pairs_rng' num2str(rng_seed) '.pdf']))
+end
+
+%% surface plots:
+[C,D,F] = getConnectome(1,1,0.1,1); % get Connectivity and Delay matrix of Connectome
+threshold = 0.1;
+C(C < threshold) = 0;
+C = bsxfun(@rdivide,C,sum(C,2));
+C = C + C';
+edgeVals = [C zeros(33,33); zeros(33,33) zeros(33,33)];
+
+all_FCs = cellfun(@(x) x{1}, reshape(results.all_FC, paramSizes), 'UniformOutput', false);
+
+for selected_pair_idx=3 %1:4
+    use_pair_idx = surfacePlotIdx{selected_pair_idx};
+    my_FC = cell2mat(all_FCs(1,use_pair_idx,:));
+
+    my_FC2 = my_FC(3:end, 3:end, 1:16);
+
+    node_coh_with_driver = squeeze(my_FC(3:end, 1, 1:16));
+
+    my_FC2_whereConn = zeros(size(my_FC2));
+    for k=1:16
+        tmp = my_FC2(:,:,k);
+        tmp(C==0) = 0;
+        my_FC2_whereConn(:,:,k) = tmp;
+    end
+
+    target_stim_pairs = results.paramComb{2,use_pair_idx};
+    coh_between_stimulated_pairs = squeeze(my_FC2(target_stim_pairs(1),target_stim_pairs(2), :));
+
+    for spo_idx = 1:16 %[3, 13]
+
+        % now create a FC conn mat with only connections on given paths:
+        my_FC3_wherePath = zeros(size(my_FC2));
+        tmp = PAs_per_SPO_maxMean_node_idxs{use_pair_idx};
+        tmp_PA = PAs_per_SPO_maxMean{use_pair_idx};
+        [~, sort_idx] = sort(tmp_PA(spo_idx,:), 'descend');
+        for k=1:1%length(surfacePlotIdx3_node_idxs)
+            nodes_on_path = tmp{sort_idx(k)};
+            for m=1:length(nodes_on_path)-1
+                start_node = nodes_on_path(m);
+                end_node = nodes_on_path(m+1);
+                my_FC3_wherePath(start_node,end_node,:) = my_FC2_whereConn(start_node,end_node,:);
+            end
+        end
+
+        edgeWidth = zeros(33,33);
+        edgeWidth(my_FC2_whereConn(:,:,spo_idx)>0) = 0.3;
+        edgeWidth(my_FC3_wherePath(:,:,spo_idx)>0) = 0.9;
+        edgeWidth = [edgeWidth(:,:) zeros(33,33); zeros(33,33) zeros(33,33)];
+        edgeColor = [my_FC2_whereConn(:,:,spo_idx) zeros(33,33); zeros(33,33) zeros(33,33)];
+
+        figure(25);
+        nodeVals = 0.0001 * zeros(66,1);
+        nodeVals(target_stim_pairs) = 0.5;
+        nodeVals(1:33) = node_coh_with_driver(:, spo_idx);
+
+        nodeVals(1:33) = 0.2;
+        nodeVals(target_stim_pairs) = 0.5;
+
+        nodeScale = 40;
+        nodeMinSize = 0;
+        nodeRange = [min(min(min(nodeVals))),max(max(max(nodeVals)))];
+        edgeMin = 0;
+        edgeAlphas = 1;
+        surfaceVisibility = 0.1;
+        rescaleEdgeVals = 2;
+        cmap = colormap(flipud(hot));
+        plotBrainConnectivityNew(nodeVals,edgeWidth,nodeMinSize,nodeScale,nodeRange,edgeColor,edgeMin,edgeAlphas,surfaceVisibility,rescaleEdgeVals,1,cmap);
+        view(260,15);
+        colorbar;
+        pause(0.1);
+
+        saveas(gcf,fullfile(path_results, ['connectome_pathways_spo' num2str(spo_idx) '.png']))
+        saveas(gcf,fullfile(path_results, ['connectome_pathways_spo' num2str(spo_idx) '.pdf']))
+    end
+end

@@ -17,12 +17,19 @@ for k=1:length(results.all_FC)
     FC_per_SPO = diag(FC,1);
     stim_pair_coh(k,:) = FC_per_SPO(1:2:31);
 end
+
+stim_pair_coh = reshape(stim_pair_coh, [paramSizes, 16]);
+stim_pair_coh = reshape(mean(stim_pair_coh,3), [paramSizes(2), 16]);
 stim_pair_coh = cat(2, stim_pair_coh, stim_pair_coh(:,1));
+
 
 %%
 figure(1)
 imagesc(d12,phase_offsets,stim_pair_coh')
-set(gca,'clim',[0; 0.6])
+set(gca,'clim',[0; 0.55]);
+set(gca,'TickLength',[0 0]);
+set(gca,'xTick',[0, 200]);
+set(gca,'yTick',[0]);
 xlabel('distance [mm]')
 ylabel('stimulation phase offset [rad]')
 set(gca,'YDir','normal')
@@ -39,7 +46,9 @@ IPSF = maxCoh - minCoh;
 figure(2);
 set(gcf, 'Position',  [100, 100, 500, 250])
 clf;
-plot(d12,[IPSF; 3*stdCoh]')
+plot(d12,[IPSF]')
+set(gca,'xTick',[0, 200]);
+set(gca,'yTick',[0, 0.2, 0.4, 0.6]);
 xlabel('distance [mm]')
 ylabel('IPSF')
 set(gca,'ylim',[0; 0.6])

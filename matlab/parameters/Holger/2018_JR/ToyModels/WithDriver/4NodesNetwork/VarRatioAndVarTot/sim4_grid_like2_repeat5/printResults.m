@@ -9,14 +9,22 @@ phase_offsets = [0:0.0625:1]*2*pi;
 d213 = 0:10:200;
 d24 = 0:10:100;
 
+all_FC = cellfun(@(x) x{1}, results.all_FC, 'UniformOutput', false);
+all_FC = permute(all_FC, [3, 4, 5, 1, 2]);
+all_FC = cell2mat(all_FC);
+
+all_FC = reshape(all_FC, [96, 96, length(d213), length(d24), 5]);
+all_FC = mean(all_FC,5);
+all_FC = reshape(all_FC, [96, 96, length(d213)*length(d24)]);
+
 paramSizes = [length(d213), length(d24)];
 
 %%
-stim_pair_coh = zeros(length(results.all_FC),16);
-PA1 = zeros(length(results.all_FC),16);
-PA2 = zeros(length(results.all_FC),16);
-for k=1:length(results.all_FC)
-    FC = results.all_FC{k}{1}(33:end,33:end);
+stim_pair_coh = zeros(size(all_FC,3),16);
+PA1 = zeros(size(all_FC,3),16);
+PA2 = zeros(size(all_FC,3),16);
+for k=1:size(all_FC,3)
+    FC = all_FC(33:end,33:end, k);
     diag1 = diag(FC,1);
     diag2 = diag(FC,2);
     diag3 = diag(FC,3);
