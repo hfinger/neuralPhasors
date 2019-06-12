@@ -1,2 +1,5 @@
 *.m~
 *.metadata
+matlab/include/*
+!matlab/include/dataPaths.m
+!matlab/include/README.md
