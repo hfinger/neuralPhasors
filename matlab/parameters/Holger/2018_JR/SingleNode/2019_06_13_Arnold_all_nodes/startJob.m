@@ -16,7 +16,7 @@ params.Gridjob.jobname = 'Connectome';
 params.Gridjob.continue = false;
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '00:19:59';
+params.Gridjob.walltime = '00:39:59';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
