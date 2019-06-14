@@ -37,6 +37,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.cs = [c_tmp, c_tmp*0.8, c_tmp*0.25, c_tmp*0.25, 0]; % connectivity strength (can sometimes be interpreted as average synaptic contacts)
       
       this.params.JansenRitConnectomePaper.drivFreq = 6; %driving frequencies
+      this.params.JansenRitConnectomePaper.drivPosVarMatrix = []; % network node to drive
       this.params.JansenRitConnectomePaper.drivPos = [1]; % network node to drive
       %this.params.JansenRitConnectomePaper.drivRange = [1 1]; % variance of the gaussian centered around DrivPos determining the strength of stimulation
       this.params.JansenRitConnectomePaper.drivPO = [0]*pi; % phase offset of drivers
@@ -54,6 +55,8 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.C = []; % Connectivity matrix
       this.params.JansenRitConnectomePaper.D = []; % Distance matrix
       this.params.JansenRitConnectomePaper.nodeLesions = 0; % number of nodes to lesion along the along the connections between driven nodes
+
+      this.params.JansenRitConnectomePaper.washout = 1;
       
       this.params.JansenRitConnectomePaper.u0 = 6e-3; % membrane voltage for which 50 % of maximum mean firing rate is observed [V].. was 0 in master thesis
       this.params.JansenRitConnectomePaper.He = 3.25e-3; % Average synaptic gain for excitatory synapses [V]
@@ -72,6 +75,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.use_inpP_as_out = false;
       this.params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
       this.params.JansenRitConnectomePaper.calcCohWithDriver = false;
+      this.params.JansenRitConnectomePaper.calcKuramotoOrderParam = false;
       this.params.JansenRitConnectomePaper.saveSpectrum = false;
       
       this.params.JansenRitConnectomePaper.xCollExtended = false;
@@ -176,224 +180,267 @@ classdef JansenRitConnectomePaper < Gridjob
         JRParams.do2 = -1/To^2; % constant for second derivative of excitatory synapses
       end
       
-      % initialize driver parameters
-      drivPos = this.params.JansenRitConnectomePaper.drivPos;
-      
-      %sim.drivRange = this.params.JansenRitConnectomePaper.drivRange;
-      sim.drivFreq = this.params.JansenRitConnectomePaper.drivFreq;
-      sim.drivScale = this.params.JansenRitConnectomePaper.drivScale;
-      sim.drivPO = this.params.JansenRitConnectomePaper.drivPO;
-      sim.drivStart = this.params.JansenRitConnectomePaper.drivStart;
-      sim.drivDur = this.params.JansenRitConnectomePaper.drivDur;
-      
-      if length(sim.drivPO) < length(drivPos)
-          sim.drivPO = [0,sim.drivPO];
+      numRepeats = 1;
+      if ~isempty(this.params.JansenRitConnectomePaper.drivPosVarMatrix)
+        numRepeats = size(this.params.JansenRitConnectomePaper.drivPosVarMatrix, 1);
+        simResultAllTmp = cell(1,numRepeats);
       end
       
-      % load C,D and anatomical indices
-      if isempty(sim.C)
-          homotopeScaling = 0.;
-          singleHemisphere = true;
-          [C,D] = getConnectome(1,sim.p,homotopeScaling,singleHemisphere);
-      else
-          C = sim.C;
-          D = sim.D;
-      end
-      
-      % lesion nodes in C
-      for i=1:sim.nodeLesions
-          [paths,~] = getDelayWeightedSWPs(C, 0.1, sim.drivPos, 5, false);
-          if isempty(paths)
-              break
-          else
-              path = paths{1,1};
-          end
-          if length(path) < 3
-              C(path(1),path(2)) = 0;
-              C(path(2),path(1)) = 0;
-          else
-              idx = randi([2,length(path(2:end-1))]);
-              C(idx,:) = 0;
-              C(:,idx) = 0;
-          end
-      end
-      
-      % get 3d coordinates for each node and for eeg electrodes
-      %path_ROICoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e/fs_rois/ca03_fs_rois.mat';
-      %path_electrodeCoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/ca_electrodeLocations/ca03_EEGLocations.txt';
-      %roiData = load(path_ROICoordinates);
-      %electrodeCoordinatesTable = readtable(path_electrodeCoordinates,'Delimiter',' ','ReadVariableNames',false);
-      
-      %roiCoordinates = roiData.fs_rois;
-      %electrodeCoordinates = table2array(electrodeCoordinatesTable(:,2:end));
-      
-      % reorder roi coordinates after anatomical indices
-      %roiCoordinates = roiCoordinates(resortIds,:);
-      
-      % create drivers:    
-      %     find electrode position closest to node to be stimulated and extract
-      %     stimulation strength for each node from gaussian centered around that
-      %     electrode position
-      drivers = zeros(size(C,1),size(drivPos',1));
-      %ED = pdist2(electrodeCoordinates, roiCoordinates);
-      for i = 1:size(drivers, 2)
-      %    [~,pos] = min(ED(:,drivPos(i)));
-      %    drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
-      %    drivStrength = drivStrength - min(drivStrength);
-      %    drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
-           drivers(drivPos(i),i) = sim.drivScale * 1e-3 / 2;  % convert from mV to V and divide by 2 to use peak-to-peak amplitude for sin
-      end
+      for repeatIdx = 1:numRepeats
 
-      % run jansen rit simulation and store PSPs of pyramidal cells
-      if this.params.JansenRitConnectomePaper.use_moran
-          nStatesJR = 13;
-          StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-          [ PSPs, Driver, xCollExtended ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
-      else
-          
-          if JRParams.use_out_psp
-            nStatesJR = 8;
-          else
-            nStatesJR = 6;
-          end
-          
-          StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
-          [ PSPs, Driver, xCollExtended ] = runJansenRitOriginal( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
-      end
-      simResult.Y = vertcat(Driver,PSPs);
-      sim.drivPos = drivPos + size(Driver, 1);
-      simResult.sim = sim;
-      clear PSPs
-      clear Driver
+        if ~isempty(this.params.JansenRitConnectomePaper.drivPosVarMatrix)
+          drivPos = this.params.JansenRitConnectomePaper.drivPosVarMatrix(repeatIdx, :);
+        else
+          drivPos = this.params.JansenRitConnectomePaper.drivPos;
+        end
+        
+        %sim.drivRange = this.params.JansenRitConnectomePaper.drivRange;
+        sim.drivFreq = this.params.JansenRitConnectomePaper.drivFreq;
+        sim.drivScale = this.params.JansenRitConnectomePaper.drivScale;
+        sim.drivPO = this.params.JansenRitConnectomePaper.drivPO;
+        sim.drivStart = this.params.JansenRitConnectomePaper.drivStart;
+        sim.drivDur = this.params.JansenRitConnectomePaper.drivDur;
 
-      % extract peak frequencies of each node
-      Fs = 1/(sim.dt*sim.sampling);
-      Hs = spectrum.periodogram;
-      freqs = zeros(size(simResult.Y,1),1);
-      if this.params.JansenRitConnectomePaper.saveSpectrum
-          simResult.spectrumPower = cell(size(simResult.Y,1),1);
-      end
-      for n=1:size(simResult.Y,1)
-        h = psd(Hs,simResult.Y(n,:),'Fs',Fs);
-        f = h.Frequencies;
-        d = h.Data;
-        d(1:100) = 0;
-        [~,target] = max(d);
-        freqs(n) = f(target);
+        if length(sim.drivPO) < length(drivPos)
+            sim.drivPO = [0,sim.drivPO];
+        end
+
+        % load C,D and anatomical indices
+        if isempty(sim.C)
+            homotopeScaling = 0.;
+            singleHemisphere = true;
+            [C,D] = getConnectome(1,sim.p,homotopeScaling,singleHemisphere);
+        else
+            C = sim.C;
+            D = sim.D;
+        end
+
+        % lesion nodes in C
+        for i=1:sim.nodeLesions
+            [paths,~] = getDelayWeightedSWPs(C, 0.1, sim.drivPos, 5, false);
+            if isempty(paths)
+                break
+            else
+                path = paths{1,1};
+            end
+            if length(path) < 3
+                C(path(1),path(2)) = 0;
+                C(path(2),path(1)) = 0;
+            else
+                idx = randi([2,length(path(2:end-1))]);
+                C(idx,:) = 0;
+                C(:,idx) = 0;
+            end
+        end
+
+        % get 3d coordinates for each node and for eeg electrodes
+        %path_ROICoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/wetransfer-b16a3e/fs_rois/ca03_fs_rois.mat';
+        %path_electrodeCoordinates = '/net/store/nbp/projects/phasesim/databases/SC_Bastian/surfaces/ca_electrodeLocations/ca03_EEGLocations.txt';
+        %roiData = load(path_ROICoordinates);
+        %electrodeCoordinatesTable = readtable(path_electrodeCoordinates,'Delimiter',' ','ReadVariableNames',false);
+
+        %roiCoordinates = roiData.fs_rois;
+        %electrodeCoordinates = table2array(electrodeCoordinatesTable(:,2:end));
+
+        % reorder roi coordinates after anatomical indices
+        %roiCoordinates = roiCoordinates(resortIds,:);
+
+        % create drivers:    
+        %     find electrode position closest to node to be stimulated and extract
+        %     stimulation strength for each node from gaussian centered around that
+        %     electrode position
+        drivers = zeros(size(C,1),size(drivPos',1));
+        %ED = pdist2(electrodeCoordinates, roiCoordinates);
+        for i = 1:size(drivers, 2)
+        %    [~,pos] = min(ED(:,drivPos(i)));
+        %    drivStrength = normpdf(ED(pos,:), 0, sim.drivRange(i));
+        %    drivStrength = drivStrength - min(drivStrength);
+        %    drivers(:,i) = (drivStrength/max(drivStrength)) * sim.drivScale;
+             drivers(drivPos(i),i) = sim.drivScale * 1e-3 / 2;  % convert from mV to V and divide by 2 to use peak-to-peak amplitude for sin
+        end
+
+        % run jansen rit simulation and store PSPs of pyramidal cells
+        if this.params.JansenRitConnectomePaper.use_moran
+            nStatesJR = 13;
+            StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
+            [ PSPs, Driver, xCollExtended ] = runJansenRit( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+        else
+
+            if JRParams.use_out_psp
+              nStatesJR = 8;
+            else
+              nStatesJR = 6;
+            end
+
+            StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
+            [ PSPs, Driver, xCollExtended ] = runJansenRitOriginal( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
+        end
+        simResult.Y = vertcat(Driver,PSPs);
+        sim.drivPos = drivPos + size(Driver, 1);
+        simResult.sim = sim;
+        clear PSPs
+        clear Driver
+
+        % extract peak frequencies of each node
+        Fs = 1/(sim.dt*sim.sampling);
+        Hs = spectrum.periodogram;
+        freqs = zeros(size(simResult.Y,1),1);
         if this.params.JansenRitConnectomePaper.saveSpectrum
-            saveTo = find(f>30,1);
-            simResult.spectrumFreq = f(1:saveTo);
-            simResult.spectrumPower{n} = d(1:saveTo);
+            simResult.spectrumPower = cell(size(simResult.Y,1),1);
         end
-      end
-      simResult.freqs = freqs;
-      fMean = mean(freqs(length(drivPos)+1:end));
-      
-      if strcmp(this.params.JansenRitConnectomePaper.fTarget, 'fMean')
-          fTarget = fMean;
-      elseif strcmp(this.params.JansenRitConnectomePaper.fTarget, 'drivFreq')
-          fTarget = this.params.JansenRitConnectomePaper.drivFreq;
-      else
-          fTarget = this.params.JansenRitConnectomePaper.fTarget;
-      end
-      
-      if fTarget < 3
-          fTarget = 3;
-      elseif fTarget > 30
-          fTarget = 30;
-      end
-      
-        
-      % apply bandpass filter
-      if sim.filterSig
-          
-          % bandpass filter parameters
-          sigBandpass(1).Fst1 = fTarget-1.; % end stop band [Hz] 
-          sigBandpass(1).Fp1 = fTarget-0.5; % start pass band [Hz]
-          sigBandpass(1).Fp2 = fTarget+0.5; % [Hz] end pass band
-          sigBandpass(1).Fst2 = fTarget+1.; % [Hz] start stop band
-          sigBandpass(1).Ast1 = fTarget; % frequency attenuation in first stopband
-          sigBandpass(1).Ap = 1; % passband ripples
-          sigBandpass(1).Ast2 = fTarget; % frequency attenuation in second stopband
-          
-          % filter signal
-          Yfiltered = filterSig(simResult.Y,Fs,1,0,sigBandpass);
-          
-      else
-          Yfiltered = simResult.Y;
-      end
-      
-      if this.params.JansenRitConnectomePaper.storeY
-          Y_raw = simResult.Y;
-      end
-      simResult.Y = Yfiltered;
-      clear Yfiltered
-      
-      % calculate FC for phase of signal
-      if this.params.JansenRitConnectomePaper.calcFC_nwin1 % for debugging...
-          nWindows = 1;
-          winLength = floor((sim.tMax - sim.initSampRem) / nWindows);
-          WindowsStart = [1:winLength:nWindows*winLength]; % starting points of time windows for which to evaluate coherence [seconds]
-          WindowsEnd = [winLength:winLength:nWindows*winLength]; % ending points of time windows for which to evaluate coherence [seconds]
-          FCWindows = vertcat(WindowsStart, WindowsEnd);
-          FC_nwin1 = getFC(simResult,sim.FCMeasure,FCWindows,1);
-          simResult.FC_nwin1 = FC_nwin1;
-      end
-      
-      nWindows = sim.nWindows;
-      winLength = floor((sim.tMax - sim.initSampRem) / nWindows);
-      WindowsStart = [1:winLength:nWindows*winLength]; % starting points of time windows for which to evaluate coherence [seconds]
-      WindowsEnd = [winLength:winLength:nWindows*winLength]; % ending points of time windows for which to evaluate coherence [seconds]
-      FCWindows = vertcat(WindowsStart, WindowsEnd);
-      FC = getFC(simResult,sim.FCMeasure,FCWindows,1);
-
-      if ~this.params.JansenRitConnectomePaper.storeY
-          simResult = rmfield(simResult,'Y');
-      else
-          simResult.Y = Y_raw;
-          clear Y_raw
-      end
-
-      % calculate match with empirical FC data
-      if this.params.JansenRitConnectomePaper.corrSimFC
-          
-        % load empirical FC
-        empFC = getEmpFC(1,round(fTarget),1);
-        simResult.empFC = empFC;
-
-        % calculate correlation between simulated and empirical FC
-        corr_SimFC = cell(1,length(FC));
-        for i=1:length(FC)
-            Idx_mat = triu(ones(size(empFC)),1);
-            FC_tmp = FC{1,i}(length(drivPos)+1:end,length(drivPos)+1:end);
-            corr_SimFC{i} =  min(min(corrcoef(abs(FC_tmp(Idx_mat == 1)), empFC(Idx_mat == 1))));
-            disp(['corr_SimFC{i} = ' num2str(corr_SimFC{i})])
-        end
-        simResult.corr_SimFC = corr_SimFC;
-        
-      end
-
-      simResult.FC = FC;
-      
-      if this.params.JansenRitConnectomePaper.calcCohWithDriver
-          coh_of_roi_with_driver = cell(1,length(FC));
-          for i=1:length(FC)
-              FC_tmp = FC{1,i}(length(drivPos)+1:end,1);
-              coh_of_roi_with_driver{i} = zeros(1, length(drivPos));
-              for j=1:length(drivPos)
-                coh_of_roi_with_driver{i}(j) = FC_tmp(drivPos(j));
-                disp(['coh_of_roi_with_driver{i}(j) = ' num2str(coh_of_roi_with_driver{i}(j))])
-              end
+        for n=1:size(simResult.Y,1)
+          h = psd(Hs,simResult.Y(n,:),'Fs',Fs);
+          f = h.Frequencies;
+          d = h.Data;
+          d(1:100) = 0;
+          [~,target] = max(d);
+          freqs(n) = f(target);
+          if this.params.JansenRitConnectomePaper.saveSpectrum
+              saveTo = find(f>30,1);
+              simResult.spectrumFreq = f(1:saveTo);
+              simResult.spectrumPower{n} = d(1:saveTo);
           end
-          simResult.coh_of_roi_with_driver = coh_of_roi_with_driver;
+        end
+        simResult.freqs = freqs;
+        fMean = mean(freqs(length(drivPos)+1:end));
+
+        if strcmp(this.params.JansenRitConnectomePaper.fTarget, 'fMean')
+            fTarget = fMean;
+        elseif strcmp(this.params.JansenRitConnectomePaper.fTarget, 'drivFreq')
+            fTarget = this.params.JansenRitConnectomePaper.drivFreq;
+        else
+            fTarget = this.params.JansenRitConnectomePaper.fTarget;
+        end
+
+        if fTarget < 3
+            fTarget = 3;
+        elseif fTarget > 30
+            fTarget = 30;
+        end
+
+
+        % apply bandpass filter
+        if sim.filterSig
+
+            % bandpass filter parameters
+            sigBandpass(1).Fst1 = fTarget-1.; % end stop band [Hz] 
+            sigBandpass(1).Fp1 = fTarget-0.5; % start pass band [Hz]
+            sigBandpass(1).Fp2 = fTarget+0.5; % [Hz] end pass band
+            sigBandpass(1).Fst2 = fTarget+1.; % [Hz] start stop band
+            sigBandpass(1).Ast1 = fTarget; % frequency attenuation in first stopband
+            sigBandpass(1).Ap = 1; % passband ripples
+            sigBandpass(1).Ast2 = fTarget; % frequency attenuation in second stopband
+
+            % filter signal
+            Yfiltered = filterSig(simResult.Y,Fs,1,0,sigBandpass);
+
+        else
+            Yfiltered = simResult.Y;
+        end
+
+        washout_in_sec = this.params.JansenRitConnectomePaper.washout * simResult.sim.dt * simResult.sim.sampling;
+
+        if this.params.JansenRitConnectomePaper.storeY
+            Y_raw = simResult.Y;
+        end
+        simResult.Y = Yfiltered;
+        clear Yfiltered
+        % calculate FC for phase of signal
+        if this.params.JansenRitConnectomePaper.calcFC_nwin1 % for debugging...
+            nWindows = 1;
+            winLength = floor((sim.tMax - sim.initSampRem - washout_in_sec) / nWindows);
+            WindowsStart = [1:winLength:nWindows*winLength]; % starting points of time windows for which to evaluate coherence [seconds]
+            WindowsEnd = [winLength:winLength:nWindows*winLength]; % ending points of time windows for which to evaluate coherence [seconds]
+            FCWindows = vertcat(WindowsStart, WindowsEnd);
+            FC_nwin1 = getFC(simResult,sim.FCMeasure,FCWindows,this.params.JansenRitConnectomePaper.washout);
+            simResult.FC_nwin1 = FC_nwin1;
+        end
+
+        nWindows = sim.nWindows;
+        winLength = floor((sim.tMax - sim.initSampRem - washout_in_sec) / nWindows);
+        WindowsStart = [1:winLength:nWindows*winLength]; % starting points of time windows for which to evaluate coherence [seconds]
+        WindowsEnd = [winLength:winLength:nWindows*winLength]; % ending points of time windows for which to evaluate coherence [seconds]
+        FCWindows = vertcat(WindowsStart, WindowsEnd);
+        FC = getFC(simResult,sim.FCMeasure,FCWindows,this.params.JansenRitConnectomePaper.washout);
+
+        % new for revision:
+        if this.params.JansenRitConnectomePaper.calcKuramotoOrderParam
+
+            % get signal
+            sig = simResult.Y(length(drivPos)+1:end,2000:end-2000); % leave out 2000 samples due to filter edge effects.
+
+            % get analytic signal
+            sigHilbert = zeros(size(sig));
+            for n=1:size(sigHilbert,1)
+                sigHilbert(n,:) = hilbert(sig(n,:));
+            end
+
+            % get phase from analytic signal
+            sigPhase = angle(sigHilbert);
+
+            kuramotoOrderParam = abs(mean( exp(1i * sigPhase), 1 ));
+            meanKuramotoOrderParam = mean(kuramotoOrderParam);
+
+            simResult.meanKuramotoOrderParam = meanKuramotoOrderParam;
+        end
+
+        if ~this.params.JansenRitConnectomePaper.storeY
+            simResult = rmfield(simResult,'Y');
+        else
+            simResult.Y = Y_raw;
+            clear Y_raw
+        end
+
+        % calculate match with empirical FC data
+        if this.params.JansenRitConnectomePaper.corrSimFC
+
+          % load empirical FC
+          empFC = getEmpFC(1,round(fTarget),1);
+          simResult.empFC = empFC;
+
+          % calculate correlation between simulated and empirical FC
+          corr_SimFC = cell(1,length(FC));
+          for i=1:length(FC)
+              Idx_mat = triu(ones(size(empFC)),1);
+              FC_tmp = FC{1,i}(length(drivPos)+1:end,length(drivPos)+1:end);
+              corr_SimFC{i} =  min(min(corrcoef(abs(FC_tmp(Idx_mat == 1)), empFC(Idx_mat == 1))));
+              disp(['corr_SimFC{i} = ' num2str(corr_SimFC{i})])
+          end
+          simResult.corr_SimFC = corr_SimFC;
+
+        end
+
+        simResult.FC = FC;
+
+        if this.params.JansenRitConnectomePaper.calcCohWithDriver
+            coh_of_roi_with_driver = cell(1,length(FC));
+            for i=1:length(FC)
+                FC_tmp = FC{1,i}(length(drivPos)+1:end,1);
+                coh_of_roi_with_driver{i} = zeros(1, length(drivPos));
+                for j=1:length(drivPos)
+                  coh_of_roi_with_driver{i}(j) = FC_tmp(drivPos(j));
+                  disp(['coh_of_roi_with_driver{i}(j) = ' num2str(coh_of_roi_with_driver{i}(j))])
+                end
+            end
+            simResult.coh_of_roi_with_driver = coh_of_roi_with_driver;
+        end
+
+        if ~isempty(this.params.JansenRitConnectomePaper.drivPosVarMatrix)
+          simResultAllTmp{repeatIdx} = simResult;
+        end
+        
       end
-      
+
+      if ~isempty(this.params.JansenRitConnectomePaper.drivPosVarMatrix)
+        simResult = simResultAllTmp;
+      end
+        
       % save results
       if ~exist(this.workpath, 'dir')
         mkdir(this.workpath)
       end
       save([this.workpath,'/', filename_JR], 'simResult')
-      
+
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
