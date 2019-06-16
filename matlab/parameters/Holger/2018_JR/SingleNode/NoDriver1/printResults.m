@@ -22,3 +22,8 @@ plot(tmp.simResult.spectrumFreq, log(tmp.simResult.spectrumPower{2}))
 xlabel('Frequency [Hz]')
 ylabel('log power')
 saveas(gcf, fullfile( path_results, 'spectrum.png'))
+
+%% calculate frequency with maximum power:
+[maxVal,maxIdx] = max(tmp.simResult.spectrumPower{2});
+freqWithMaxPower = tmp.simResult.spectrumFreq(maxIdx);
+disp(freqWithMaxPower)
