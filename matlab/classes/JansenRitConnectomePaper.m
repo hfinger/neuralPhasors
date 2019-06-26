@@ -23,6 +23,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.tMax = 405; %max simulation time [seconds]
       this.params.JansenRitConnectomePaper.dt = 0.0005; % simulation step size [seconds]
       this.params.JansenRitConnectomePaper.sampling = 2; % sampling every x steps
+      this.params.JansenRitConnectomePaper.sampleNoiseEvery = 1; % sampling of noise every x steps
       this.params.JansenRitConnectomePaper.noiseVar = 0; % variance of white noise used to drive neural masses
       this.params.JansenRitConnectomePaper.noiseMu = 200; % mean of white noise used to drive neural masses
       this.params.JansenRitConnectomePaper.runningAvg = true; % if true, substract running average from input to neural masses
@@ -51,6 +52,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.nWindows = 1; %number of timewindows over which to calculate FC
       this.params.JansenRitConnectomePaper.nBins = 80; % only important, if information theoretic FC measure is used. Number of bins to use to discretize phase signal
       this.params.JansenRitConnectomePaper.storeY = false; % if true, raw signal will be stored on struct aswell
+      this.params.JansenRitConnectomePaper.storeMeanAndStdOfY = false; % if true, store mean and std of raw signals.
       this.params.JansenRitConnectomePaper.filterSig = true; % if true, raw PSPs will be bandpass-filtered before coherence is calculated
       this.params.JansenRitConnectomePaper.C = []; % Connectivity matrix
       this.params.JansenRitConnectomePaper.D = []; % Distance matrix
@@ -74,6 +76,7 @@ classdef JansenRitConnectomePaper < Gridjob
       this.params.JansenRitConnectomePaper.use_sigm_as_out = false;
       this.params.JansenRitConnectomePaper.use_inpP_as_out = false;
       this.params.JansenRitConnectomePaper.use_sigm_y0_as_out = false;
+      this.params.JansenRitConnectomePaper.use_rk4 = false;
       this.params.JansenRitConnectomePaper.calcCohWithDriver = false;
       this.params.JansenRitConnectomePaper.calcKuramotoOrderParam = false;
       this.params.JansenRitConnectomePaper.saveSpectrum = false;
@@ -121,6 +124,7 @@ classdef JansenRitConnectomePaper < Gridjob
       sim.tMax = this.params.JansenRitConnectomePaper.tMax;
       sim.dt = this.params.JansenRitConnectomePaper.dt;
       sim.sampling = this.params.JansenRitConnectomePaper.sampling;
+      sim.sampleNoiseEvery = this.params.JansenRitConnectomePaper.sampleNoiseEvery;
       sim.noiseVar = this.params.JansenRitConnectomePaper.noiseVar;
       sim.noiseMu = this.params.JansenRitConnectomePaper.noiseMu;
       sim.rAvg = this.params.JansenRitConnectomePaper.runningAvg;
@@ -165,6 +169,9 @@ classdef JansenRitConnectomePaper < Gridjob
       JRParams.use_sigm_as_out = this.params.JansenRitConnectomePaper.use_sigm_as_out;
       JRParams.use_inpP_as_out = this.params.JansenRitConnectomePaper.use_inpP_as_out;
       JRParams.use_sigm_y0_as_out = this.params.JansenRitConnectomePaper.use_sigm_y0_as_out;
+      
+      JRParams.use_rk4 = this.params.JansenRitConnectomePaper.use_rk4;
+      JRParams.sampleNoiseEvery = this.params.JansenRitConnectomePaper.sampleNoiseEvery;
       
       JRParams.xCollExtended = this.params.JansenRitConnectomePaper.xCollExtended;
       JRParams.xCollExtendedIdxs = this.params.JansenRitConnectomePaper.xCollExtendedIdxs;
@@ -272,7 +279,7 @@ classdef JansenRitConnectomePaper < Gridjob
               nStatesJR = 6;
             end
 
-            StartStates = zeros(size(C, 1), nStatesJR, 1/sim.dt);
+            StartStates = zeros(size(C, 1), nStatesJR, round(1/sim.dt));
             [ PSPs, Driver, xCollExtended ] = runJansenRitOriginal( StartStates, drivers, sim.drivFreq, sim.drivPO, sim.drivStart+2*pi*rand(1), sim.drivDur, C, D, sim.k, sim.v, sim.tMax, sim.dt, sim.initSampRem, sim.noiseVar, sim.noiseMu, sim.rAvg, sim.netInp, sim.subInp, sim.sampling, sim.verbose, JRParams);
         end
         simResult.Y = vertcat(Driver,PSPs);
@@ -281,6 +288,11 @@ classdef JansenRitConnectomePaper < Gridjob
         clear PSPs
         clear Driver
 
+        if this.params.JansenRitConnectomePaper.storeMeanAndStdOfY
+            simResult.Y_mean = mean(simResult.Y, 2);
+            simResult.Y_std = std(simResult.Y, [], 2);
+        end
+        
         % extract peak frequencies of each node
         Fs = 1/(sim.dt*sim.sampling);
         Hs = spectrum.periodogram;
@@ -343,6 +355,7 @@ classdef JansenRitConnectomePaper < Gridjob
         if this.params.JansenRitConnectomePaper.storeY
             Y_raw = simResult.Y;
         end
+        
         simResult.Y = Yfiltered;
         clear Yfiltered
         % calculate FC for phase of signal
@@ -363,7 +376,7 @@ classdef JansenRitConnectomePaper < Gridjob
         FCWindows = vertcat(WindowsStart, WindowsEnd);
         FC = getFC(simResult,sim.FCMeasure,FCWindows,this.params.JansenRitConnectomePaper.washout);
 
-        % new for revision:
+        % calculate kuramoto order for revision:
         if this.params.JansenRitConnectomePaper.calcKuramotoOrderParam
 
             % get signal

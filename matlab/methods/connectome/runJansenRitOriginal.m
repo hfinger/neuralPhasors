@@ -67,7 +67,7 @@ end
 driverColl = zeros(length(DrivPO), numIters/sampling, 'double');
 
 % build buffer to realize delays in network
-ringBufferSize = fix(max(D(:)))+1;
+ringBufferSize = fix(max(D(:)))+3;
 %disp(['size of ring buffer: ' num2str(ringBufferSize)]);
 ringBuffer = squeeze(StartStates(:,1,end-ringBufferSize+1:end))'; % timesteps x N
 
@@ -78,33 +78,52 @@ ringBuffer = squeeze(StartStates(:,1,end-ringBufferSize+1:end))'; % timesteps x 
 t = 0;
 x = squeeze(StartStates(:,:,end));
 for i = 0:numIters-1
-    t = t + dt;
-    
-    % realize global model delays D
-    curPosInRingBuff = mod(i,ringBufferSize); 
-    lookupInBuffer = mod(curPosInRingBuff-1-D,ringBufferSize)+1;
-    linInd = sub2ind(size(ringBuffer),lookupInBuffer,repmat(1:size(ringBuffer,2),[N 1]));
-    x1DelayedSpikeRate = ringBuffer(linInd);
-    
-    % extrinsic input updates
-    if t > DrivStart && t < DrivStart + DrivDur
-        drivPhase = sin(t*2*pi*DrivFreqs + DrivPO);
+  
+    if mod(i, JRParams.sampleNoiseEvery)==0
+      if length(nMu)>1
+          inp_sub = nMu(1) + (nMu(2)-nMu(1)) * rand(N, 1);
+      else
+          inp_sub = nMu + nVar * randn(N, 1);
+      end
     else
-        drivPhase = zeros(1,length(DrivPO));
-    end
-    driver = Drivers .* repmat(drivPhase,size(Drivers,1),1);
-    driver = sum(driver,2);
-    
-    inp_net = sum(C .* x1DelayedSpikeRate, 2);
-    if length(nMu)>1
-        inp_sub = nMu(1) + (nMu(2)-nMu(1)) * rand(N, 1);
-    else
-        inp_sub = nMu + nVar * randn(N, 1);
+      inp_sub = prev_inp_sub;
     end
     
-    % intrinsic state variable updates
-    [dx, inpP] = odesys(x, driver, inp_sub, inp_net, JRParams);
-    x = x + dt*dx;
+    if i==0
+      % in first iteration set both to the same value (prev_inp_sub needs to be defined in case of RK4):
+      prev_inp_sub = inp_sub;
+    end
+    
+    if JRParams.use_rk4
+
+      % use RK4:
+      use_t = t;
+      use_i = i;
+      use_x = x;
+      [dx_1, inpP, drivPhase] = ddesys(use_t, use_i, use_x, ringBufferSize, C, D, ringBuffer, N, DrivStart, DrivDur, DrivFreqs, DrivPO, Drivers, JRParams, prev_inp_sub);
+      use_t = t + 0.5*dt;
+      use_i = i + 0.5;
+      use_x = x + 0.5*dt*dx_1;
+      [dx_2, ~, ~] = ddesys(use_t, use_i, use_x, ringBufferSize, C, D, ringBuffer, N, DrivStart, DrivDur, DrivFreqs, DrivPO, Drivers, JRParams, prev_inp_sub);
+      use_t = t + 0.5*dt;
+      use_i = i + 0.5;
+      use_x = x + 0.5*dt*dx_2;
+      [dx_3, ~, ~] = ddesys(use_t, use_i, use_x, ringBufferSize, C, D, ringBuffer, N, DrivStart, DrivDur, DrivFreqs, DrivPO, Drivers, JRParams, prev_inp_sub);
+      use_t = t + dt;
+      use_i = i + 1;
+      use_x = x + dx_3*dt;
+      [dx_4, ~, ~] = ddesys(use_t, use_i, use_x, ringBufferSize, C, D, ringBuffer, N, DrivStart, DrivDur, DrivFreqs, DrivPO, Drivers, JRParams, inp_sub);
+      
+      x = x + (1/6) * (dx_1 + 2*dx_2 + 2*dx_3 + dx_4) * dt;
+      t = t + dt;
+    else
+      
+      t = t + dt;
+      
+      % use Euler:
+      [dx, inpP, drivPhase] = ddesys(t, i, x, ringBufferSize, C, D, ringBuffer, N, DrivStart, DrivDur, DrivFreqs, DrivPO, Drivers, JRParams, inp_sub);
+      x = x + dt*dx;
+    end
     
     %update ring buffer
     
@@ -123,7 +142,8 @@ for i = 0:numIters-1
         x1spikeRateOut = x(:,1); % v_{p}
     end
     
-    ringBuffer(curPosInRingBuff+1,:) = x1spikeRateOut;
+    writePosInRingBuff = mod(i,ringBufferSize); 
+    ringBuffer(writePosInRingBuff+1,:) = x1spikeRateOut;
     
     %save every sampling steps:
     if mod(i,sampling)==0 && t > initSampRem
@@ -137,8 +157,12 @@ for i = 0:numIters-1
     %print progress:
     if verbose && mod(i,round(numIters/100))==0
         fprintf(['t = ' num2str(t) ' of ' num2str(tMax) '\n']);
+        
+        %figure(34);
+        %imagesc(ringBuffer)
     end
     
+    prev_inp_sub = inp_sub;
 end
 
 %% Store results
@@ -181,5 +205,49 @@ function [dy, inpP] = odesys(y, driver, inp_sub, inp_net, JRParams)
         dy(:,7) = y(:,8);
         dy(:,8) = JRParams.Ko * inpP + JRParams.do1 * y(:,8) + JRParams.do2 * y(:,7);
     end
+    
+end
+
+function [dx, inpP, drivPhase] = ddesys(t, i, x, ringBufferSize, C, D, ringBuffer, N, DrivStart, DrivDur, DrivFreqs, DrivPO, Drivers, JRParams, inp_sub)
+
+    % realize global model delays D
+    if mod(i, 1)==0
+      curPosInRingBuff = mod(i,ringBufferSize); 
+      lookupInBuffer = mod(curPosInRingBuff-1-D,ringBufferSize)+1;
+      linInd = sub2ind(size(ringBuffer),lookupInBuffer,repmat(1:size(ringBuffer,2),[N 1]));
+      x1DelayedSpikeRate = ringBuffer(linInd);
+    else
+      % calculate model delays D using interpolation (i.e. for half steps in RK4):
+      
+      % prev:
+      curPosInRingBuff = mod(floor(i),ringBufferSize); 
+      lookupInBuffer = mod(curPosInRingBuff-1-D,ringBufferSize)+1;
+      linInd = sub2ind(size(ringBuffer),lookupInBuffer,repmat(1:size(ringBuffer,2),[N 1]));
+      x1DelayedSpikeRatePrev = ringBuffer(linInd);
+      
+      % next:
+      curPosInRingBuff = mod(ceil(i),ringBufferSize); 
+      lookupInBuffer = mod(curPosInRingBuff-1-D,ringBufferSize)+1;
+      linInd = sub2ind(size(ringBuffer),lookupInBuffer,repmat(1:size(ringBuffer,2),[N 1]));
+      x1DelayedSpikeRateNext = ringBuffer(linInd);
+      
+      weight = mod(i, 1);
+      x1DelayedSpikeRate = x1DelayedSpikeRatePrev * (1-weight) + x1DelayedSpikeRateNext * (weight);
+    end
+    
+    % extrinsic input updates
+    if t > DrivStart && t < DrivStart + DrivDur
+        drivPhase = sin(t*2*pi*DrivFreqs + DrivPO);
+    else
+        drivPhase = zeros(1,length(DrivPO));
+    end
+    driver = Drivers .* repmat(drivPhase,size(Drivers,1),1);
+    driver = sum(driver,2);
+    
+    inp_net = sum(C .* x1DelayedSpikeRate, 2);
+    
+    
+    % intrinsic state variable updates
+    [dx, inpP] = odesys(x, driver, inp_sub, inp_net, JRParams);
     
 end
