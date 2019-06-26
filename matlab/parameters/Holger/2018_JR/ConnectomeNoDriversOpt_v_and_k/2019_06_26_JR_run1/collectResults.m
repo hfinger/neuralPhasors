@@ -3,12 +3,13 @@ data = dataPaths();
 
 my_path = ['Holger/2018_JR/ConnectomeNoDriversOpt_v_and_k/' my_foldername];
 path_results = fullfile(data.resultsdir, my_path);
+path_workdir = fullfile(data.workdir, my_path);
 
 if ~exist(path_results)
   mkdir(path_results)
 end
 
-jobDesc = load( fullfile(data.workdir, 'Holger/2018_JR/ConnectomeNoDriversOpt_v_and_k',my_foldername,'temp_Connectome','jobDesc.mat') );
+jobDesc = load( fullfile(path_workdir,'temp_Connectome','jobDesc.mat') );
 
 paramComb = jobDesc.paramComb;
 variableParams = jobDesc.variableParams;
@@ -29,7 +30,7 @@ all_coh = zeros(1,numJobs);
 all_FC = cell(1,numJobs);
 all_corr_SimFC = cell(1,numJobs);
 for j=1:numJobs
-  fname = fullfile( path_results, ['Connectome' num2str(j) '.mat']);
+  fname = fullfile( path_workdir, ['Connectome' num2str(j) '.mat']);
   if exist(fname, 'file')
       tmp = load( fname );
 
