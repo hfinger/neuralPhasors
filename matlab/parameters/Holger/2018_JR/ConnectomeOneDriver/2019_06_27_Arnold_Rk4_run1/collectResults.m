@@ -1,9 +1,9 @@
 data = dataPaths();
 [~,my_foldername] = fileparts(pwd);
-path_results = fullfile(data.resultsdir, ['Holger/2018_JR/SingleNode/' my_foldername]);
-path_workdir = fullfile(data.workdir, ['Holger/2018_JR/SingleNode/' my_foldername]);
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ConnectomeOneDriver/' my_foldername]);
+path_workdir = fullfile(data.workdir, ['Holger/2018_JR/ConnectomeOneDriver/' my_foldername]);
 
-jobDesc = load( fullfile(data.workdir, 'Holger/2018_JR/SingleNode',my_foldername,'temp_Connectome','jobDesc.mat') );
+jobDesc = load( fullfile(data.workdir, 'Holger/2018_JR/ConnectomeOneDriver',my_foldername,'temp_Connectome','jobDesc.mat') );
 
 paramComb = jobDesc.paramComb;
 variableParams = jobDesc.variableParams;
