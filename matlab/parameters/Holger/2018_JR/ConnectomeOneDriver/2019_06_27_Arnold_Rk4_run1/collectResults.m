@@ -52,7 +52,7 @@ for j=1:numJobs
   end
 end
 
-if ~isfolder(path_results)
+if ~exist(path_results)
   mkdir(path_results)
 end
 save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'params', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC', 'all_meanKuramotoOrderParam')
