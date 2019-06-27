@@ -315,7 +315,31 @@ classdef JansenRitConnectomePaper < Gridjob
         end
         simResult.freqs = freqs;
         fMean = mean(freqs(length(drivPos)+1:end));
+        
+        % calculate kuramoto order for revision:
+        if this.params.JansenRitConnectomePaper.calcKuramotoOrderParam
 
+            % for kuramoto order parameter use the mean network frequency:
+            Yfiltered = this.bandpass_filter( simResult.Y, Fs, fMean);
+            
+            % get signal
+            sig = Yfiltered(length(drivPos)+1:end,1000:end-1000); % leave out 2000 samples due to filter edge effects.
+
+            % get analytic signal
+            sigHilbert = zeros(size(sig));
+            for n=1:size(sigHilbert,1)
+                sigHilbert(n,:) = hilbert(sig(n,:));
+            end
+
+            % get phase from analytic signal
+            sigPhase = angle(sigHilbert);
+
+            kuramotoOrderParam = abs(mean( exp(1i * sigPhase(:,1000:end-1000)), 1 ));
+            meanKuramotoOrderParam = mean(kuramotoOrderParam);
+
+            simResult.meanKuramotoOrderParam = meanKuramotoOrderParam;
+        end
+        
         if strcmp(this.params.JansenRitConnectomePaper.fTarget, 'fMean')
             fTarget = fMean;
         elseif strcmp(this.params.JansenRitConnectomePaper.fTarget, 'drivFreq')
@@ -330,22 +354,9 @@ classdef JansenRitConnectomePaper < Gridjob
             fTarget = 30;
         end
 
-
         % apply bandpass filter
         if sim.filterSig
-
-            % bandpass filter parameters
-            sigBandpass(1).Fst1 = fTarget-1.; % end stop band [Hz] 
-            sigBandpass(1).Fp1 = fTarget-0.5; % start pass band [Hz]
-            sigBandpass(1).Fp2 = fTarget+0.5; % [Hz] end pass band
-            sigBandpass(1).Fst2 = fTarget+1.; % [Hz] start stop band
-            sigBandpass(1).Ast1 = fTarget; % frequency attenuation in first stopband
-            sigBandpass(1).Ap = 1; % passband ripples
-            sigBandpass(1).Ast2 = fTarget; % frequency attenuation in second stopband
-
-            % filter signal
-            Yfiltered = filterSig(simResult.Y,Fs,1,0,sigBandpass);
-
+            Yfiltered = this.bandpass_filter( simResult.Y, Fs, fTarget);
         else
             Yfiltered = simResult.Y;
         end
@@ -375,27 +386,6 @@ classdef JansenRitConnectomePaper < Gridjob
         WindowsEnd = [winLength:winLength:nWindows*winLength]; % ending points of time windows for which to evaluate coherence [seconds]
         FCWindows = vertcat(WindowsStart, WindowsEnd);
         FC = getFC(simResult,sim.FCMeasure,FCWindows,this.params.JansenRitConnectomePaper.washout);
-
-        % calculate kuramoto order for revision:
-        if this.params.JansenRitConnectomePaper.calcKuramotoOrderParam
-
-            % get signal
-            sig = simResult.Y(length(drivPos)+1:end,2000:end-2000); % leave out 2000 samples due to filter edge effects.
-
-            % get analytic signal
-            sigHilbert = zeros(size(sig));
-            for n=1:size(sigHilbert,1)
-                sigHilbert(n,:) = hilbert(sig(n,:));
-            end
-
-            % get phase from analytic signal
-            sigPhase = angle(sigHilbert);
-
-            kuramotoOrderParam = abs(mean( exp(1i * sigPhase), 1 ));
-            meanKuramotoOrderParam = mean(kuramotoOrderParam);
-
-            simResult.meanKuramotoOrderParam = meanKuramotoOrderParam;
-        end
 
         if ~this.params.JansenRitConnectomePaper.storeY
             simResult = rmfield(simResult,'Y');
@@ -447,7 +437,7 @@ classdef JansenRitConnectomePaper < Gridjob
       if ~isempty(this.params.JansenRitConnectomePaper.drivPosVarMatrix)
         simResult = simResultAllTmp;
       end
-        
+      
       % save results
       if ~exist(this.workpath, 'dir')
         mkdir(this.workpath)
@@ -457,6 +447,20 @@ classdef JansenRitConnectomePaper < Gridjob
       %%%% END EDIT HERE:                                %%%%
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
+    end
+    
+    function [Yfiltered] = bandpass_filter(this, Y, Fs, fTarget)
+      % bandpass filter parameters
+      sigBandpass(1).Fst1 = fTarget-1.; % end stop band [Hz] 
+      sigBandpass(1).Fp1 = fTarget-0.5; % start pass band [Hz]
+      sigBandpass(1).Fp2 = fTarget+0.5; % [Hz] end pass band
+      sigBandpass(1).Fst2 = fTarget+1.; % [Hz] start stop band
+      sigBandpass(1).Ast1 = fTarget; % frequency attenuation in first stopband
+      sigBandpass(1).Ap = 1; % passband ripples
+      sigBandpass(1).Ast2 = fTarget; % frequency attenuation in second stopband
+
+      % filter signal
+      Yfiltered = filterSig(Y,Fs,1,0,sigBandpass); 
     end
     
     %% finishJobs: is executed once (after all individual parameter jobs are finished)
