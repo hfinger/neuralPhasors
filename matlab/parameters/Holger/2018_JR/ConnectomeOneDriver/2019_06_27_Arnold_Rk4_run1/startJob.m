@@ -16,7 +16,7 @@ params.Gridjob.jobname = 'Connectome';
 params.Gridjob.continue = false;
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '01:59:59';
+params.Gridjob.walltime = '00:59:59';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
@@ -84,9 +84,9 @@ idx = 1:length(C);
 
 params.JansenRitConnectomePaper.drivPosVarMatrix = idx'; % indices of network nodes to be driven
 params.JansenRitConnectomePaper.drivPos = []; % indices of network nodes to be driven
-params.JansenRitConnectomePaper.drivScale = num2cell(2.^(-5:0.5:2)); % driver strength [mV]
+params.JansenRitConnectomePaper.drivScale = num2cell(2.^(-5:2)); % driver strength [mV]
 params.JansenRitConnectomePaper.drivPO = 0; % phase offset of drivers
-params.JansenRitConnectomePaper.drivFreq = num2cell([5:35]); % frequency of driver [Hz]
+params.JansenRitConnectomePaper.drivFreq = num2cell([7:14]); % frequency of driver [Hz]
 params.JansenRitConnectomePaper.drivDur = 90; % duration of driver [s]
 
 paramsAll{1} = params;
