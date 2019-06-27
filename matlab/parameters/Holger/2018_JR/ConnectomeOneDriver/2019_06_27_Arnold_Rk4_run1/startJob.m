@@ -16,13 +16,13 @@ params.Gridjob.jobname = 'Connectome';
 params.Gridjob.continue = false;
 params.Gridjob.initRandStreamWithJobid = true;
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '01:29:59';
+params.Gridjob.walltime = '01:59:59';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
 params.JansenRitConnectomePaper.k = 14; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
 params.JansenRitConnectomePaper.v = 2.6; %num2cell(2.4:0.1:3.2); %3.2; % velocity [m/s]
-params.JansenRitConnectomePaper.tMax = 90; %max simulation time [seconds]
+params.JansenRitConnectomePaper.tMax = 70; %max simulation time [seconds]
 params.JansenRitConnectomePaper.dt = 0.0005; % simulation step size [seconds]
 params.JansenRitConnectomePaper.sampling = 2; % sampling every x steps
 params.JansenRitConnectomePaper.use_rk4 = true;
@@ -31,7 +31,7 @@ params.JansenRitConnectomePaper.noiseMu = [120, 320]; %num2cell(round(20:20:140)
 params.JansenRitConnectomePaper.runningAvg = false; % if true, substract running average from input to neural masses
 params.JansenRitConnectomePaper.netInp = [1,0,0]; % scales the input to [pyramidal, excitatory, inhibitory] neurons from connectome
 params.JansenRitConnectomePaper.subInp = [1,0,0]; % scales the input to [pyramidal, excitatory, inhibitory] neurons from connectome
-params.JansenRitConnectomePaper.initSampRem = 30; %initial interval to remove [seconds]
+params.JansenRitConnectomePaper.initSampRem = 10; %initial interval to remove [seconds]
 params.JansenRitConnectomePaper.verbose = false; % if we want to print time steps to console
 
 c_tmp = 135;
