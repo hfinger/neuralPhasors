@@ -2,7 +2,7 @@ clear paramsAll;
 
 clear params;
 
-params.Gridjob.runLocal = true;
+params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 2500;
 params.Gridjob.wc_host = '!(*saturn*|*c01grid*|*ramsauer*|*kuma*)';
 params.Gridjob.jobname = 'Connectome';
