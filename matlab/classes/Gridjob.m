@@ -311,15 +311,7 @@ classdef Gridjob
           runAllJobs = false;
         else
           runAllJobs = true;
-        end
-        
-        if runAllJobs
-          disp('set -t parameter to all jobs');
           fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
-        else
-          disp('set -t parameter to runOnlyJobIdsString');
-          runOnlyJobIdsString = strjoin(cellfun(@(x) num2str(x), num2cell(runOnlyJobIds), 'UniformOutput', false),',');
-          fprintf(fid,'#$ -t %s\n',runOnlyJobIdsString);
         end
         
         fprintf(fid,'#$ -N %s\n',this.params.Gridjob.jobname);
@@ -381,17 +373,38 @@ classdef Gridjob
         end
         
         %now start the grid job:
-        if qsubMissing || this.params.Gridjob.remoteStart
-          if ispc
-            systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
-            disp('Execute:');
-            disp(systemCmd);
-            system(systemCmd);
+        if runAllJobs
+          if qsubMissing || this.params.Gridjob.remoteStart
+            if ispc
+  %             system(['putty.exe -ssh -2 -m c:"cd ' pwd '; qsub ' jobscriptpath '" shaggy']);
+  %             systemCmd = ['plink.exe -ssh -i ' paths.puttyPrivateKey ' ' paths.sshUsername '@' paths.sshServer ' "qsub ' jobscriptpathRemote '"'];
+              systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
+              disp('Execute:');
+              disp(systemCmd);
+              system(systemCmd);
+            else
+              system([paths.linSSHArg ' "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+            end
           else
-            system([paths.linSSHArg ' "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
+            system(['qsub ' jobscriptpath]);
           end
         else
-          system(['qsub ' jobscriptpath]);
+          for jid = 1:length(runOnlyJobIds)
+            if qsubMissing || this.params.Gridjob.remoteStart
+              if ispc
+                systemCmd = ['plink.exe ' paths.plinkArg ' "qsub -t ' num2str(runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"'];
+                disp('Execute:');
+                disp(systemCmd);
+                system(systemCmd);
+              else
+                system([paths.linSSHArg ' "cd ' pwd '; qsub -t ' num2str(runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"']);
+              end
+            else
+              system(['qsub -t ' num2str(runOnlyJobIds(jid)) ' ' jobscriptpath]);
+            end
+            pause(1);
+            
+          end
         end
       end
     end
