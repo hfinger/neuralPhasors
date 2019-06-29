@@ -318,7 +318,7 @@ classdef Gridjob
           fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
         else
           disp('set -t parameter to runOnlyJobIdsString');
-          runOnlyJobIdsString = strjoin(cellfun(@(x) string(x), num2cell(runOnlyJobIds)),',');
+          runOnlyJobIdsString = strjoin(cellfun(@(x) num2str(x), num2cell(runOnlyJobIds), 'UniformOutput', false),',');
           fprintf(fid,'#$ -t %s\n',runOnlyJobIdsString);
         end
         
