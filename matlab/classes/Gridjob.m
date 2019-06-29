@@ -298,6 +298,7 @@ classdef Gridjob
         if ~isempty(this.params.Gridjob.runOnlyJobIds)
           disp('run only specified job ids...');
           runOnlyJobIds = this.params.Gridjob.runOnlyJobIds;
+          runAllJobs = false;
         elseif this.params.Gridjob.runOnlyUnfinishedJobIds
           disp('run only unfinished job ids...');
           filelist = dir(fullfile(this.temppath,'isfinished'));
@@ -305,11 +306,14 @@ classdef Gridjob
           filelist = cell2mat(filelist);
           allJobIds = 1:length(this.params.Gridjob.runOnlyJobIds);
           runOnlyJobIds = setdiff(allJobIds, filelist);
+          disp('unfinished job ids:');
+          disp(runOnlyJobIds);
+          runAllJobs = false;
         else
-          runOnlyJobIds = [];
+          runAllJobs = true;
         end
         
-        if isempty(runOnlyJobIds)
+        if runAllJobs
           disp('set -t parameter to all jobs');
           fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
         else
