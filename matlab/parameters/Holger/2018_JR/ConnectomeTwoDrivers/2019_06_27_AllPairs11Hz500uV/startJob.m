@@ -3,15 +3,15 @@ clear paramsAll;
 clear params;
 
 params.Gridjob.runLocal = false;
-params.Gridjob.requiremf = 2000;
-params.Gridjob.wc_host = '!(*ramsauer*)';
+params.Gridjob.requiremf = 2300;
+params.Gridjob.wc_host = '!(*ramsauer*|*c01grid*|*c02grid*|*c03grid*|*c04grid*|*scooby-doo*)';
 params.Gridjob.jobname = 'Connectome';
 params.Gridjob.runOnlyJobIds = [];
 params.Gridjob.continue = true;
 params.Gridjob.initRandStreamWithJobid = true;
 %params.Gridjob.initRandStreamWithSeed = 56232;
 params.Gridjob.combParallel = false;
-params.Gridjob.walltime = '00:09:59';
+params.Gridjob.walltime = '00:14:59';
 params.Gridjob.requiredThreads = '3';
 
 params.JansenRitConnectomePaper.p = 1; %defines what kind of p norm to use for normalization of structural connectivity
