@@ -44,6 +44,7 @@ classdef Gridjob
       this.params.Gridjob.relativeWorkpath = [];
       this.params.Gridjob.walltime = []; %3600;
       this.params.Gridjob.runOnlyJobIds = [];
+      this.params.Gridjob.runOnlyUnfinishedJobIds = false;
       
       % save folder from which the object is constructed
       this.constructedFromFolder = pwd;
@@ -294,8 +295,23 @@ classdef Gridjob
         fid=fopen(jobscriptpath, 'w'); 
         fprintf(fid,'#!/bin/bash\n');
         
-        if isempty(this.params.Gridjob.runOnlyJobIds)
+        if ~isempty(this.params.Gridjob.runOnlyJobIds)
+          runOnlyJobIds = this.params.Gridjob.runOnlyJobIds;
+        elseif this.params.Gridjob.runOnlyUnfinishedJobIds
+          filelist = dir(fullfile(this.temppath,'isfinished'));
+          filelist = cellfun(@str2num,{filelist.name},'UniformOutput',false);
+          filelist = cell2mat(filelist);
+          allJobIds = 1:length(this.params.Gridjob.runOnlyJobIds);
+          runOnlyJobIds = setdiff(allJobIds, filelist);
+        else
+          runOnlyJobIds = [];
+        end
+        
+        if isempty(runOnlyJobIds)
           fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
+        else
+          runOnlyJobIdsString = strjoin(cellfun(@(x) string(x), num2cell(runOnlyJobIds)),',');
+          fprintf(fid,'#$ -t %s\n',runOnlyJobIdsString);
         end
         
         fprintf(fid,'#$ -N %s\n',this.params.Gridjob.jobname);
@@ -310,7 +326,6 @@ classdef Gridjob
             fprintf(fid,'#$ -l h_rt=%u\n',this.params.Gridjob.walltime);
           end
         end
-        
         
         if this.params.Gridjob.newGrid
           if ~isempty(this.params.Gridjob.requiremf)
@@ -358,39 +373,17 @@ classdef Gridjob
         end
         
         %now start the grid job:
-        if isempty(this.params.Gridjob.runOnlyJobIds)
-          if qsubMissing || this.params.Gridjob.remoteStart
-            if ispc
-  %             system(['putty.exe -ssh -2 -m c:"cd ' pwd '; qsub ' jobscriptpath '" shaggy']);
-  %             systemCmd = ['plink.exe -ssh -i ' paths.puttyPrivateKey ' ' paths.sshUsername '@' paths.sshServer ' "qsub ' jobscriptpathRemote '"'];
-              systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
-              disp('Execute:');
-              disp(systemCmd);
-              system(systemCmd);
-            else
-              system([paths.linSSHArg ' "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
-            end
+        if qsubMissing || this.params.Gridjob.remoteStart
+          if ispc
+            systemCmd = ['plink.exe ' paths.plinkArg ' "qsub ' jobscriptpathRemote '"'];
+            disp('Execute:');
+            disp(systemCmd);
+            system(systemCmd);
           else
-            system(['qsub ' jobscriptpath]);
+            system([paths.linSSHArg ' "cd ' pwd '; qsub ' jobscriptpathRemote '"']);
           end
         else
-          for jid = 1:length(this.params.Gridjob.runOnlyJobIds)
-            
-            if qsubMissing || this.params.Gridjob.remoteStart
-              if ispc
-                systemCmd = ['plink.exe ' paths.plinkArg ' "qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"'];
-                disp('Execute:');
-                disp(systemCmd);
-                system(systemCmd);
-              else
-                system([paths.linSSHArg ' "cd ' pwd '; qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpathRemote '"']);
-              end
-            else
-              system(['qsub -t ' num2str(this.params.Gridjob.runOnlyJobIds(jid)) ' ' jobscriptpath]);
-            end
-            pause(1);
-            
-          end
+          system(['qsub ' jobscriptpath]);
         end
       end
     end

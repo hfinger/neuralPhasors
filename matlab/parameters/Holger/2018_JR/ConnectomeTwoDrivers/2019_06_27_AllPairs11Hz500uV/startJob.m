@@ -4,9 +4,10 @@ clear params;
 
 params.Gridjob.runLocal = false;
 params.Gridjob.requiremf = 2300;
-params.Gridjob.wc_host = '!(*ramsauer*|*c01grid*|*c02grid*|*c03grid*|*c04grid*|*scooby-doo*)';
+params.Gridjob.wc_host = '!(*ramsauer*|*c01grid*|*c02grid*|*c03grid*|*c04grid*|*scooby*|*scrappy*)';
 params.Gridjob.jobname = 'Connectome';
 params.Gridjob.runOnlyJobIds = [];
+params.Gridjob.runOnlyUnfinishedJobIds = true;
 params.Gridjob.continue = true;
 params.Gridjob.initRandStreamWithJobid = true;
 %params.Gridjob.initRandStreamWithSeed = 56232;
