@@ -304,7 +304,7 @@ classdef Gridjob
           filelist = dir(fullfile(this.temppath,'isfinished'));
           filelist = cellfun(@str2num,{filelist.name},'UniformOutput',false);
           filelist = cell2mat(filelist);
-          allJobIds = 1:length(this.params.Gridjob.runOnlyJobIds);
+          allJobIds = 1:this.numJobs;
           runOnlyJobIds = setdiff(allJobIds, filelist);
           disp('unfinished job ids:');
           disp(runOnlyJobIds);
