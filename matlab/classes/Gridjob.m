@@ -296,8 +296,10 @@ classdef Gridjob
         fprintf(fid,'#!/bin/bash\n');
         
         if ~isempty(this.params.Gridjob.runOnlyJobIds)
+          disp('run only specified job ids...');
           runOnlyJobIds = this.params.Gridjob.runOnlyJobIds;
         elseif this.params.Gridjob.runOnlyUnfinishedJobIds
+          disp('run only unfinished job ids...');
           filelist = dir(fullfile(this.temppath,'isfinished'));
           filelist = cellfun(@str2num,{filelist.name},'UniformOutput',false);
           filelist = cell2mat(filelist);
@@ -308,8 +310,10 @@ classdef Gridjob
         end
         
         if isempty(runOnlyJobIds)
+          disp('set -t parameter to all jobs');
           fprintf(fid,'#$ -t 1:%u\n',this.numJobs);
         else
+          disp('set -t parameter to runOnlyJobIdsString');
           runOnlyJobIdsString = strjoin(cellfun(@(x) string(x), num2cell(runOnlyJobIds)),',');
           fprintf(fid,'#$ -t %s\n',runOnlyJobIdsString);
         end
