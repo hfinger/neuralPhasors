@@ -44,6 +44,11 @@ for k=1:33
   smoothed_psd = filter(smooth_filter, 1, log(spectrumPowerNetwork(:,k)));
 
   plot(tmp.simResult.spectrumFreq, (k-1)*2 + smoothed_psd)
+  
+  
+  [~,maxIdx] = max(spectrumPowerNetwork(:,k));
+  freqWithMaxPowerPerNode(k) = tmp.simResult.spectrumFreq(maxIdx);
+  
 end
 xlabel('Frequency [Hz]')
 ylabel('log power spectral density (with offsets for visibility)')

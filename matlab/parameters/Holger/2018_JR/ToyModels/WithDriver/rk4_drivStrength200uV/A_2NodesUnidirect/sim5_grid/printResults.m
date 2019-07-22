@@ -2,7 +2,7 @@ clear all;
 
 data = dataPaths();
 [~,my_foldername] = fileparts(pwd);
-path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ToyModels/WithDriver/rk4/A_2NodesUnidirect/' my_foldername]);
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ToyModels/WithDriver/rk4_drivStrength200uV/A_2NodesUnidirect/' my_foldername]);
 results = load(fullfile( path_results, 'all_coh.mat'));
 
 paramSizes = cellfun(@length, results.paramValues);
@@ -26,7 +26,7 @@ stim_pair_coh = cat(2, stim_pair_coh, stim_pair_coh(:,1));
 %%
 figure(1)
 imagesc(d12,phase_offsets,stim_pair_coh')
-%set(gca,'clim',[0.3; 0.7]);
+set(gca,'clim',[0.2; 0.6]);
 set(gca,'TickLength',[0 0]);
 set(gca,'xTick',[0, 200]);
 set(gca,'yTick',[0]);

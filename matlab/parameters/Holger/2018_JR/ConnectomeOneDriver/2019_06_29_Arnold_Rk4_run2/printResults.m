@@ -36,7 +36,9 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('coherence to driven node')
+set(gca,'TickLength',[0 0])
 saveas(gcf,fullfile(path_results, 'coh_to_driven_node.png'))
+saveas(gcf,fullfile(path_results, 'coh_to_driven_node.pdf'))
 
 figure(2);
 imagesc(driver_coh_to_net)
@@ -47,7 +49,9 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('mean coherence to all network nodes')
+set(gca,'TickLength',[0 0])
 saveas(gcf,fullfile(path_results, 'mean_coh_to_net.png'))
+saveas(gcf,fullfile(path_results, 'mean_coh_to_net.pdf'))
 
 figure(3);
 imagesc(driver_meanKuramotoOrderParam)
@@ -58,7 +62,9 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('mean kuramoto order param of network')
+set(gca,'TickLength',[0 0])
 saveas(gcf,fullfile(path_results, 'mean_kuramoto_order_param.png'))
+saveas(gcf,fullfile(path_results, 'mean_kuramoto_order_param.pdf'))
 
 %%
 target_freq = 11;
@@ -102,4 +108,6 @@ colorbar;
 xlabel('Freq [Hz]')
 ylabel('Driver Strength [mV]')
 title('mean coherence to nearest neigbors in network')
+set(gca,'TickLength',[0 0])
 saveas(gcf,fullfile(path_results, 'mean_coh_to_nn.png'))
+saveas(gcf,fullfile(path_results, 'mean_coh_to_nn.pdf'))

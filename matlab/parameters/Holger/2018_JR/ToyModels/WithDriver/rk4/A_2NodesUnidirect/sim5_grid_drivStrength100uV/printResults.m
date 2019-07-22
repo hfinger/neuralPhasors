@@ -26,7 +26,7 @@ stim_pair_coh = cat(2, stim_pair_coh, stim_pair_coh(:,1));
 %%
 figure(1)
 imagesc(d12,phase_offsets,stim_pair_coh')
-set(gca,'clim',[0.3; 0.7]);
+%set(gca,'clim',[0.3; 0.7]);
 set(gca,'TickLength',[0 0]);
 set(gca,'xTick',[0, 200]);
 set(gca,'yTick',[0]);

@@ -46,7 +46,7 @@ PA2 = min( FC_split(:, :, 1,3), FC_split(:, :, 3,4));
 %%
 figure(6)
 imagesc(d12,phase_offsets,PA1')
-%set(gca,'clim',[0.3; 0.55]);
+set(gca,'clim',[0; 0.3]);
 set(gca,'TickLength',[0 0]);
 set(gca,'xTick',[0, 100]);
 set(gca,'yTick',[0]);
@@ -61,7 +61,7 @@ saveas(gcf,fullfile(path_results,'PA1.pdf'))
 %%
 figure(7)
 imagesc(d12,phase_offsets,PA2')
-%set(gca,'clim',[0.3; 0.55]);
+set(gca,'clim',[0; 0.3]);
 set(gca,'TickLength',[0 0]);
 set(gca,'xTick',[0, 100]);
 set(gca,'yTick',[0]);

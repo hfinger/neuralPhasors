@@ -2,7 +2,7 @@ clear all;
 
 data = dataPaths();
 [~,my_foldername] = fileparts(pwd);
-path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ToyModels/WithDriver/rk4_drivStrength200uV/C_3NodesBidirect/' my_foldername]);
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ToyModels/WithDriver/rk4_drivStrength100uV/C_3NodesBidirect/' my_foldername]);
 results = load(fullfile( path_results, 'all_coh.mat'));
 
 paramSizes = cellfun(@length, results.paramValues);
@@ -25,7 +25,7 @@ stim_pair_coh = cat(2, stim_pair_coh, stim_pair_coh(:,1));
 %%
 figure(1)
 imagesc(d213,phase_offsets,stim_pair_coh')
-set(gca,'clim',[0.3; 0.5]);
+set(gca,'clim',[0; 0.3]);
 set(gca,'TickLength',[0 0]);
 set(gca,'xTick',[0, 200]);
 set(gca,'yTick',[0]);
@@ -47,9 +47,9 @@ set(gcf, 'Position',  [100, 100, 500, 250])
 clf;
 plot(d213,[IPSF]')
 set(gca,'xTick',[0, 200]);
-set(gca,'yTick',[0.0, 0.1, 0.2]);
+set(gca,'yTick',[0.0, 0.3]);
 xlabel('distance [mm]')
 ylabel('IPSF')
-set(gca,'ylim',[0.0; 0.2])
+set(gca,'ylim',[0.0; 0.3])
 saveas(gcf,fullfile(path_results,'ipsf.png'))
 saveas(gcf,fullfile(path_results,'ipsf.pdf'))

@@ -2,7 +2,7 @@ clear all;
 
 data = dataPaths();
 [~,my_foldername] = fileparts(pwd);
-path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ToyModels/WithDriver/rk4_drivStrength200uV/New_4NodesDirectional/' my_foldername]);
+path_results = fullfile(data.resultsdir, ['Holger/2018_JR/ToyModels/WithDriver/rk4_drivStrength100uV/New_4NodesDirectional/' my_foldername]);
 results = load(fullfile( path_results, 'all_coh.mat'));
 
 paramSizes = cellfun(@length, results.paramValues);
