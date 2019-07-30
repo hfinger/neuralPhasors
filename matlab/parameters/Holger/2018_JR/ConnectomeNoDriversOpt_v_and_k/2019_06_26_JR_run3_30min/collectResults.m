@@ -29,11 +29,13 @@ end
 all_coh = zeros(1,numJobs);
 all_FC = cell(1,numJobs);
 all_corr_SimFC = cell(1,numJobs);
+all_freqs = cell(1,numJobs);
 for j=1:numJobs
   fname = fullfile( path_workdir, ['Connectome' num2str(j) '.mat']);
   if exist(fname, 'file')
       tmp = load( fname );
 
+      all_freqs{j} = tmp.simResult.freqs;
       all_FC{j} = tmp.simResult.FC;
       if jobDesc.params.JansenRitConnectomePaper.corrSimFC
         all_corr_SimFC{j} = tmp.simResult.corr_SimFC;
@@ -47,4 +49,4 @@ for j=1:numJobs
   end
 end
 
-save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC')
+save(fullfile( path_results, 'all_coh.mat'), 'all_coh', 'paramComb', 'variableParams', 'paramValues', 'all_FC', 'all_corr_SimFC', 'all_freqs')
