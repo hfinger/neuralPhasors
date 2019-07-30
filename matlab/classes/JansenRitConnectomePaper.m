@@ -304,8 +304,14 @@ classdef JansenRitConnectomePaper < Gridjob
           h = psd(Hs,simResult.Y(n,:),'Fs',Fs);
           f = h.Frequencies;
           d = h.Data;
-          d(1:100) = 0;
-          [~,target] = max(d);
+          
+          % find peak frequency:
+          dCopy = d;
+          startAt = find(f>5,1);
+          dCopy(1:startAt) = 0;
+          [~,target] = max(dCopy);
+          clear dCopy;
+          
           freqs(n) = f(target);
           if this.params.JansenRitConnectomePaper.saveSpectrum
               saveTo = find(f>30,1);

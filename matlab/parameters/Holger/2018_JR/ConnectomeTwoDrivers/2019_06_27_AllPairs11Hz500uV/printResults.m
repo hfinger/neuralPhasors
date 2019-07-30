@@ -1,9 +1,9 @@
 clear all;
 
-PA_METHOD = 'minCoh';
+%PA_METHOD = 'minCoh';
 %PA_METHOD = 'minCohStength';
 %PA_METHOD = 'minCohMeanStength';
-%PA_METHOD = 'prodCoh';
+PA_METHOD = 'prodCoh';
 %PA_METHOD = 'prodCohMeanStrength';
 
 data = dataPaths();
@@ -94,71 +94,82 @@ for k=1:size(all_paths.node_pairs, 1)
 end
 
 %%
-paths_unique_PAs = cell(length(results.all_FC),1);
-paths_unique = cell(length(results.all_FC),1);
-paths_twoway = cell(length(results.all_FC),1);
-for k=1:length(results.all_FC)
-    if mod(k,500)==0
-        disp(k)
-    end
-    FC = results.all_FC{k}{1}(3:end, 3:end);
-    stim_pairs = results.paramComb{2,k};
-    
-    paths1 = paths_grid{stim_pairs(1),stim_pairs(2)};
-    paths2 = paths_grid{stim_pairs(2),stim_pairs(1)};
-    paths1 = num2cell(paths1,1);
-    paths2 = num2cell(paths2,1);
-    paths1 = cellfun(@nonzeros, paths1, 'UniformOutput', false);
-    paths2 = cellfun(@nonzeros, paths2, 'UniformOutput', false);
-    
-    % only invert path direction of paths2 to make them compatible and unique:
-    paths2 = cellfun(@flipud, paths2, 'UniformOutput', false);
-    
-    % now make them unique:
-    paths_twoway{k} = cat(2, paths1, paths2);
-    paths_chars = cellfun(@(x) num2str(x(:)'),paths_twoway{k},'UniformOutput',false);
-    [~,unique_idx] = unique(paths_chars);
-    paths_unique{k} = paths_twoway{k}(unique_idx);
-    
-    % now evaluate min(FC) along paths:
-    paths_start = cellfun(@(x) x(1:end-1), paths_unique{k}, 'UniformOutput', false);
-    paths_final = cellfun(@(x) x(2:end), paths_unique{k}, 'UniformOutput', false);
-    
-    paths_lin_ind = cellfun(@(x) sub2ind([33, 33], x(1:end-1), x(2:end)), paths_unique{k}, 'UniformOutput', false);
-    
-    if strcmp(PA_METHOD, 'minCoh')
-      coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
-      paths_unique_PAs{k} = cellfun(@(x) min(x), coh_along_paths);
-    elseif strcmp(PA_METHOD, 'minCohStength')
-      coh_times_strength = FC .* symSC;
-      coh_times_strength_along_paths = cellfun(@(x) coh_times_strength(x), paths_lin_ind, 'UniformOutput', false);
-      paths_unique_PAs{k} = cellfun(@(x) min(x), coh_times_strength_along_paths);
-    elseif strcmp(PA_METHOD, 'minCohMeanStength')
-      
-      coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
-      min_coh_along_paths = cellfun(@(x) min(x), coh_along_paths);
-      
-      strength_along_paths = cellfun(@(x) symSC(x), paths_lin_ind, 'UniformOutput', false);
-      mean_strength_along_paths = cellfun(@(x) mean(x), strength_along_paths);
-      
-      paths_unique_PAs{k} = min_coh_along_paths .* mean_strength_along_paths;
-      
-    elseif strcmp(PA_METHOD, 'prodCoh')
-      coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
-      paths_unique_PAs{k} = cellfun(@(x) prod(x), coh_along_paths);
-    elseif strcmp(PA_METHOD, 'prodCohMeanStrength')
-      coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
-      prod_coh_along_paths = cellfun(@(x) prod(x), coh_along_paths);
-      
-      strength_along_paths = cellfun(@(x) symSC(x), paths_lin_ind, 'UniformOutput', false);
-      mean_strength_along_paths = cellfun(@(x) mean(x), strength_along_paths);
-      
-      paths_unique_PAs{k} = prod_coh_along_paths .* mean_strength_along_paths;
-    end
+
+pathEvalFilename = fullfile(path_results, 'pathEvals.mat');
+if isfile(pathEvalFilename)
+  tmp = load(pathEvalFilename);
+  paths_unique_PAs = tmp.paths_unique_PAs;
+  paths_unique = tmp.paths_unique;
+  paths_twoway = tmp.paths_twoway;
+else
+  paths_unique_PAs = cell(length(results.all_FC),1);
+  paths_unique = cell(length(results.all_FC),1);
+  paths_twoway = cell(length(results.all_FC),1);
+  for k=1:length(results.all_FC)
+      if mod(k,500)==0
+          disp(k)
+      end
+      FC = results.all_FC{k}{1}(3:end, 3:end);
+      stim_pairs = results.paramComb{2,k};
+
+      paths1 = paths_grid{stim_pairs(1),stim_pairs(2)};
+      paths2 = paths_grid{stim_pairs(2),stim_pairs(1)};
+      paths1 = num2cell(paths1,1);
+      paths2 = num2cell(paths2,1);
+      paths1 = cellfun(@nonzeros, paths1, 'UniformOutput', false);
+      paths2 = cellfun(@nonzeros, paths2, 'UniformOutput', false);
+
+      % only invert path direction of paths2 to make them compatible and unique:
+      paths2 = cellfun(@flipud, paths2, 'UniformOutput', false);
+
+      % now make them unique:
+      paths_twoway{k} = cat(2, paths1, paths2);
+      paths_chars = cellfun(@(x) num2str(x(:)'),paths_twoway{k},'UniformOutput',false);
+      [~,unique_idx] = unique(paths_chars);
+      paths_unique{k} = paths_twoway{k}(unique_idx);
+
+      % now evaluate min(FC) along paths:
+      paths_start = cellfun(@(x) x(1:end-1), paths_unique{k}, 'UniformOutput', false);
+      paths_final = cellfun(@(x) x(2:end), paths_unique{k}, 'UniformOutput', false);
+
+      paths_lin_ind = cellfun(@(x) sub2ind([33, 33], x(1:end-1), x(2:end)), paths_unique{k}, 'UniformOutput', false);
+
+      if strcmp(PA_METHOD, 'minCoh')
+        coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
+        paths_unique_PAs{k} = cellfun(@(x) min(x), coh_along_paths);
+      elseif strcmp(PA_METHOD, 'minCohStength')
+        coh_times_strength = FC .* symSC;
+        coh_times_strength_along_paths = cellfun(@(x) coh_times_strength(x), paths_lin_ind, 'UniformOutput', false);
+        paths_unique_PAs{k} = cellfun(@(x) min(x), coh_times_strength_along_paths);
+      elseif strcmp(PA_METHOD, 'minCohMeanStength')
+
+        coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
+        min_coh_along_paths = cellfun(@(x) min(x), coh_along_paths);
+
+        strength_along_paths = cellfun(@(x) symSC(x), paths_lin_ind, 'UniformOutput', false);
+        mean_strength_along_paths = cellfun(@(x) mean(x), strength_along_paths);
+
+        paths_unique_PAs{k} = min_coh_along_paths .* mean_strength_along_paths;
+
+      elseif strcmp(PA_METHOD, 'prodCoh')
+        coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
+        paths_unique_PAs{k} = cellfun(@(x) prod(x), coh_along_paths);
+      elseif strcmp(PA_METHOD, 'prodCohMeanStrength')
+        coh_along_paths = cellfun(@(x) FC(x), paths_lin_ind, 'UniformOutput', false);
+        prod_coh_along_paths = cellfun(@(x) prod(x), coh_along_paths);
+
+        strength_along_paths = cellfun(@(x) symSC(x), paths_lin_ind, 'UniformOutput', false);
+        mean_strength_along_paths = cellfun(@(x) mean(x), strength_along_paths);
+
+        paths_unique_PAs{k} = prod_coh_along_paths .* mean_strength_along_paths;
+      end
+  end
+  paths_unique_PAs = squeeze(reshape(paths_unique_PAs, paramSizes));
+  paths_unique = squeeze(reshape(paths_unique, paramSizes));
+  paths_twoway = squeeze(reshape(paths_twoway, paramSizes));
+  save(pathEvalFilename, 'paths_unique_PAs', 'paths_unique', 'paths_twoway')
 end
-paths_unique_PAs = squeeze(reshape(paths_unique_PAs, paramSizes));
-paths_unique = squeeze(reshape(paths_unique, paramSizes));
-paths_twoway = squeeze(reshape(paths_twoway, paramSizes));
+
 paths_unique_lengths = cellfun(@(x) cellfun(@length,x) - 1, paths_unique(:,1), 'UniformOutput', false);
 paths_twoway_lengths = cellfun(@(x) cellfun(@length,x) - 1, paths_twoway(:,1), 'UniformOutput', false);
 
@@ -244,6 +255,10 @@ bar(shortestPathUnique, shortestPathHistCounts)
 title('number of region pairs per shortest path length')
 xlabel('shortest path length')
 ylabel('number region pairs')
+
+%% IPSF ttest:
+[h,p,ci,stats] = ttest(IPSF);
+disp(['PSF effect ttest: mean = ' num2str(mean(IPSF)) ', CI=[' num2str(ci(1)) ', ' num2str(ci(2)) '], t = ' num2str(stats.tstat) ', p = ' num2str(p)])
 
 %% IPSF_vs_shortest_path_length:
 [p,tbl,stats] = anova1(IPSF, shortestPathPerStimPair, 'off');
@@ -793,6 +808,12 @@ plot([0, 0], [0, 40], 'LineWidth', 2)
 hold off;
 saveas(gcf,fullfile(path_results, ['hist_PSI.pdf']))
 
+percentSwitching = sum(switching_index > 0)/length(switching_index);
+disp(['percentSwitching = ' num2str(percentSwitching)])
+fileID = fopen(fullfile(path_results, 'percentSwitching.txt'),'w');
+fprintf(fileID,'%f\n',percentSwitching);
+fclose(fileID);
+
 [h,p,ci,stats] = ttest(switching_index);
 
 first_path_PAs = squeeze(cell2mat(first_path_PAs_cell));
@@ -806,7 +827,8 @@ edges(end) = 0.81;
 histogram(all_first_path_SPO_selectivity, edges)
 xlim([0 0.8])
 set(gca,'xtick',[0 0.4 0.8])
-set(gca,'ytick',[0, 180])
+ylim([0, 150])
+set(gca,'ytick',[0, 150])
 xlabel('pathway phase selectivity (PPS)')
 ylabel('number node pairs')
 saveas(gcf,fullfile(path_results, ['hist_PPS.pdf']))
@@ -824,6 +846,7 @@ set(gcf,'PaperPosition', [0 0 1 1]);
 num_per_grpup = 8;
 plotDataX = radPerIndexUnique';
 plotDataX = [plotDataX; plotDataX(1,:)];
+all_ploted_idxs = zeros(8, 3, num_per_grpup);
 for rng_seed = 1:8
     clf;
     plot_counter = 1;
@@ -906,15 +929,17 @@ for rng_seed = 1:8
             if rng_seed==1 && plot_pairs_with_shortest_path_length==2 && repeat==6
                 surfacePlotNewIdx{2} = global_pair_idx;
             end
-            if rng_seed==2 && plot_pairs_with_shortest_path_length==3 && repeat==2
+            if rng_seed==6 && plot_pairs_with_shortest_path_length==3 && repeat==7
                 surfacePlotNewIdx{3} = global_pair_idx;
             end
             
+            all_ploted_idxs(rng_seed, plot_pairs_with_shortest_path_length, repeat) = global_pair_idx;
+            
             if showPSI
                 if size(PAs_of_collected_paths_cell{global_pair_idx},1)>0
-                    switching_index = pathway_switching_index(PAs_of_collected_paths_cell{global_pair_idx}(1:16, 1),PAs_of_collected_paths_cell{global_pair_idx}(1:16, 2));
+                    switching_index_tmp = pathway_switching_index(PAs_of_collected_paths_cell{global_pair_idx}(1:16, 1),PAs_of_collected_paths_cell{global_pair_idx}(1:16, 2));
                     PPS = all_first_path_SPO_selectivity(global_pair_idx);
-                    title(['PSI=' num2str(round(switching_index*100)/100) ' PPS=' num2str(round(PPS*100)/100)])
+                    title(['PSI=' num2str(round(switching_index_tmp*100)/100) ' PPS=' num2str(round(PPS*100)/100)])
                 end
             else
                 if repeat==round(num_per_grpup/2)
@@ -943,7 +968,8 @@ set(gcf,'PaperPosition', [0 0 1 1]);
 plotDataX = radPerIndexUnique';
 plotDataX = [plotDataX; plotDataX(1,:)];
 %pairIdxsToPlot = [349, 82, 312]; %old
-pairIdxsToPlot = [349, 469, 242]; %new
+%pairIdxsToPlot = [349, 469, 242]; %new
+pairIdxsToPlot = cell2mat(surfacePlotNewIdx);
 for plotIdx = 1:length(pairIdxsToPlot)
 
     global_pair_idx = pairIdxsToPlot(plotIdx);
@@ -956,24 +982,23 @@ for plotIdx = 1:length(pairIdxsToPlot)
         this_PAs = cell2mat(paths_unique_PAs(global_pair_idx,:)');
         this_PAs = [this_PAs(1:16, :); this_PAs(1, :)];
 
+        first_path_idx = first_path_idxs_cell{1,1,global_pair_idx};
+        second_path_idx = second_path_idxs_cell{1,1,global_pair_idx};
         remaining_path_idxs = setdiff(1:size(this_PAs,2), [first_path_idx, second_path_idx]);
         rest_PAs = this_PAs(:,remaining_path_idxs);
         [~, rest_PAs_sort_idxs] = sort(mean(rest_PAs(1:16,:),1),'descend');
 
-
         % first plot remaining and only at last the strongest
         polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(1)), 'Color', [0.4660, 0.6740, 0.1880]	)
         hold on;
-        polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(2)), 'Color', [0.4660, 0.6740, 0.1880]	)
-        polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(3)), 'Color', [0.4660, 0.6740, 0.1880]	)
+        %polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(2)), 'Color', [0.4660, 0.6740, 0.1880]	)
+        %polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(3)), 'Color', [0.4660, 0.6740, 0.1880]	)
 
-        second_path_idx = second_path_idxs_cell{1,1,global_pair_idx};
         second_path_PAs = this_PAs(:, second_path_idx);
         if size(second_path_PAs,2)>0
             polarplot(plotDataX, second_path_PAs, 'Color', [0.6350, 0.0780, 0.1840])
         end
 
-        first_path_idx = first_path_idxs_cell{1,1,global_pair_idx};
         first_path_PAs = this_PAs(:, first_path_idx);
         polarplot(plotDataX, first_path_PAs, 'Color', [0, 0.4470, 0.7410])
 
@@ -1007,9 +1032,9 @@ for plotIdx = 1:length(pairIdxsToPlot)
 
     if showPSI
         if size(PAs_of_collected_paths_cell{global_pair_idx},1)>0
-            switching_index = pathway_switching_index(PAs_of_collected_paths_cell{global_pair_idx}(1:16, 1),PAs_of_collected_paths_cell{global_pair_idx}(1:16, 2));
+            switching_index_tmp = pathway_switching_index(PAs_of_collected_paths_cell{global_pair_idx}(1:16, 1),PAs_of_collected_paths_cell{global_pair_idx}(1:16, 2));
             PPS = all_first_path_SPO_selectivity(global_pair_idx);
-            title(['PSI=' num2str(round(switching_index*100)/100) ' PPS=' num2str(round(PPS*100)/100)])
+            title(['PSI=' num2str(round(switching_index_tmp*100)/100) ' PPS=' num2str(round(PPS*100)/100)])
         end
     end
     
@@ -1027,72 +1052,82 @@ edgeVals = [C zeros(33,33); zeros(33,33) zeros(33,33)];
 
 all_FCs = cellfun(@(x) x{1}, reshape(results.all_FC, paramSizes), 'UniformOutput', false);
 
-for selected_pair_idx=3 %1:4
-    use_pair_idx = surfacePlotIdx{selected_pair_idx};
-    my_FC = cell2mat(all_FCs(1,use_pair_idx,:));
+rng_idx = 6; row_idx = 3; col_idx = 7;
+%rng_idx = 5; row_idx = 3; col_idx = 2; bad
+%rng_idx = 4; row_idx = 2; col_idx = 7; bad
+%rng_idx = 3; row_idx = 2; col_idx = 1; bad
+%rng_idx = 3; row_idx = 3; col_idx = 2; bad
+%rng_idx = 1; row_idx = 3; col_idx = 7; bad
+%rng_idx = 7; row_idx = 3; col_idx = 8; bad
+%rng_idx = 8; row_idx = 3; col_idx = 1; bad
 
-    my_FC2 = my_FC(3:end, 3:end, 1:16);
+out_folder = fullfile(path_results, ['connectome_pathways_' num2str(rng_idx) '_' num2str(row_idx) '_' num2str(col_idx)]);
+mkdir(out_folder);
 
-    node_coh_with_driver = squeeze(my_FC(3:end, 1, 1:16));
+use_pair_idx = all_ploted_idxs(rng_idx, row_idx, col_idx);
+my_FC = cell2mat(all_FCs(1,use_pair_idx,:));
 
-    my_FC2_whereConn = zeros(size(my_FC2));
-    for k=1:16
-        tmp = my_FC2(:,:,k);
-        tmp(C==0) = 0;
-        my_FC2_whereConn(:,:,k) = tmp;
-    end
+my_FC2 = my_FC(3:end, 3:end, 1:16);
 
-    target_stim_pairs = results.paramComb{2,use_pair_idx};
-    coh_between_stimulated_pairs = squeeze(my_FC2(target_stim_pairs(1),target_stim_pairs(2), :));
+node_coh_with_driver = squeeze(my_FC(3:end, 1, 1:16));
 
-    for spo_idx = 1:16 %[3, 13]
-
-        % now create a FC conn mat with only connections on given paths:
-        my_FC3_wherePath = zeros(size(my_FC2));
-        tmp = PAs_per_SPO_maxMean_node_idxs{use_pair_idx};
-        tmp_PA = PAs_per_SPO_maxMean{use_pair_idx};
-        [~, sort_idx] = sort(tmp_PA(spo_idx,:), 'descend');
-        for k=1:1%length(surfacePlotIdx3_node_idxs)
-            nodes_on_path = tmp{sort_idx(k)};
-            for m=1:length(nodes_on_path)-1
-                start_node = nodes_on_path(m);
-                end_node = nodes_on_path(m+1);
-                my_FC3_wherePath(start_node,end_node,:) = my_FC2_whereConn(start_node,end_node,:);
-            end
-        end
-
-        edgeWidth = zeros(33,33);
-        edgeWidth(my_FC2_whereConn(:,:,spo_idx)>0) = 0.3;
-        edgeWidth(my_FC3_wherePath(:,:,spo_idx)>0) = 0.9;
-        edgeWidth = [edgeWidth(:,:) zeros(33,33); zeros(33,33) zeros(33,33)];
-        edgeColor = [my_FC2_whereConn(:,:,spo_idx) zeros(33,33); zeros(33,33) zeros(33,33)];
-
-        figure(25);
-        nodeVals = 0.0001 * zeros(66,1);
-        nodeVals(target_stim_pairs) = 0.5;
-        nodeVals(1:33) = node_coh_with_driver(:, spo_idx);
-
-        nodeVals(1:33) = 0.2;
-        nodeVals(target_stim_pairs) = 0.5;
-
-        nodeScale = 40;
-        nodeMinSize = 0;
-        nodeRange = [min(min(min(nodeVals))),max(max(max(nodeVals)))];
-        edgeMin = 0;
-        edgeAlphas = 1;
-        surfaceVisibility = 0.1;
-        rescaleEdgeVals = 2;
-        cmap = colormap(flipud(hot));
-        plotBrainConnectivityNew(nodeVals,edgeWidth,nodeMinSize,nodeScale,nodeRange,edgeColor,edgeMin,edgeAlphas,surfaceVisibility,rescaleEdgeVals,1,cmap);
-        view(260,15);
-        colorbar;
-        pause(0.1);
-
-        saveas(gcf,fullfile(path_results, ['connectome_pathways_spo' num2str(spo_idx) '.png']))
-        saveas(gcf,fullfile(path_results, ['connectome_pathways_spo' num2str(spo_idx) '.pdf']))
-    end
+my_FC2_whereConn = zeros(size(my_FC2));
+for k=1:16
+    tmp = my_FC2(:,:,k);
+    tmp(C==0) = 0;
+    my_FC2_whereConn(:,:,k) = tmp;
 end
 
+target_stim_pairs = results.paramComb{2,use_pair_idx};
+coh_between_stimulated_pairs = squeeze(my_FC2(target_stim_pairs(1),target_stim_pairs(2), :));
+
+if 0
+  for spo_idx = 1:16 %[3, 13]
+      % now create a FC conn mat with only connections on given paths:
+      my_FC3_wherePath = zeros(size(my_FC2));
+      tmp = PAs_per_SPO_maxMean_node_idxs{use_pair_idx};
+      tmp_PA = PAs_per_SPO_maxMean{use_pair_idx};
+      [~, sort_idx] = sort(tmp_PA(spo_idx,:), 'descend');
+      for k=1:1%length(surfacePlotIdx3_node_idxs)
+          nodes_on_path = tmp{sort_idx(k)};
+          for m=1:length(nodes_on_path)-1
+              start_node = nodes_on_path(m);
+              end_node = nodes_on_path(m+1);
+              my_FC3_wherePath(start_node,end_node,:) = my_FC2_whereConn(start_node,end_node,:);
+          end
+      end
+
+      edgeWidth = zeros(33,33);
+      edgeWidth(my_FC2_whereConn(:,:,spo_idx)>0) = 0.3;
+      edgeWidth(my_FC3_wherePath(:,:,spo_idx)>0) = 0.9;
+      edgeWidth = [edgeWidth(:,:) zeros(33,33); zeros(33,33) zeros(33,33)];
+      edgeColor = [my_FC2_whereConn(:,:,spo_idx) zeros(33,33); zeros(33,33) zeros(33,33)];
+
+      figure(25);
+      nodeVals = 0.0001 * zeros(66,1);
+      nodeVals(target_stim_pairs) = 0.5;
+      nodeVals(1:33) = node_coh_with_driver(:, spo_idx);
+
+      nodeVals(1:33) = 0.2;
+      nodeVals(target_stim_pairs) = 0.5;
+
+      nodeScale = 40;
+      nodeMinSize = 0;
+      nodeRange = [min(min(min(nodeVals))),max(max(max(nodeVals)))];
+      edgeMin = 0;
+      edgeAlphas = 1;
+      surfaceVisibility = 0.1;
+      rescaleEdgeVals = 2;
+      cmap = colormap(flipud(hot));
+      plotBrainConnectivityNew(nodeVals,edgeWidth,nodeMinSize,nodeScale,nodeRange,edgeColor,edgeMin,edgeAlphas,surfaceVisibility,rescaleEdgeVals,1,cmap);
+      view(260,15);
+      colorbar;
+      pause(0.1);
+
+      saveas(gcf,fullfile(out_folder, ['spo' num2str(spo_idx) '.png']))
+      %saveas(gcf,fullfile(out_folder, ['spo' num2str(spo_idx) '.pdf']))
+  end
+end
 %%
 
 
@@ -1102,3 +1137,213 @@ for idx=1:length(pairIdxsToPlot)
   target_stim_pairs = results.paramComb{2,pairIdxsToPlot(idx)};
   disp(target_stim_pairs)
 end
+
+%%
+
+
+%% polar PA plots of only the 3 examplary pairs:
+showPSI = true;
+plotOnlyNonOverlapping = true;
+
+figure(25);
+clf;
+set(gcf, 'Position',  [100, 100, 1000, 800])
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','normalized');
+set(gcf,'PaperPosition', [0 0 1 1]);
+plotDataX = radPerIndexUnique';
+plotDataX = [plotDataX; plotDataX(1,:)];
+%pairIdxsToPlot = [349, 82, 312]; %old
+%pairIdxsToPlot = [349, 469, 242]; %new
+pairIdxsToPlot = [349, 469, 416]; %new
+%pairIdxsToPlot = cell2mat(surfacePlotNewIdx);
+
+switching_index_for_arrows = zeros(3,1);
+pps_for_arrows = zeros(3,1);
+for plotIdx = 1:length(pairIdxsToPlot)
+
+    global_pair_idx = pairIdxsToPlot(plotIdx);
+        
+    subplot(3,3,plotIdx)
+    plot_counter = plot_counter + 1;
+
+    if plotOnlyNonOverlapping
+
+        this_PAs = cell2mat(paths_unique_PAs(global_pair_idx,:)');
+        this_PAs = [this_PAs(1:16, :); this_PAs(1, :)];
+
+        first_path_idx = first_path_idxs_cell{1,1,global_pair_idx};
+        second_path_idx = second_path_idxs_cell{1,1,global_pair_idx};
+        remaining_path_idxs = setdiff(1:size(this_PAs,2), [first_path_idx, second_path_idx]);
+        rest_PAs = this_PAs(:,remaining_path_idxs);
+        [~, rest_PAs_sort_idxs] = sort(mean(rest_PAs(1:16,:),1),'descend');
+
+        % first plot remaining and only at last the strongest
+        polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(1)), 'Color', [0.4660, 0.6740, 0.1880]	)
+        hold on;
+        %polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(2)), 'Color', [0.4660, 0.6740, 0.1880]	)
+        %polarplot(plotDataX, rest_PAs(:,rest_PAs_sort_idxs(3)), 'Color', [0.4660, 0.6740, 0.1880]	)
+
+        second_path_PAs = this_PAs(:, second_path_idx);
+        if size(second_path_PAs,2)>0
+            polarplot(plotDataX, second_path_PAs, 'Color', [0.6350, 0.0780, 0.1840])
+        end
+
+        first_path_PAs = this_PAs(:, first_path_idx);
+        polarplot(plotDataX, first_path_PAs, 'Color', [0, 0.4470, 0.7410])
+
+        hold off;
+    else
+        plotDataY = PAs_per_SPO_maxMean{global_pair_idx};
+        %plotDataY = PAs_per_SPO_maxMax{global_pair_idx};
+        %plotDataY = PAs_per_SPO_maxMaxMin{global_pair_idx};
+
+        plotDataY = [plotDataY; plotDataY(1,:)];
+        polarplot(plotDataX, plotDataY)
+    end
+
+    pax = gca; pax.ThetaAxisUnits = 'radians';
+    %thetaticks(0:90:315)
+    thetaticks([0, pi/2, pi, 3*pi/2])
+
+    hold on;
+
+    %plotDataYcoh = [cohUnique(global_pair_idx,:), cohUnique(global_pair_idx,1)]';
+    %polarplot(plotDataX, plotDataYcoh, 'color', 'k', 'LineStyle', ':')
+
+    tmp_rlim = rlim();
+    tmp_rlim(1) = 0;
+    rlim(tmp_rlim)
+    rticks(tmp_rlim(2))
+    
+    rticks([tmp_rlim(2)])
+    rticklabels({['r = ' num2str(tmp_rlim(2))]})
+
+    %polarplot([maxPhaseRad(global_pair_idx), maxPhaseRad(global_pair_idx)], [0, 1])
+
+    hold off;
+
+    if showPSI
+        if size(PAs_of_collected_paths_cell{global_pair_idx},1)>0
+            switching_index_tmp = pathway_switching_index(PAs_of_collected_paths_cell{global_pair_idx}(1:16, 1),PAs_of_collected_paths_cell{global_pair_idx}(1:16, 2));
+            PPS = all_first_path_SPO_selectivity(global_pair_idx);
+            %title(['PSI=' num2str(round(switching_index_tmp*100)/100) ' PPS=' num2str(round(PPS*100)/100)])
+            
+            switching_index_for_arrows(plotIdx) = switching_index_tmp;
+            pps_for_arrows(plotIdx) = PPS;
+        end
+    end
+    
+    set(gcf,'Color',[1 1 1]); set(gca,'Color',[.85 .85 .85]); set(gcf,'InvertHardCopy','off');
+    
+end
+
+my_FC = cell2mat(all_FCs(1,pairIdxsToPlot(3),:));
+
+ha = subplot(3,3,6);
+if strcmp(PA_METHOD,'minCoh')
+  set_xlim = [0 0.8];
+  step_size = 0.04;
+elseif strcmp(PA_METHOD,'prodCoh')
+  set_xlim = [0 0.8];
+  step_size = 0.04;
+elseif strcmp(PA_METHOD,'prodCohMeanStrength')
+  set_xlim = [0 0.3];
+  step_size = 0.02;
+else
+  set_xlim = [0 0.8];
+  step_size = 0.04;
+end
+edges = set_xlim(1):step_size:set_xlim(2);
+edges(end) = 0.81;
+histogram(all_first_path_SPO_selectivity, edges)
+xlim(set_xlim)
+set(gca,'xtick',set_xlim)
+my_ylim = ylim();
+ylim([0, my_ylim(2)])
+set(gca,'ytick',[0, my_ylim(2)])
+xlabel('PPS')
+ylabel('# node pairs')
+for plotIdx = 1:3
+  pos = get(ha, 'position');
+  Start = [pps_for_arrows(plotIdx), my_ylim(2) / 1.5]; % x, y
+  End   = [pps_for_arrows(plotIdx), my_ylim(2) / 1.12];  % x , y
+  ta = annotation('textarrow',...
+      [(End(1) + abs(min(xlim)))/diff(xlim) * pos(3) + pos(1),...
+       (Start(1) + abs(min(xlim)))/diff(xlim) * pos(3) + pos(1) ],... 
+      [(End(2) - min(ylim))/diff(ylim) * pos(4) + pos(2),...
+       (Start(2) - min(ylim))/diff(ylim) * pos(4) + pos(2)]);
+  if plotIdx==1
+    ta.String = 'A';
+  elseif plotIdx==2
+      ta.String = 'B';
+  elseif plotIdx==3
+      ta.String = 'C';
+  end
+  ta.HorizontalAlignment = 'center';
+end
+
+subplot(3,3,7);
+polarhistogram(angleWithMostPA_relToMaxSpo(1,:),circHistBinEdges)
+pax = gca; pax.ThetaAxisUnits = 'radians';
+thetaticks([0, pi/2, pi, 3*pi/2])
+rlim([0, 120])
+rticks([120])
+rticklabels({'r = 120'})
+set(gcf,'Color',[1 1 1]); set(gca,'Color',[.85 .85 .85]); set(gcf,'InvertHardCopy','off');
+
+subplot(3,3,8)
+polarhistogram(angleWithMostPA_relToMaxSpo(2,:),circHistBinEdges)
+pax = gca; pax.ThetaAxisUnits = 'radians';
+thetaticks([0, pi/2, pi, 3*pi/2])
+rlim([0, 120])
+rticks([120])
+rticklabels({'r = 120'})
+set(gcf,'Color',[1 1 1]); set(gca,'Color',[.85 .85 .85]); set(gcf,'InvertHardCopy','off');
+
+ha = subplot(3,3,9);
+if strcmp(PA_METHOD,'minCoh')
+  set_xlim = [-1 1];
+  step_size = 0.04;
+elseif strcmp(PA_METHOD,'prodCoh')
+  set_xlim = [-1 1];
+  step_size = 0.04;
+elseif strcmp(PA_METHOD,'prodCohMeanStrength')
+  set_xlim = [-0.4 0.4];
+  step_size = 0.02;
+else
+  set_xlim = [-1 1];
+  step_size = 0.04;
+end
+histogram(switching_index, set_xlim(1):step_size:set_xlim(2))
+xlim(set_xlim)
+set(gca,'xtick',[set_xlim(1), 0, set_xlim(2)])
+my_ylim = ylim();
+ylim([0, my_ylim(2)])
+set(gca,'ytick',[0, my_ylim(2)])
+xlabel('PSI / $\sqrt{|PSI|}$','Interpreter','latex')
+ylabel('# node pairs')
+
+for plotIdx = 1:3
+  pos = get(ha, 'position');
+  Start = [switching_index_for_arrows(plotIdx), my_ylim(2) / 1.5]; % x, y
+  End   = [switching_index_for_arrows(plotIdx), my_ylim(2) / 1.12];  % x , y
+  ta = annotation('textarrow',...
+      [(End(1) + abs(min(xlim)))/diff(xlim) * pos(3) + pos(1),...
+       (Start(1) + abs(min(xlim)))/diff(xlim) * pos(3) + pos(1) ],... 
+      [(End(2) - min(ylim))/diff(ylim) * pos(4) + pos(2),...
+       (Start(2) - min(ylim))/diff(ylim) * pos(4) + pos(2)]);
+  if plotIdx==1
+    ta.String = 'A';
+  elseif plotIdx==2
+      ta.String = 'B';
+  elseif plotIdx==3
+      ta.String = 'C';
+  end
+  ta.HorizontalAlignment = 'center';
+end
+
+saveas(gcf,fullfile(path_results, ['fig7.pdf']))
+
+

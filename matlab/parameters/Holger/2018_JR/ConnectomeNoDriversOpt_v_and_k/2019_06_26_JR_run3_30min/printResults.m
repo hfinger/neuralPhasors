@@ -9,6 +9,7 @@ results = load(fullfile( path_results, 'all_coh.mat'));
 
 paramSizes = cellfun(@length, results.paramValues);
 
+results.freqs = squeeze(reshape(results.all_freqs, paramSizes));
 results.coh = squeeze(reshape(results.all_coh, paramSizes));
 results.FC = squeeze(reshape(results.all_FC, paramSizes));
 results.corr_SimFC = squeeze(reshape(results.all_corr_SimFC, paramSizes));
@@ -28,6 +29,8 @@ disp(['vSelected = ' num2str(vSelected)]);
 
 params.JansenRitConnectomePaper.k = 14; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
 params.JansenRitConnectomePaper.v = 2.6; %num2cell(2.4:0.1:3.2); %3.2; % velocity [m/s]
+
+disp(['freqSelected = ' num2str(results.freqs{kSelectedIdx,vSelectedIdx})]);
 
 %%
 imagesc(results.corr_SimFC')
