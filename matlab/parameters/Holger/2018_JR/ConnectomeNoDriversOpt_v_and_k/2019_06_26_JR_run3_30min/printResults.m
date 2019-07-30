@@ -30,7 +30,7 @@ disp(['vSelected = ' num2str(vSelected)]);
 params.JansenRitConnectomePaper.k = 14; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
 params.JansenRitConnectomePaper.v = 2.6; %num2cell(2.4:0.1:3.2); %3.2; % velocity [m/s]
 
-disp(['freqSelected = ' num2str(results.freqs{kSelectedIdx,vSelectedIdx})]);
+%disp(['freqSelected = ' num2str(results.freqs{kSelectedIdx,vSelectedIdx})]);
 
 %%
 imagesc(results.corr_SimFC')
@@ -87,6 +87,7 @@ figure(2)
 imagesc(C)
 title('C');
 set(gca,'YDir','normal');
+axis square
 colorbar;
 set(gca,'clim',[0, 0.8])
 saveas(gcf,fullfile(path_results, 'C.png'))
@@ -96,6 +97,7 @@ imagesc(D)
 title('D');
 set(gca,'YDir','normal');
 colormap(flipud(colormap))
+axis square
 colorbar;
 set(gca,'clim',[0, 200])
 saveas(gcf,fullfile(path_results, 'D.png'))
@@ -104,6 +106,7 @@ figure(4)
 imagesc(simFC)
 title('simFC');
 set(gca,'YDir','normal');
+axis square
 colorbar;
 set(gca,'clim',[0, 0.9])
 saveas(gcf,fullfile(path_results, 'simFC.png'))
@@ -112,6 +115,7 @@ figure(5)
 imagesc(empFC)
 title('empFC');
 set(gca,'YDir','normal');
+axis square
 colorbar;
 set(gca,'clim',[0, 0.5])
 saveas(gcf,fullfile(path_results, 'empFC.png'))
@@ -120,6 +124,7 @@ figure(6)
 imagesc(symSC)
 title('symSC');
 set(gca,'YDir','normal');
+axis square
 colorbar;
 set(gca,'clim',[0, 0.6])
 saveas(gcf,fullfile(path_results, 'symSC.png'))

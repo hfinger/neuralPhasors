@@ -30,7 +30,7 @@ disp(['vSelected = ' num2str(vSelected)]);
 params.JansenRitConnectomePaper.k = 14; %num2cell([3, 10]); %30; %num2cell(round(22:2:34)); %global connection strength scaling
 params.JansenRitConnectomePaper.v = 2.6; %num2cell(2.4:0.1:3.2); %3.2; % velocity [m/s]
 
-disp(['freqSelected = ' num2str(results.freqs{kSelectedIdx,vSelectedIdx})]);
+%disp(['freqSelected = ' num2str(results.freqs{kSelectedIdx,vSelectedIdx})]);
 
 %%
 imagesc(results.corr_SimFC')
@@ -40,7 +40,8 @@ xlabel('k')
 ylabel('v')
 set(gca,'YDir','normal')
 title('corr with empricial FC')
-set(gca,'clim',[0.15; 0.65]);
+set(gca,'clim',[0.4; 0.65]);
+axis square;
 colorbar
 saveas(gcf, fullfile( path_results, 'corr_with_empirical_fc.png'))
 saveas(gcf, fullfile( path_results, 'corr_with_empirical_fc.pdf'))
@@ -76,50 +77,82 @@ disp(['corr_simFC_symSC = ' num2str(corr_simFC_symSC(1,2)) ' p=' num2str(P(1,2))
 [corr_empFC_symSC,P] = corrcoef(empFC(Idx_mat), symSC(Idx_mat));
 disp(['corr_empFC_symSC = ' num2str(corr_empFC_symSC(1,2)) ' p=' num2str(P(1,2))]);
 
-[corr_simFC_C,P] = corrcoef(simFC(Idx_mat_offdiag), C(Idx_mat_offdiag));
-disp(['corr_simFC_C = ' num2str(corr_simFC_C(1,2)) ' p=' num2str(P(1,2))]);
+%[corr_simFC_C,P] = corrcoef(simFC(Idx_mat_offdiag), C(Idx_mat_offdiag));
+%disp(['corr_simFC_C = ' num2str(corr_simFC_C(1,2)) ' p=' num2str(P(1,2))]);
 
-[corr_empFC_C,P] = corrcoef(empFC(Idx_mat_offdiag), C(Idx_mat_offdiag));
-disp(['corr_empFC_C = ' num2str(corr_empFC_C(1,2)) ' p=' num2str(P(1,2))]);
+%[corr_empFC_C,P] = corrcoef(empFC(Idx_mat_offdiag), C(Idx_mat_offdiag));
+%disp(['corr_empFC_C = ' num2str(corr_empFC_C(1,2)) ' p=' num2str(P(1,2))]);
 
 %%
-figure(2)
-imagesc(C)
-title('C');
-set(gca,'YDir','normal');
-colorbar;
-set(gca,'clim',[0, 0.8])
-saveas(gcf,fullfile(path_results, 'C.png'))
+% figure(2)
+% imagesc(C)
+% title('C');
+% set(gca,'YDir','normal');
+% colorbar;
+% set(gca,'clim',[0, 0.8])
+% saveas(gcf,fullfile(path_results, 'C.png'))
 
-figure(3)
-imagesc(D)
-title('D');
-set(gca,'YDir','normal');
-colormap(flipud(colormap))
-colorbar;
-set(gca,'clim',[0, 200])
-saveas(gcf,fullfile(path_results, 'D.png'))
+figure(3);
+clf;
+set(gcf, 'Position',  [100, 100, 1000, 800])
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','normalized');
+set(gcf,'PaperPosition', [0 0 1 1]);
 
-figure(4)
-imagesc(simFC)
-title('simFC');
-set(gca,'YDir','normal');
-colorbar;
-set(gca,'clim',[0, 0.9])
-saveas(gcf,fullfile(path_results, 'simFC.png'))
-
-figure(5)
-imagesc(empFC)
-title('empFC');
-set(gca,'YDir','normal');
-colorbar;
-set(gca,'clim',[0, 0.5])
-saveas(gcf,fullfile(path_results, 'empFC.png'))
-
-figure(6)
+subplot(2,3,1)
 imagesc(symSC)
-title('symSC');
+title('Structural Conn.');
 set(gca,'YDir','normal');
+axis square;
 colorbar;
 set(gca,'clim',[0, 0.6])
-saveas(gcf,fullfile(path_results, 'symSC.png'))
+set(gca, 'XTick', [1, 33])
+set(gca, 'YTick', [1, 33])
+
+subplot(2,3,2)
+imagesc(D)
+title('Fiber Distance');
+set(gca,'YDir','normal');
+cmap = colormap;
+colormap(gca,flipud(cmap))
+axis square;
+colorbar;
+set(gca,'clim',[0, 200])
+set(gca, 'XTick', [1, 33])
+set(gca, 'YTick', [1, 33])
+
+subplot(2,3,3)
+imagesc(empFC)
+title('Empirical FC');
+set(gca,'YDir','normal');
+axis square;
+colorbar;
+set(gca,'clim',[0, 0.5])
+set(gca, 'XTick', [1, 33])
+set(gca, 'YTick', [1, 33])
+
+subplot(2,3,4)
+imagesc(k, v, results.corr_SimFC')
+set(gca, 'XTick', [10,20,30])
+set(gca, 'YTick', 2:4)
+xlabel('c_{net}')
+ylabel('v [m/s]')
+set(gca,'YDir','normal')
+title('Parameter Optim.')
+set(gca,'clim',[0.4; 0.65]);
+axis square;
+colorbar
+
+subplot(2,3,5)
+imagesc(simFC)
+title('Simulated FC');
+set(gca,'YDir','normal');
+axis square;
+colorbar;
+set(gca,'clim',[0, 0.7])
+set(gca, 'XTick', [1, 33])
+set(gca, 'YTick', [1, 33])
+
+saveas(gcf,fullfile(path_results, 'Figure4.png'))
+saveas(gcf,fullfile(path_results, 'Figure4.pdf'))
